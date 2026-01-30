@@ -1,14 +1,14 @@
-﻿using System.Configuration;
-using System.Data;
-using System.Windows;
+﻿using System.Windows;
+using Syncfusion.Licensing;
 
 namespace MaterialReqAppV3
 {
-    /// <summary>
-    /// Interaction logic for App.xaml
-    /// </summary>
-    public partial class App : System.Windows.Application
+    public partial class App : Application
     {
+        public App()
+        {
+            // Register Syncfusion license key
+            SyncfusionLicenseProvider.RegisterLicense("NxYtFisQPR08Cit/VkR+XU9Ff1RDX3xKf0x/TGpQb19xflBPallYVBYiSV9jS3hTd0ZjWHpccXdVQmlaVk91XQ==");
+        }
     }
-
 }

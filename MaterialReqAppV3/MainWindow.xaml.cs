@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
-using System.Linq;
 using System.Runtime;
 using System.Text.Json;
 using System.Windows;
@@ -13,6 +12,11 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
+using Syncfusion.Pdf.Parsing;
+using Syncfusion.Pdf.Interactive;
+using Syncfusion.Pdf;
+
+
 
 
 
@@ -30,6 +34,14 @@ namespace MaterialReqAppV3
         private readonly Dictionary<TabItem, ObservableCollection<SelectedPartLine>> _selectedPartsByTab = new();
         private readonly Dictionary<TabItem, StackPanel> _movementPanelByTab = new();
         private readonly Dictionary<TabItem, string> _movementTypeByTab = new();
+        private readonly Dictionary<TabItem, string> _costCenterByTab = new();
+        private readonly Dictionary<TabItem, string> _wbsByTab = new();
+        private readonly Dictionary<TabItem, string> _workOrderByTab = new();
+
+        private readonly Dictionary<TabItem, TextBox> _detailsBoxByTab = new();
+
+        private bool _suppressDetailsTextChanged = false;
+
 
         private bool GetIsReturnForTab(TabItem tab)
         {
@@ -55,16 +67,14 @@ namespace MaterialReqAppV3
                 ? new[]
                 {
             "202 - Consumption for Cost Center Reversal",
-            "222 - Consumption for Project Reversal",
-            "232 - Consumption for Sales Order Reversal",
+            "222 - Consumption for Project Reversal",            
             "262 - Consumption for Order Reversal",
             "962 - Consumption for Order Reversal - Used"
                 }
                 : new[]
                 {
             "201 - Consumption for Cost Center",
-            "221 - Consumption for Project",
-            "231 - Consumption for Sales Order",
+            "221 - Consumption for Project",            
             "261 - Consumption for Order"
                 };
 
@@ -97,13 +107,16 @@ namespace MaterialReqAppV3
                     IsChecked = string.Equals(GetMovementType(tab), opt, StringComparison.OrdinalIgnoreCase)
                 };
 
-                rb.Checked += (_, __) => SetMovementType(tab, opt);
+                rb.Checked += (_, __) =>
+                {
+                    SetMovementType(tab, opt);
+                    UpdateDetailsBoxForTab(tab);
+                };
+
 
                 panel.Children.Add(rb);
             }
         }
-
-
 
         private ObservableCollection<SelectedPartLine> GetSelectedParts(TabItem tab)
         {
@@ -274,12 +287,22 @@ namespace MaterialReqAppV3
                 int siteTabs = SiteTabs.Items.Count - 1; // exclude the + tab
                 if (siteTabs <= 1)
                 {
-                    MessageBox.Show("You must have at least one site tab.");
+                    // no message boxes
                     return;
                 }
 
                 // Index of the tab being closed (before removal)
                 int closingIndex = SiteTabs.Items.IndexOf(ownerTab);
+
+                // cleanup per-tab state before removing the tab
+                _selectedPartsByTab.Remove(ownerTab);
+                _movementTypeByTab.Remove(ownerTab);
+                _movementPanelByTab.Remove(ownerTab);
+
+                _detailsBoxByTab.Remove(ownerTab);
+                _costCenterByTab.Remove(ownerTab);
+                _wbsByTab.Remove(ownerTab);
+                _workOrderByTab.Remove(ownerTab);
 
                 // Remove it
                 SiteTabs.Items.Remove(ownerTab);
@@ -296,13 +319,20 @@ namespace MaterialReqAppV3
 
                 SiteTabs.SelectedIndex = newIndex;
 
-                // Keep textbox in sync
-                if (SiteNameBox != null && SiteTabs.SelectedItem is TabItem selected && selected != PlusTab)
+                // Keep Reason textbox + movement/details in sync
+                if (SiteTabs.SelectedItem is TabItem selected && selected != PlusTab)
                 {
-                    SiteNameBox.Text = GetTabTitle(selected);
-                    SiteNameBox.SelectAll();
+                    if (SiteNameBox != null)
+                    {
+                        SiteNameBox.Text = GetTabReason(selected); // <-- reason text (watermark if empty)
+                        SiteNameBox.SelectAll();
+                    }
+
+                    BuildMovementOptions(selected);
+                    UpdateDetailsBoxForTab(selected);
                 }
             };
+
 
 
 
@@ -497,8 +527,8 @@ namespace MaterialReqAppV3
             Grid.SetColumn(movementHost, 0);
             topRightLayout.Children.Add(movementHost);
 
-            // Inputs panel (placeholders for now)
-            var inputPanel = new StackPanel { Margin = new Thickness(0, 0, 0, 0) };
+            // Inputs panel (single Details box that changes based on movement type)
+            var inputPanel = new StackPanel();
 
             inputPanel.Children.Add(new TextBlock
             {
@@ -508,24 +538,44 @@ namespace MaterialReqAppV3
                 Margin = new Thickness(0, 0, 0, 10)
             });
 
-            TextBox MakeInput(string watermark)
+            var detailsBox = new TextBox
             {
-                var tb = new TextBox
-                {
-                    Height = 28,
-                    Margin = new Thickness(0, 0, 0, 10),
-                    Tag = watermark
-                };
-                tb.Style = (Style)FindResource("WatermarkTextBoxStyle");
-                return tb;
-            }
+                Height = 28,
+                Tag = "Work Order", // will be overwritten by UpdateDetailsBoxForTab(...)
+                Margin = new Thickness(0, 0, 0, 0)
+            };
+            detailsBox.Style = (Style)FindResource("WatermarkTextBoxStyle");
 
-            inputPanel.Children.Add(MakeInput("Cost Center"));
-            inputPanel.Children.Add(MakeInput("WBS / Project"));
-            inputPanel.Children.Add(MakeInput("Work Order / Order / Sales Order"));
+            // store reference per tab so other code can update it
+            _detailsBoxByTab[ownerTab] = detailsBox;
+
+            // save text into the correct bucket for this tab based on current movement type
+            detailsBox.TextChanged += (_, __) =>
+            {
+                if (_suppressDetailsTextChanged) return;
+
+                string val = (detailsBox.Text ?? "").Trim();
+                switch (GetRequiredField(ownerTab))
+                {
+                    case DetailField.CostCenter:
+                        SetCostCenter(ownerTab, val);
+                        break;
+
+                    case DetailField.Wbs:
+                        SetWbs(ownerTab, val);
+                        break;
+
+                    default:
+                        SetWorkOrder(ownerTab, val);
+                        break;
+                }
+            };
+
+            inputPanel.Children.Add(detailsBox);
 
             Grid.SetColumn(inputPanel, 1);
             topRightLayout.Children.Add(inputPanel);
+
 
             var topRightCard = MakeCard(topRightLayout, new Thickness(8, 0, 0, 8));
             Grid.SetRow(topRightCard, 0);
@@ -534,6 +584,8 @@ namespace MaterialReqAppV3
 
             // Build movement options AFTER panel is registered
             BuildMovementOptions(ownerTab);
+            UpdateDetailsBoxForTab(ownerTab);
+
 
             // ============================================================
             // BOTTOM-RIGHT: Selected Parts (grid + buttons)
@@ -681,36 +733,124 @@ namespace MaterialReqAppV3
 
         private void GeneratePdf_Click(object sender, RoutedEventArgs e)
         {
-            if (SiteTabs.SelectedItem is not TabItem tab || tab == PlusTab)
-                return;
-
-            bool isReturn = GetIsReturnForTab(tab);
-            string templatePath = GetTemplatePath(isReturn);
-
-            // Use settings output folder if valid, otherwise fall back to bin\Output
+            // Output folder (use settings if provided; otherwise bin\Output)
             string baseDir = AppDomain.CurrentDomain.BaseDirectory;
-            string outDir = _settings != null && Directory.Exists(_settings.PdfOutputFolder)
-                ? _settings.PdfOutputFolder
-                : Path.Combine(baseDir, "Output");
+
+            string outDir =
+                !string.IsNullOrWhiteSpace(_settings?.PdfOutputFolder)
+                    ? _settings.PdfOutputFolder.Trim()
+                    : Path.Combine(baseDir, "Output");
 
             Directory.CreateDirectory(outDir);
 
-            // Use the per-tab reason text if available, otherwise the tab title
-            string safeName = GetTabReason(tab).Trim();
-            if (string.IsNullOrWhiteSpace(safeName))
-                safeName = GetTabTitle(tab).Trim();
+            // Output filename uses selected tab reason/title (just like you had)
+            string fileLabel = "MaterialReq";
+            if (SiteTabs.SelectedItem is TabItem selectedTab && selectedTab != PlusTab)
+            {
+                fileLabel = (GetTabReason(selectedTab) ?? "").Trim();
+                if (string.IsNullOrWhiteSpace(fileLabel))
+                    fileLabel = (GetTabTitle(selectedTab) ?? "").Trim();
+            }
 
-            // sanitize filename
             foreach (char c in Path.GetInvalidFileNameChars())
-                safeName = safeName.Replace(c, '_');
+                fileLabel = fileLabel.Replace(c, '_');
 
             string stamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-            string outFile = Path.Combine(outDir, $"{safeName}_{(isReturn ? "RETURN" : "ISSUE")}_{stamp}.pdf");
+            string outFile = Path.Combine(outDir, $"{fileLabel}_MERGED_{stamp}.pdf");
 
-            File.Copy(templatePath, outFile, overwrite: true);
+            // Create merged output PDF
+            using var outDoc = new PdfDocument();
 
-            MessageBox.Show("Created:\n" + outFile);
+            bool addedAny = false;
+
+            foreach (var item in SiteTabs.Items)
+            {
+                if (item is not TabItem tab) continue;
+                if (tab == PlusTab) continue;
+
+                // Optional: skip totally blank tabs (no parts + no DocHeader)
+                var lines = GetSelectedParts(tab);
+                string docHeader = (GetTabReason(tab) ?? "").Trim();
+                if (lines.Count == 0 && string.IsNullOrWhiteSpace(docHeader))
+                    continue;
+
+                bool isReturn = GetIsReturnForTab(tab);
+                string templatePath = GetTemplatePath(isReturn);
+                if (!File.Exists(templatePath))
+                    continue; // silent skip; no message boxes
+
+                // MovementType code
+                string mtFull = GetMovementType(tab) ?? "";
+                string mtCode = ExtractMovementCode(mtFull);
+                if (string.IsNullOrWhiteSpace(mtCode))
+                    mtCode = isReturn ? "262" : "261";
+
+                // Only ONE field filled based on mtCode
+                string costCenter = "";
+                string wbs = "";
+                string workOrder = "";
+                string workOrderUsed = "";
+
+                if (mtCode == "201" || mtCode == "202")
+                    costCenter = (GetCostCenter(tab) ?? "").Trim();
+                else if (mtCode == "221" || mtCode == "222")
+                    wbs = (GetWbs(tab) ?? "").Trim();
+                else
+                {
+                    if (isReturn && mtCode == "962")
+                        workOrderUsed = (GetWorkOrder(tab) ?? "").Trim();
+                    else
+                        workOrder = (GetWorkOrder(tab) ?? "").Trim();
+                }
+
+                using var loaded = new PdfLoadedDocument(templatePath);
+
+                // Header
+                //SetPdfTextField(loaded, "CompanyName", _settings?.CompanyName ?? "");
+                SetPdfTextField(loaded, "Name", _settings?.Name ?? "");
+                SetPdfTextField(loaded, "Date", DateTime.Now.ToString("MM/dd/yyyy"));
+                SetPdfTextField(loaded, "DocHeader", docHeader);
+                SetPdfTextField(loaded, "MovementType", mtCode);
+
+                // Assignment
+                SetPdfTextField(loaded, "CostCenter", costCenter);
+                SetPdfTextField(loaded, "Wbs", wbs);
+                SetPdfTextField(loaded, "WorkOrder", workOrder);
+                SetPdfTextField(loaded, "WorkOrderUsed", workOrderUsed);
+
+                // Lines 1..12
+                for (int i = 1; i <= 12; i++)
+                {
+                    var line = (i - 1 < lines.Count) ? lines[i - 1] : null;
+
+                    SetPdfTextField(loaded, $"DESCRIPTION{i}", line?.Description ?? "");
+                    SetPdfTextField(loaded, $"MATERIAL{i}", line?.Material ?? "");
+                    SetPdfTextField(loaded, $"QUANTITY{i}", line != null ? line.Qty.ToString() : "");
+                }
+
+                // Flatten for reliable printing
+                if (loaded.Form != null)
+                    loaded.Form.Flatten = true;
+
+                // Import this filled page(s) into merged output
+                outDoc.ImportPageRange(loaded, 0, loaded.Pages.Count - 1);
+
+                addedAny = true;
+            }
+
+            if (!addedAny)
+            {
+                Title = "Nothing to generate (all tabs blank).";
+                return;
+            }
+
+            using var fs = File.Create(outFile);
+            outDoc.Save(fs);
+
+            Title = "Created: " + outFile;
         }
+
+
 
         private string GetSettingsPath()
         {
@@ -840,8 +980,89 @@ namespace MaterialReqAppV3
             if (SiteTabs.SelectedItem is not TabItem tab || tab == PlusTab)
                 return;
 
-            // ensure Tag binding updates first
-            Dispatcher.BeginInvoke(() => BuildMovementOptions(tab));
+            Dispatcher.BeginInvoke(() =>
+            {
+                BuildMovementOptions(tab);
+                UpdateDetailsBoxForTab(tab);
+            });
+        }
+
+
+        private enum DetailField { CostCenter, Wbs, WorkOrder }
+
+        private DetailField GetRequiredField(TabItem tab)
+        {
+            string mt = GetMovementType(tab);
+
+            if (mt.StartsWith("201") || mt.StartsWith("202"))
+                return DetailField.CostCenter;
+
+            if (mt.StartsWith("221") || mt.StartsWith("222"))
+                return DetailField.Wbs;
+
+            // 261/262/962 (and anything else) -> Work Order
+            return DetailField.WorkOrder;
+        }
+
+        private string GetCostCenter(TabItem tab) => _costCenterByTab.TryGetValue(tab, out var v) ? v : "";
+        private string GetWbs(TabItem tab) => _wbsByTab.TryGetValue(tab, out var v) ? v : "";
+        private string GetWorkOrder(TabItem tab) => _workOrderByTab.TryGetValue(tab, out var v) ? v : "";
+
+        private void SetCostCenter(TabItem tab, string v) => _costCenterByTab[tab] = v;
+        private void SetWbs(TabItem tab, string v) => _wbsByTab[tab] = v;
+        private void SetWorkOrder(TabItem tab, string v) => _workOrderByTab[tab] = v;
+
+        private void UpdateDetailsBoxForTab(TabItem tab)
+        {
+            if (!_detailsBoxByTab.TryGetValue(tab, out var box))
+                return;
+
+            var field = GetRequiredField(tab);
+
+            _suppressDetailsTextChanged = true;
+
+            switch (field)
+            {
+                case DetailField.CostCenter:
+                    box.Tag = "Cost Center";
+                    box.Text = GetCostCenter(tab);
+                    break;
+
+                case DetailField.Wbs:
+                    box.Tag = "WBS";
+                    box.Text = GetWbs(tab);
+                    break;
+
+                default:
+                    box.Tag = "Work Order";
+                    box.Text = GetWorkOrder(tab);
+                    break;
+            }
+
+            _suppressDetailsTextChanged = false;
+        }
+
+        private static string ExtractMovementCode(string movementText)
+        {
+            if (string.IsNullOrWhiteSpace(movementText)) return "";
+            int dash = movementText.IndexOf('-');
+            if (dash > 0) return movementText.Substring(0, dash).Trim();
+            return movementText.Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? "";
+        }
+
+        private static void SetPdfTextField(PdfLoadedDocument doc, string fieldName, string value)
+        {
+            if (doc.Form == null) return;
+
+            foreach (PdfField f in doc.Form.Fields)
+            {
+                if (string.Equals(f.Name, fieldName, StringComparison.OrdinalIgnoreCase) &&
+                    f is PdfLoadedTextBoxField tb)
+                {
+                    tb.Text = value ?? "";
+                    return;
+                }
+            }
         }
 
 
