@@ -175,7 +175,9 @@
                                         <!-- Issue/Return pill: per-tab state in TabItem.Tag -->
                                         <ToggleButton Margin="0,0,14,0"
                                                       Style="{StaticResource PillToggleStyle}"
-                                                      IsChecked="{Binding SelectedItem.Tag, RelativeSource={RelativeSource AncestorType=TabControl}, Mode=TwoWay}"/>
+                                                      IsChecked="{Binding SelectedItem.Tag, RelativeSource={RelativeSource AncestorType=TabControl}, Mode=TwoWay}"
+                                                      Checked="IssueReturnToggle_Changed"
+                                                      Unchecked="IssueReturnToggle_Changed"/>
 
                                         <TextBox x:Name="PART_SiteNameBox"
                                                  Width="260"
@@ -204,113 +206,226 @@
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
-        </Style>   
+        </Style>
+
+        <!--Template for Data Boxes-->
+        <DataTemplate x:Key="PartItemTemplate">
+            <StackPanel Margin="0,4">
+                <TextBlock Text="{Binding Description}"
+                   FontSize="14"
+                   Foreground="{DynamicResource TextPrimary}"
+                   TextWrapping="Wrap"/>
+                <TextBlock Text="{Binding Material}"
+                   FontSize="12"
+                   Foreground="{DynamicResource TextSecondary}"
+                   Margin="0,1,0,0"/>
+            </StackPanel>
+        </DataTemplate>
+
+        <!--Template for Selected Parts Grid-->
+        <DataTemplate x:Key="SelectedPartDisplayTemplate">
+            <StackPanel Margin="0,4">
+                <TextBlock Text="{Binding Description}"
+                   FontSize="14"
+                   Foreground="{DynamicResource TextPrimary}"
+                   TextWrapping="Wrap"/>
+
+                <TextBlock Text="{Binding Material}"
+                   FontSize="12"
+                   Foreground="{DynamicResource TextSecondary}"
+                   Margin="0,1,0,0"/>
+            </StackPanel>
+        </DataTemplate>
+
 
     </Window.Resources>
 
     <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <!-- Top header -->
+            <RowDefinition Height="*"/>
+            <!-- Tabs -->
+            <RowDefinition Height="Auto"/>
+            <!-- Bottom bar -->
+        </Grid.RowDefinitions>
 
+        <!-- =======================
+         TOP HEADER BAR
+         ======================= -->
+        <Border Grid.Row="0"
+            Background="{DynamicResource SurfaceBg}"
+            BorderBrush="{DynamicResource SurfaceBorder}"
+            BorderThickness="1"
+            CornerRadius="10"
+            Padding="10"
+            Margin="0,0,0,10">
+            <DockPanel LastChildFill="True">
+
+                <!-- Right side buttons -->
+                <StackPanel DockPanel.Dock="Right"
+                        Orientation="Horizontal"
+                        VerticalAlignment="Center">
+                    <Button Content="Test CSV"
+                            Height="30"
+                            Padding="14,0"
+                            Margin="0,0,10,0"
+                            Click="TestCsv_Click"/>
+                    <Button Content="Settings"
+                        Height="30"
+                        Padding="14,0"
+                        Click="OpenSettings_Click"/>
+                </StackPanel>
+
+                <!-- Left header text -->
+                <TextBlock x:Name="HeaderText"
+                       Text="Material Requisition - Warehouse - Building *"
+                       Foreground="{DynamicResource TextPrimary}"
+                       FontSize="20"
+                       FontWeight="SemiBold"
+                       VerticalAlignment="Center"/>
+            </DockPanel>
+        </Border>
+
+        <!-- =======================
+         TABS
+         ======================= -->
         <TabControl x:Name="SiteTabs"
-                    Style="{StaticResource TabControlWithSiteBarStyle}"
-                    SelectionChanged="SiteTabs_SelectionChanged"
-                    PreviewMouseLeftButtonDown="SiteTabs_PreviewMouseLeftButtonDown">
+                Grid.Row="1"
+                Style="{StaticResource TabControlWithSiteBarStyle}"
+                SelectionChanged="SiteTabs_SelectionChanged"
+                PreviewMouseLeftButtonDown="SiteTabs_PreviewMouseLeftButtonDown">
 
             <!-- Default site tab -->
             <TabItem x:Name="FirstBlankTab"
-                     Header="Blank"
-                     Tag="False">
+                 Header="Blank"
+                 Tag="False">
+
+                <!-- 2x2 layout -->
                 <Grid Margin="10">
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="220"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
-                    <!-- (Removed the old checkbox row — pill lives next to Site Name now) -->
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
 
-                    <!-- 2x2 layout -->
-                    <Grid Grid.Row="1">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="220"/>
-                            <RowDefinition Height="*"/>
-                        </Grid.RowDefinitions>
+                    <Border Grid.Row="0" Grid.Column="0"
+                        Background="{DynamicResource SurfaceBg}"
+                        BorderBrush="{DynamicResource SurfaceBorder}"
+                        BorderThickness="1"
+                        CornerRadius="12"
+                        Padding="12"
+                        Margin="0,0,8,8">
+                        <TextBlock Text="Movement Type (Top-Left)"
+                               Foreground="{DynamicResource TextPrimary}"
+                               FontSize="18"
+                               FontWeight="SemiBold"/>
+                    </Border>
 
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
+                    <Border Grid.Row="0" Grid.Column="1"
+                        Background="{DynamicResource SurfaceBg}"
+                        BorderBrush="{DynamicResource SurfaceBorder}"
+                        BorderThickness="1"
+                        CornerRadius="12"
+                        Padding="12"
+                        Margin="8,0,0,8">
+                        <TextBlock Text="Cost Center / WBS / Work Order (Top-Right)"
+                               Foreground="{DynamicResource TextPrimary}"
+                               FontSize="18"
+                               FontWeight="SemiBold"/>
+                    </Border>
 
-                        <!-- Top-left: Movement Type -->
-                        <Border Grid.Row="0"
-                                Grid.Column="0"
-                                Background="{DynamicResource SurfaceBg}"
-                                BorderBrush="{DynamicResource SurfaceBorder}"
-                                BorderThickness="1"
-                                CornerRadius="12"
-                                Padding="12"
-                                Margin="0,0,8,8">
-                            <TextBlock Text="Movement Type (Top-Left)"
-                                       Foreground="{DynamicResource TextPrimary}"
-                                       FontSize="18"
-                                       FontWeight="SemiBold"/>
-                        </Border>
+                    <!--Parts Catalog-->
+                    <Border Grid.Row="1"
+                            Grid.Column="0"
+                            Background="{DynamicResource SurfaceBg}"
+                            BorderBrush="{DynamicResource SurfaceBorder}"
+                            BorderThickness="1"
+                            CornerRadius="12"
+                            Padding="12"
+                            Margin="0,8,8,0">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
 
-                        <!-- Top-right: Cost Center / WBS / Work Order -->
-                        <Border Grid.Row="0"
-                                Grid.Column="1"
-                                Background="{DynamicResource SurfaceBg}"
-                                BorderBrush="{DynamicResource SurfaceBorder}"
-                                BorderThickness="1"
-                                CornerRadius="12"
-                                Padding="12"
-                                Margin="8,0,0,8">
-                            <TextBlock Text="Cost Center / WBS / Work Order (Top-Right)"
-                                       Foreground="{DynamicResource TextPrimary}"
-                                       FontSize="18"
-                                       FontWeight="SemiBold"/>
-                        </Border>
+                            <TextBox x:Name="PartsSearchBox"
+                                     Height="28"
+                                     Margin="0,0,0,10"
+                                     Tag="Search parts..."
+                                     Style="{StaticResource WatermarkTextBoxStyle}"
+                                     TextChanged="PartsSearchBox_TextChanged"/>
 
-                        <!-- Bottom-left: Parts Browser -->
-                        <Border Grid.Row="1"
-                                Grid.Column="0"
-                                Background="{DynamicResource SurfaceBg}"
-                                BorderBrush="{DynamicResource SurfaceBorder}"
-                                BorderThickness="1"
-                                CornerRadius="12"
-                                Padding="12"
-                                Margin="0,8,8,0">
-                            <TextBlock Text="Parts Browser (Bottom-Left)"
-                                       Foreground="{DynamicResource TextPrimary}"
-                                       FontSize="18"
-                                       FontWeight="SemiBold"/>
-                        </Border>
+                            <ListBox x:Name="PartsListBox"
+                                     Grid.Row="1"
+                                     BorderThickness="0"
+                                     ScrollViewer.HorizontalScrollBarVisibility="Disabled">
 
-                        <!-- Bottom-right: Selected Parts -->
-                        <Border Grid.Row="1"
-                                Grid.Column="1"
-                                Background="{DynamicResource SurfaceBg}"
-                                BorderBrush="{DynamicResource SurfaceBorder}"
-                                BorderThickness="1"
-                                CornerRadius="12"
-                                Padding="12"
-                                Margin="8,8,0,0">
-                            <TextBlock Text="Selected Parts (Bottom-Right)"
-                                       Foreground="{DynamicResource TextPrimary}"
-                                       FontSize="18"
-                                       FontWeight="SemiBold"/>
-                        </Border>
-                    </Grid>
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Margin="0,4">
+                                            <!-- Description (primary) -->
+                                            <TextBlock Text="{Binding Description}"
+                                                       FontSize="12"
+                                                       Foreground="{DynamicResource TextPrimary}"
+                                                       TextWrapping="Wrap"/>
+
+                                            <!-- Material (secondary) -->
+                                            <TextBlock Text="{Binding Material}"
+                                                       FontSize="10"
+                                                       Foreground="{DynamicResource TextSecondary}"
+                                                       Margin="0,1,0,0"/>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+
+                            </ListBox>
+
+                        </Grid>
+                    </Border>
+
+
+                    <Border Grid.Row="1" Grid.Column="1"
+                        Background="{DynamicResource SurfaceBg}"
+                        BorderBrush="{DynamicResource SurfaceBorder}"
+                        BorderThickness="1"
+                        CornerRadius="12"
+                        Padding="12"
+                        Margin="8,8,0,0">
+                        <TextBlock Text="Selected Parts (Bottom-Right)"
+                               Foreground="{DynamicResource TextPrimary}"
+                               FontSize="18"
+                               FontWeight="SemiBold"/>
+                    </Border>
                 </Grid>
             </TabItem>
 
             <!-- Plus tab -->
             <TabItem x:Name="PlusTab"
-                     Header="+"
-                     Width="35">
+                 Header="+"
+                 Width="35">
                 <Grid/>
             </TabItem>
 
         </TabControl>
 
+        <!-- =======================
+         BOTTOM BAR
+         ======================= -->
+        <Grid Grid.Row="2" Margin="0,10,0,0">
+            <Button Content="Generate PDF"
+                HorizontalAlignment="Right"
+                Height="34"
+                Padding="18,0"
+                Click="GeneratePdf_Click"/>
+        </Grid>
     </Grid>
+
+
 
 </Window>

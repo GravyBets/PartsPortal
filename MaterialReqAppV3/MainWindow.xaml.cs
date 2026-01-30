@@ -1,8 +1,19 @@
-﻿using System.Windows;
+﻿using MaterialReqAppV3.Models;
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.IO;
+using System.Linq;
+using System.Linq;
+using System.Runtime;
+using System.Text.Json;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
+
 
 
 namespace MaterialReqAppV3
@@ -11,29 +22,134 @@ namespace MaterialReqAppV3
     {
         public string SelectedWarehouse { get; }
         private TextBox? SiteNameBox;
+        private readonly SettingsService _settingsService = new();
+        private UserSettings _settings = new();
+        private readonly PartsCatalogService _partsService = new();
+        private List<Part> _allParts = new();
+        private string _currentWarehouse = "Building D"; // temporary default
+        private readonly Dictionary<TabItem, ObservableCollection<SelectedPartLine>> _selectedPartsByTab = new();
+        private readonly Dictionary<TabItem, StackPanel> _movementPanelByTab = new();
+        private readonly Dictionary<TabItem, string> _movementTypeByTab = new();
+
+        private bool GetIsReturnForTab(TabItem tab)
+        {
+            if (tab.Tag is bool b) return b;
+            if (bool.TryParse(tab.Tag?.ToString(), out var parsed)) return parsed;
+            return false; // default Issue
+        }
+
+        private string GetMovementType(TabItem tab)
+            => _movementTypeByTab.TryGetValue(tab, out var v) ? v : "";
+
+        private void SetMovementType(TabItem tab, string value)
+            => _movementTypeByTab[tab] = value;
+
+        private void BuildMovementOptions(TabItem tab)
+        {
+            if (!_movementPanelByTab.TryGetValue(tab, out var panel))
+                return;
+
+            bool isReturn = GetIsReturnForTab(tab);
+
+            string[] options = isReturn
+                ? new[]
+                {
+            "202 - Consumption for Cost Center Reversal",
+            "222 - Consumption for Project Reversal",
+            "232 - Consumption for Sales Order Reversal",
+            "262 - Consumption for Order Reversal",
+            "962 - Consumption for Order Reversal - Used"
+                }
+                : new[]
+                {
+            "201 - Consumption for Cost Center",
+            "221 - Consumption for Project",
+            "231 - Consumption for Sales Order",
+            "261 - Consumption for Order"
+                };
+
+            string defaultOption = isReturn
+                ? "262 - Consumption for Order Reversal"
+                : "261 - Consumption for Order";
+
+            // If current selection isn't valid for this mode, snap to default
+            string current = GetMovementType(tab);
+            if (string.IsNullOrWhiteSpace(current) || !options.Contains(current))
+                SetMovementType(tab, defaultOption);
+
+            panel.Children.Clear();
+
+            panel.Children.Add(new TextBlock
+            {
+                Text = "Movement Type",
+                FontSize = 16,
+                FontWeight = FontWeights.SemiBold,
+                Margin = new Thickness(0, 0, 0, 10)
+            });
+
+            foreach (var opt in options)
+            {
+                var rb = new RadioButton
+                {
+                    Content = opt,
+                    GroupName = "MovementType_" + tab.GetHashCode(), // isolates per tab
+                    Margin = new Thickness(0, 4, 0, 4),
+                    IsChecked = string.Equals(GetMovementType(tab), opt, StringComparison.OrdinalIgnoreCase)
+                };
+
+                rb.Checked += (_, __) => SetMovementType(tab, opt);
+
+                panel.Children.Add(rb);
+            }
+        }
+
+
+
+        private ObservableCollection<SelectedPartLine> GetSelectedParts(TabItem tab)
+        {
+            if (!_selectedPartsByTab.TryGetValue(tab, out var list))
+            {
+                list = new ObservableCollection<SelectedPartLine>();
+                _selectedPartsByTab[tab] = list;
+            }
+            return list;
+        }
 
         public MainWindow(string selectedWarehouse)
         {
             InitializeComponent();
 
+            // 1) Warehouse + header first
+            SelectedWarehouse = selectedWarehouse;
+            _currentWarehouse = NormalizeWarehouse(selectedWarehouse);
+
+            Title = $"Material Requisition - {SelectedWarehouse}";
+            HeaderText.Text = $"Material Requisition - {SelectedWarehouse}";
+
+            // 2) Load settings + parts
+            _settings = _settingsService.Load();
+            TryLoadParts();
+
+            // 3) After UI is ready
             Loaded += (_, __) =>
             {
+                // Grab the templated SiteName box
                 SiteNameBox = (TextBox?)SiteTabs.Template.FindName("PART_SiteNameBox", SiteTabs);
 
+                // First tab header uses hover-close header + empty reason (watermark)
                 if (SiteTabs.Items.Count > 0 && SiteTabs.Items[0] is TabItem blankTab)
                 {
-                    // Make first tab header use hover-close header
                     blankTab.Header = CreateTabHeader("Blank", blankTab);
-
-                    // Default: no reason yet
                     SetTabReason(blankTab, "");
+                    blankTab.Content = CreateTabContentLayout(blankTab);
                 }
+                
 
-                // Show the selected tab's saved reason (or empty => watermark shows)
+                // Show current tab's reason in textbox
                 if (SiteNameBox != null && SiteTabs.SelectedItem is TabItem selected && selected != PlusTab)
                     SiteNameBox.Text = GetTabReason(selected);
 
-                // Press Enter to apply
+                // Enter = Apply
                 if (SiteNameBox != null)
                 {
                     SiteNameBox.KeyDown += (s, e) =>
@@ -45,13 +161,23 @@ namespace MaterialReqAppV3
                         }
                     };
                 }
+
+                // Now that PartsListBox exists, populate it
+                RefreshPartsList();
+
+                // OPTIONAL: keep only if you still want the template existence check.
+                // If it's annoying now, just delete this block.
+                var issue = GetTemplatePath(isReturn: false);
+                var ret = GetTemplatePath(isReturn: true);
+
+                if (!System.IO.File.Exists(issue))
+                    MessageBox.Show("Issue template missing:\n" + issue);
+
+                if (!System.IO.File.Exists(ret))
+                    MessageBox.Show("Return template missing:\n" + ret);
             };
-
-
-            SelectedWarehouse = selectedWarehouse;
-            Title = $"Material Requisition - {SelectedWarehouse}";
-
         }
+
         private void ApplySiteName_Click(object sender, RoutedEventArgs e)
         {
             if (SiteNameBox == null) return;
@@ -73,7 +199,6 @@ namespace MaterialReqAppV3
                 tab.Header = name;
         }
 
-
         private void SiteTabs_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (SiteTabs.SelectedItem == null) return;
@@ -84,12 +209,20 @@ namespace MaterialReqAppV3
                 return;
             }
 
-            if (SiteNameBox != null && SiteTabs.SelectedItem is TabItem tab && tab != PlusTab)
+            if (SiteTabs.SelectedItem is TabItem tab && tab != PlusTab)
             {
-                SiteNameBox.Text = GetTabReason(tab); // empty => watermark shows
-                SiteNameBox.SelectAll();
+                if (SiteNameBox != null)
+                {
+                    SiteNameBox.Text = GetTabReason(tab); // empty => watermark shows
+                    SiteNameBox.SelectAll();
+                }
+
+                BuildMovementOptions(tab);
             }
+
+            Title = System.IO.Path.GetFileName(GetSelectedTabTemplatePath());
         }
+
 
 
         private TabItem CreateSiteTab(string header)
@@ -97,7 +230,7 @@ namespace MaterialReqAppV3
             var tab = new TabItem();
             tab.Tag = false; // default: Material Issue
             tab.Header = CreateTabHeader(header, tab);
-            tab.Content = CreateTabContentLayout();
+            tab.Content = CreateTabContentLayout(tab);
             SetTabReason(tab, "");
             return tab;
         }
@@ -198,7 +331,6 @@ namespace MaterialReqAppV3
             }
         }
 
-
         private const int MaxSiteTabs = 4;
 
         private void AddNewSiteTab()
@@ -239,60 +371,478 @@ namespace MaterialReqAppV3
             return tab.Header?.ToString() ?? "";
         }
 
-        private Grid CreateTabContentLayout()
+        private UIElement CreateTabContentLayout(TabItem ownerTab)
         {
-            // Pull theme brushes from XAML resources (with safe fallbacks)
-            var cardBg = TryFindResource("SurfaceBg") as Brush ?? Brushes.White;
-            var cardBorder = TryFindResource("SurfaceBorder") as Brush ?? Brushes.LightGray;
-            var textPrimary = TryFindResource("TextPrimary") as Brush ?? Brushes.Black;
+            // New layout:
+            // Left column = Parts Browser (spans full height)
+            // Right column = Top: Movement+Inputs, Bottom: Selected Parts
 
-            var content = new Grid { Margin = new Thickness(10) };
+            var grid = new Grid { Margin = new Thickness(10) };
 
-            content.RowDefinitions.Add(new RowDefinition { Height = new GridLength(220) });
-            content.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });                     // top-right card height
+            grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) }); // bottom-right card
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) }); // left
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) }); // right
 
-            content.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            content.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-
-            Border MakeCard(string title, int row, int col, Thickness margin)
+            Border MakeCard(UIElement child, Thickness margin)
             {
-                var border = new Border
+                return new Border
                 {
-                    Background = cardBg,
-                    BorderBrush = cardBorder,
+                    Background = (System.Windows.Media.Brush)FindResource("SurfaceBg"),
+                    BorderBrush = (System.Windows.Media.Brush)FindResource("SurfaceBorder"),
                     BorderThickness = new Thickness(1),
                     CornerRadius = new CornerRadius(12),
                     Padding = new Thickness(12),
                     Margin = margin,
-                    Child = new TextBlock
-                    {
-                        Text = title,
-                        Foreground = textPrimary,
-                        FontSize = 18,
-                        FontWeight = FontWeights.SemiBold
-                    }
+                    Child = child
                 };
-
-                Grid.SetRow(border, row);
-                Grid.SetColumn(border, col);
-                return border;
             }
 
-            content.Children.Add(MakeCard("Movement Type (Top-Left)", 0, 0, new Thickness(0, 0, 8, 8)));
-            content.Children.Add(MakeCard("Cost Center / WBS / Work Order (Top-Right)", 0, 1, new Thickness(8, 0, 0, 8)));
-            content.Children.Add(MakeCard("Parts Browser (Bottom-Left)", 1, 0, new Thickness(0, 8, 8, 0)));
-            content.Children.Add(MakeCard("Selected Parts (Bottom-Right)", 1, 1, new Thickness(8, 8, 0, 0)));
+            // ============================================================
+            // LEFT: Parts Browser (search + list + Add button) spans rows 0-1
+            // ============================================================
 
-            return content;
+            var partsPanel = new Grid();
+            partsPanel.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });                         // search
+            partsPanel.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });   // list
+            partsPanel.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });                         // button
+
+            var partsSearch = new TextBox
+            {
+                Height = 28,
+                Margin = new Thickness(0, 0, 0, 10),
+                Tag = "Search parts..."
+            };
+            partsSearch.Style = (Style)FindResource("WatermarkTextBoxStyle");
+
+            var partsList = new ListBox
+            {
+                BorderThickness = new Thickness(0),
+                ItemTemplate = (DataTemplate)FindResource("PartItemTemplate")
+            };
+
+            var addToOrderBtn = new Button
+            {
+                Content = "Add to Order",
+                Height = 34,
+                Padding = new Thickness(14, 0, 14, 0),
+                HorizontalAlignment = HorizontalAlignment.Left,
+                Margin = new Thickness(0, 10, 0, 0)
+            };
+
+            partsPanel.Children.Add(partsSearch);
+
+            Grid.SetRow(partsList, 1);
+            partsPanel.Children.Add(partsList);
+
+            Grid.SetRow(addToOrderBtn, 2);
+            partsPanel.Children.Add(addToOrderBtn);
+
+            void RefreshParts()
+            {
+                string q = (partsSearch.Text ?? "").Trim();
+
+                var filtered = _allParts
+                    .Where(p => string.Equals(p.Warehouse, _currentWarehouse, StringComparison.OrdinalIgnoreCase))
+                    .Where(p =>
+                        string.IsNullOrWhiteSpace(q) ||
+                        (p.Description?.Contains(q, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                        (p.Material?.Contains(q, StringComparison.OrdinalIgnoreCase) ?? false))
+                    .Take(250)
+                    .ToList();
+
+                partsList.ItemsSource = filtered;
+            }
+
+            partsSearch.TextChanged += (_, __) => RefreshParts();
+
+            partsList.MouseDoubleClick += (_, __) =>
+            {
+                if (partsList.SelectedItem is Part part)
+                    AddPartToOrder(ownerTab, part);
+            };
+
+            addToOrderBtn.Click += (_, __) =>
+            {
+                if (partsList.SelectedItem is Part part)
+                    AddPartToOrder(ownerTab, part);
+            };
+
+            RefreshParts();
+
+            var partsCard = MakeCard(partsPanel, new Thickness(0, 0, 8, 0));
+            Grid.SetRow(partsCard, 0);
+            Grid.SetColumn(partsCard, 0);
+            Grid.SetRowSpan(partsCard, 2); // <-- fills the empty top-left space now
+            grid.Children.Add(partsCard);
+
+            // ============================================================
+            // TOP-RIGHT: Movement Types + Inputs (same card)
+            // ============================================================
+
+            var topRightLayout = new Grid();
+            topRightLayout.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(300) }); // movement list
+            topRightLayout.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) }); // text inputs
+
+            // Movement list panel (dynamic per Issue/Return)
+            var movementPanel = new StackPanel();
+            _movementPanelByTab[ownerTab] = movementPanel;
+
+            var movementHost = new Border
+            {
+                Background = System.Windows.Media.Brushes.Transparent,
+                Padding = new Thickness(0, 0, 12, 0),
+                Child = movementPanel
+            };
+            Grid.SetColumn(movementHost, 0);
+            topRightLayout.Children.Add(movementHost);
+
+            // Inputs panel (placeholders for now)
+            var inputPanel = new StackPanel { Margin = new Thickness(0, 0, 0, 0) };
+
+            inputPanel.Children.Add(new TextBlock
+            {
+                Text = "Details",
+                FontSize = 16,
+                FontWeight = FontWeights.SemiBold,
+                Margin = new Thickness(0, 0, 0, 10)
+            });
+
+            TextBox MakeInput(string watermark)
+            {
+                var tb = new TextBox
+                {
+                    Height = 28,
+                    Margin = new Thickness(0, 0, 0, 10),
+                    Tag = watermark
+                };
+                tb.Style = (Style)FindResource("WatermarkTextBoxStyle");
+                return tb;
+            }
+
+            inputPanel.Children.Add(MakeInput("Cost Center"));
+            inputPanel.Children.Add(MakeInput("WBS / Project"));
+            inputPanel.Children.Add(MakeInput("Work Order / Order / Sales Order"));
+
+            Grid.SetColumn(inputPanel, 1);
+            topRightLayout.Children.Add(inputPanel);
+
+            var topRightCard = MakeCard(topRightLayout, new Thickness(8, 0, 0, 8));
+            Grid.SetRow(topRightCard, 0);
+            Grid.SetColumn(topRightCard, 1);
+            grid.Children.Add(topRightCard);
+
+            // Build movement options AFTER panel is registered
+            BuildMovementOptions(ownerTab);
+
+            // ============================================================
+            // BOTTOM-RIGHT: Selected Parts (grid + buttons)
+            // ============================================================
+
+            var selectedArea = new Grid();
+            selectedArea.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+            selectedArea.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+
+            var selectedGrid = new DataGrid
+            {
+                AutoGenerateColumns = false,
+                CanUserAddRows = false,
+                HeadersVisibility = DataGridHeadersVisibility.Column,
+                GridLinesVisibility = DataGridGridLinesVisibility.None,
+                BorderThickness = new Thickness(0),
+                Background = System.Windows.Media.Brushes.Transparent,
+                ItemsSource = GetSelectedParts(ownerTab),
+                IsReadOnly = true // you set it read-only; keep it stable
+            };
+
+            // prevent weird crashes on double click
+            selectedGrid.PreviewMouseDoubleClick += (_, e) => e.Handled = true;
+
+            selectedGrid.FontSize = 14;
+            selectedGrid.RowHeight = 44;
+            selectedGrid.ColumnHeaderHeight = 30;
+            selectedGrid.VerticalContentAlignment = VerticalAlignment.Center;
+
+            selectedGrid.CellStyle = new Style(typeof(DataGridCell));
+            selectedGrid.CellStyle.Setters.Add(new Setter(Control.PaddingProperty, new Thickness(8, 4, 8, 4)));
+            selectedGrid.CellStyle.Setters.Add(new Setter(Control.VerticalContentAlignmentProperty, VerticalAlignment.Top));
+
+            selectedGrid.Columns.Clear();
+
+            // Qty centered (your existing style)
+            var qtyTextStyle = new Style(typeof(TextBlock));
+            qtyTextStyle.Setters.Add(new Setter(TextBlock.TextAlignmentProperty, TextAlignment.Center));
+            qtyTextStyle.Setters.Add(new Setter(TextBlock.VerticalAlignmentProperty, VerticalAlignment.Center));
+            qtyTextStyle.Setters.Add(new Setter(TextBlock.HorizontalAlignmentProperty, HorizontalAlignment.Center));
+
+            selectedGrid.Columns.Add(new DataGridTextColumn
+            {
+                Header = "Qty",
+                Width = 50,
+                Binding = new Binding("Qty") { UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged },
+                ElementStyle = qtyTextStyle,
+                IsReadOnly = true
+            });
+
+            selectedGrid.Columns.Add(new DataGridTemplateColumn
+            {
+                Header = "Part",
+                Width = new DataGridLength(1, DataGridLengthUnitType.Star),
+                CellTemplate = (DataTemplate)FindResource("SelectedPartDisplayTemplate"),
+                IsReadOnly = true
+            });
+
+            // Buttons under Selected Parts (LEFT aligned)
+            var btnRow = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                HorizontalAlignment = HorizontalAlignment.Left,
+                Margin = new Thickness(0, 10, 0, 0)
+            };
+
+            var removeBtn = new Button
+            {
+                Content = "Remove Part",
+                Height = 34,
+                Padding = new Thickness(14, 0, 14, 0),
+                Margin = new Thickness(0, 0, 10, 0)
+            };
+
+            var clearBtn = new Button
+            {
+                Content = "Clear List",
+                Height = 34,
+                Padding = new Thickness(14, 0, 14, 0)
+            };
+
+            btnRow.Children.Add(removeBtn);
+            btnRow.Children.Add(clearBtn);
+
+            removeBtn.Click += (_, __) =>
+            {
+                if (selectedGrid.SelectedItem is not SelectedPartLine line) return;
+
+                var list = GetSelectedParts(ownerTab);
+                if (line.Qty > 1) line.Qty -= 1;
+                else list.Remove(line);
+            };
+
+            clearBtn.Click += (_, __) => GetSelectedParts(ownerTab).Clear();
+
+            // Delete key matches Remove Part behavior
+            selectedGrid.PreviewKeyDown += (_, e) =>
+            {
+                if (e.Key == System.Windows.Input.Key.Delete && selectedGrid.SelectedItem is SelectedPartLine line)
+                {
+                    var list = GetSelectedParts(ownerTab);
+                    if (line.Qty > 1) line.Qty -= 1;
+                    else list.Remove(line);
+
+                    e.Handled = true;
+                }
+            };
+
+            Grid.SetRow(selectedGrid, 0);
+            selectedArea.Children.Add(selectedGrid);
+
+            Grid.SetRow(btnRow, 1);
+            selectedArea.Children.Add(btnRow);
+
+            var selectedCard = MakeCard(selectedArea, new Thickness(8, 8, 0, 0));
+            Grid.SetRow(selectedCard, 1);
+            Grid.SetColumn(selectedCard, 1);
+            grid.Children.Add(selectedCard);
+
+            return grid;
         }
+
 
         private string GetTabReason(TabItem tab) => tab.ToolTip?.ToString() ?? "";
         private void SetTabReason(TabItem tab, string reason) => tab.ToolTip = reason;
 
+        private string GetTemplatePath(bool isReturn)
+        {
+            string fileName = isReturn
+                ? "Material_Requisition_Return_Fillable.pdf"
+                : "Material_Requisition_Issue_Fillable.pdf";
 
+            string baseDir = AppDomain.CurrentDomain.BaseDirectory; // bin\Debug\net8.0-windows\
+            return System.IO.Path.Combine(baseDir, "Templates", fileName);
+        }        
 
+        private string GetSelectedTabTemplatePath()
+        {
+            if (SiteTabs.SelectedItem is not TabItem tab || tab == PlusTab)
+                return GetTemplatePath(isReturn: false); // safe fallback
 
+            bool isReturn = GetIsReturnForTab(tab);
+            return GetTemplatePath(isReturn);
+        }
 
+        private void GeneratePdf_Click(object sender, RoutedEventArgs e)
+        {
+            if (SiteTabs.SelectedItem is not TabItem tab || tab == PlusTab)
+                return;
+
+            bool isReturn = GetIsReturnForTab(tab);
+            string templatePath = GetTemplatePath(isReturn);
+
+            // Use settings output folder if valid, otherwise fall back to bin\Output
+            string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+            string outDir = _settings != null && Directory.Exists(_settings.PdfOutputFolder)
+                ? _settings.PdfOutputFolder
+                : Path.Combine(baseDir, "Output");
+
+            Directory.CreateDirectory(outDir);
+
+            // Use the per-tab reason text if available, otherwise the tab title
+            string safeName = GetTabReason(tab).Trim();
+            if (string.IsNullOrWhiteSpace(safeName))
+                safeName = GetTabTitle(tab).Trim();
+
+            // sanitize filename
+            foreach (char c in Path.GetInvalidFileNameChars())
+                safeName = safeName.Replace(c, '_');
+
+            string stamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+            string outFile = Path.Combine(outDir, $"{safeName}_{(isReturn ? "RETURN" : "ISSUE")}_{stamp}.pdf");
+
+            File.Copy(templatePath, outFile, overwrite: true);
+
+            MessageBox.Show("Created:\n" + outFile);
+        }
+
+        private string GetSettingsPath()
+        {
+            string user = Environment.UserName; // windows login username
+            string dir = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                "MaterialReqAppV3");
+
+            return Path.Combine(dir, $"settings_{user}.json");
+        }
+
+        private UserSettings LoadSettings()
+        {
+            string path = GetSettingsPath();
+            string user = Environment.UserName;
+
+            if (File.Exists(path))
+            {
+                try
+                {
+                    var json = File.ReadAllText(path);
+                    var s = JsonSerializer.Deserialize<UserSettings>(json) ?? new UserSettings();
+                    if (string.IsNullOrWhiteSpace(s.EmployeeId))
+                        s.EmployeeId = user;
+                    return s;
+                }
+                catch { /* ignore and fall back */ }
+            }
+
+            return new UserSettings { EmployeeId = user };
+        }
+
+        private void OpenSettings_Click(object sender, RoutedEventArgs e)
+        {
+            var win = new SettingsWindow(_settings) { Owner = this };
+            bool? ok = win.ShowDialog();
+
+            if (ok == true)
+            {
+                _settings = win.Settings;
+                _settingsService.Save(_settings);
+
+                System.Windows.MessageBox.Show("Settings saved!", "Settings",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+        }       
+
+        private void TestCsv_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var path = _settings?.CsvPath ?? "";
+                var parts = _partsService.LoadFromCsv(path);
+
+                var preview = string.Join("\n", parts.Take(5).Select(p => p.ToString()));
+                MessageBox.Show($"Loaded {parts.Count} parts.\n\nFirst 5:\n{preview}");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("CSV load failed:\n" + ex.Message);
+            }
+        }
+
+        private void TryLoadParts()
+        {
+            try
+            {
+                _allParts = _partsService.LoadFromCsv(_settings.CsvPath);
+            }
+            catch
+            {
+                _allParts = new List<Part>();
+                // We'll show a friendly message later (or in the UI)
+            }
+        }
+
+        private void RefreshPartsList()
+        {
+            if (PartsListBox == null) return;
+
+            string q = (PartsSearchBox?.Text ?? "").Trim();
+
+            var filtered = _allParts
+                .Where(p => string.Equals(p.Warehouse, _currentWarehouse, StringComparison.OrdinalIgnoreCase))
+                .Where(p =>
+                    string.IsNullOrWhiteSpace(q) ||
+                    (p.Description?.Contains(q, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                    (p.Material?.Contains(q, StringComparison.OrdinalIgnoreCase) ?? false))
+                .Take(200) // keep it snappy for now
+                .ToList();
+
+            PartsListBox.ItemsSource = filtered;
+        }
+
+        private void PartsSearchBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
+        {
+            RefreshPartsList();
+        }
+
+        private string NormalizeWarehouse(string selectedWarehouse)
+        {
+            if (string.IsNullOrWhiteSpace(selectedWarehouse))
+                return "Building D";
+
+            // If passed "Warehouse - Building D", reduce to "Building D"
+            int idx = selectedWarehouse.IndexOf("Building", StringComparison.OrdinalIgnoreCase);
+            if (idx >= 0)
+                return selectedWarehouse.Substring(idx).Trim();
+
+            // If already "Building D", keep it
+            return selectedWarehouse.Trim();
+        }
+
+        private void AddPartToOrder(TabItem ownerTab, Part part)
+        {
+            var list = GetSelectedParts(ownerTab);
+            var existing = list.FirstOrDefault(x => x.Material == part.Material);
+
+            if (existing != null)
+                existing.Qty += 1;
+            else
+                list.Add(new SelectedPartLine(part));
+        }
+
+        private void IssueReturnToggle_Changed(object sender, RoutedEventArgs e)
+        {
+            if (SiteTabs.SelectedItem is not TabItem tab || tab == PlusTab)
+                return;
+
+            // ensure Tag binding updates first
+            Dispatcher.BeginInvoke(() => BuildMovementOptions(tab));
+        }
 
 
     }
