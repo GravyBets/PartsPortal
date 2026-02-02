@@ -1,0 +1,14 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- =========================
+         SOFT THEME (LIGHT)
+         ========================= -->
+    <SolidColorBrush x:Key="AppBg" Color="#F3F5F8"/>
+    <SolidColorBrush x:Key="SurfaceBg" Color="#FAFBFC"/>
+    <SolidColorBrush x:Key="SurfaceBorder" Color="#D7DCE3"/>
+    <SolidColorBrush x:Key="TextPrimary" Color="#1F2937"/>
+    <SolidColorBrush x:Key="TextSecondary" Color="#4B5563"/>
+    <SolidColorBrush x:Key="HoverOverlay" Color="#14000000"/>
+
+</ResourceDictionary>

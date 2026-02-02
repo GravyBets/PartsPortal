@@ -1,22 +1,23 @@
-﻿using MaterialReqAppV3.Models;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
-using Syncfusion.Pdf.Parsing;
-using Syncfusion.Pdf.Interactive;
+using MaterialReqAppV3.Models;
+using MaterialReqAppV3.Services;
 using Syncfusion.Pdf;
-
-
+using Syncfusion.Pdf.Interactive;
+using Syncfusion.Pdf.Parsing;
 
 
 
@@ -37,10 +38,16 @@ namespace MaterialReqAppV3
         private readonly Dictionary<TabItem, string> _costCenterByTab = new();
         private readonly Dictionary<TabItem, string> _wbsByTab = new();
         private readonly Dictionary<TabItem, string> _workOrderByTab = new();
-
+        private readonly Services.FavoritesService _favoritesService = new();
+        private HashSet<string> _favoriteMaterials = new(StringComparer.OrdinalIgnoreCase);
+        private readonly TemplatesService _templatesService = new();
+        private List<PartTemplate> _templates = new();
+        private readonly List<ListBox> _templateLists = new();
+        private readonly List<(ListBox Names, DataGrid Lines)> _templateUIs = new();
         private readonly Dictionary<TabItem, TextBox> _detailsBoxByTab = new();
-
         private bool _suppressDetailsTextChanged = false;
+        private const int MaxLineItemsPerTab = 12;
+        private readonly Dictionary<TabItem, TextBlock> _selectedStatusByTab = new();
 
 
         private bool GetIsReturnForTab(TabItem tab)
@@ -142,6 +149,16 @@ namespace MaterialReqAppV3
             // 2) Load settings + parts
             _settings = _settingsService.Load();
             TryLoadParts();
+            RefreshPartsList();
+
+            // Load Favorites
+            _favoriteMaterials = _favoritesService.Load();
+
+            //Templates
+            if (string.IsNullOrWhiteSpace(_currentWarehouse))
+                _currentWarehouse = SelectedWarehouse; // or whatever your fallback should be
+
+            _templates = _templatesService.Load(GetWarehouseKey());
 
             // 3) After UI is ready
             Loaded += (_, __) =>
@@ -156,6 +173,7 @@ namespace MaterialReqAppV3
                     SetTabReason(blankTab, "");
                     blankTab.Content = CreateTabContentLayout(blankTab);
                 }
+                UpdateTabCloseButtonsVisibility();
                 
 
                 // Show current tab's reason in textbox
@@ -231,12 +249,11 @@ namespace MaterialReqAppV3
                 }
 
                 BuildMovementOptions(tab);
+                UpdateDetailsBoxForTab(tab);
             }
 
             Title = System.IO.Path.GetFileName(GetSelectedTabTemplatePath());
         }
-
-
 
         private TabItem CreateSiteTab(string header)
         {
@@ -266,7 +283,8 @@ namespace MaterialReqAppV3
             var closeHit = new Border
             {
                 Style = (Style)FindResource("TabCloseHitStyle"),
-                VerticalAlignment = VerticalAlignment.Center
+                VerticalAlignment = VerticalAlignment.Center,
+                Tag = "CloseHit"
             };
 
             var closeText = new TextBlock
@@ -303,9 +321,13 @@ namespace MaterialReqAppV3
                 _costCenterByTab.Remove(ownerTab);
                 _wbsByTab.Remove(ownerTab);
                 _workOrderByTab.Remove(ownerTab);
+                _selectedStatusByTab.Remove(ownerTab);
+
 
                 // Remove it
                 SiteTabs.Items.Remove(ownerTab);
+                UpdateTabCloseButtonsVisibility();
+
 
                 // After removal, last real tab index (since + is last)
                 int lastRealIndex = SiteTabs.Items.Count - 2;
@@ -375,12 +397,14 @@ namespace MaterialReqAppV3
                 return;
             }
 
-            int newNumber = currentSiteTabCount + 1;
-            string header = newNumber == 1 ? "Blank" : $"Blank {newNumber}";
+            string header = GetNextDefaultBlankTitle();
+
 
             var newTab = CreateSiteTab(header);
             SiteTabs.Items.Insert(SiteTabs.Items.Count - 1, newTab);
             SiteTabs.SelectedItem = newTab;
+            UpdateTabCloseButtonsVisibility();
+
 
             SetTabReason(newTab, ""); // start empty so watermark shows
 
@@ -389,8 +413,6 @@ namespace MaterialReqAppV3
                 SiteNameBox.Text = "";
                 SiteNameBox.Focus();
             }
-
-
         }
 
         private string GetTabTitle(TabItem tab)
@@ -429,12 +451,12 @@ namespace MaterialReqAppV3
             }
 
             // ============================================================
-            // LEFT: Parts Browser (search + list + Add button) spans rows 0-1
+            // LEFT: Parts Browser (search + tabs + Add button) spans rows 0-1
             // ============================================================
 
             var partsPanel = new Grid();
             partsPanel.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });                         // search
-            partsPanel.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });   // list
+            partsPanel.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });   // tabs
             partsPanel.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });                         // button
 
             var partsSearch = new TextBox
@@ -445,66 +467,426 @@ namespace MaterialReqAppV3
             };
             partsSearch.Style = (Style)FindResource("WatermarkTextBoxStyle");
 
-            var partsList = new ListBox
+            // ---- Tabs container
+            var partsTabs = new TabControl
+            {
+                Margin = new Thickness(0),
+                Padding = new Thickness(0)
+            };
+            Grid.SetRow(partsTabs, 1);
+
+            // ---- All parts list
+            var allPartsList = new ListBox
             {
                 BorderThickness = new Thickness(0),
                 ItemTemplate = (DataTemplate)FindResource("PartItemTemplate")
             };
 
+            // ---- Favorites list
+            var favPartsList = new ListBox
+            {
+                BorderThickness = new Thickness(0),
+                ItemTemplate = (DataTemplate)FindResource("PartItemTemplate")
+            };
+
+            // ---- Templates UI: left = names, right = preview
+            var templatesPanel = new Grid();
+            templatesPanel.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(220) });
+            templatesPanel.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            templatesPanel.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+            templatesPanel.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+
+            // Names list (LEFT)
+            var templatesList = new ListBox
+            {
+                BorderThickness = new Thickness(0),
+                DisplayMemberPath = "Name"
+            };
+            templatesList.ItemContainerStyle = new Style(typeof(ListBoxItem))
+            {
+                Setters =
+                {
+                    new Setter(Control.FontSizeProperty, 14.0),
+                    new Setter(Control.PaddingProperty, new Thickness(6, 4, 6, 4))
+                }
+            };
+            Grid.SetRow(templatesList, 0);
+            Grid.SetColumn(templatesList, 0);
+
+            // Preview grid (RIGHT)
+            var templateLinesGrid = new DataGrid
+            {
+                AutoGenerateColumns = false,
+                CanUserAddRows = false,
+                HeadersVisibility = DataGridHeadersVisibility.Column,
+                GridLinesVisibility = DataGridGridLinesVisibility.None,
+                BorderThickness = new Thickness(0),
+                Background = System.Windows.Media.Brushes.Transparent,
+                IsReadOnly = true,
+                RowHeight = 44,
+                FontSize = 14,
+                ColumnHeaderHeight = 30
+            };
+            Grid.SetRow(templateLinesGrid, 0);
+            Grid.SetColumn(templateLinesGrid, 1);
+
+            // Columns: Qty + Part (2-line template)
+            templateLinesGrid.Columns.Clear();
+
+            var qtyStyle = new Style(typeof(TextBlock));
+            qtyStyle.Setters.Add(new Setter(TextBlock.TextAlignmentProperty, TextAlignment.Center));
+            qtyStyle.Setters.Add(new Setter(TextBlock.VerticalAlignmentProperty, VerticalAlignment.Center));
+            qtyStyle.Setters.Add(new Setter(TextBlock.HorizontalAlignmentProperty, HorizontalAlignment.Center));
+
+            templateLinesGrid.Columns.Add(new DataGridTextColumn
+            {
+                Header = "Qty",
+                Width = 50,
+                Binding = new Binding("Qty"),
+                ElementStyle = qtyStyle
+            });
+
+            templateLinesGrid.Columns.Add(new DataGridTemplateColumn
+            {
+                Header = "Part",
+                Width = new DataGridLength(1, DataGridLengthUnitType.Star),
+                CellTemplate = (DataTemplate)FindResource("SelectedPartDisplayTemplate")
+            });
+
+            
+
+            void RefreshTemplatesUI(string? selectName = null)
+            {
+                var sorted = _templates.OrderBy(t => t.Name).ToList();
+
+                templatesList.ItemsSource = null;
+                templatesList.ItemsSource = sorted;
+
+                string? pick = selectName ?? (templatesList.SelectedItem as PartTemplate)?.Name;
+                if (!string.IsNullOrWhiteSpace(pick))
+                {
+                    var match = sorted.FirstOrDefault(t =>
+                        string.Equals(t.Name, pick, StringComparison.OrdinalIgnoreCase));
+
+                    templatesList.SelectedItem = match;
+                    templateLinesGrid.ItemsSource = match?.Lines;
+                }
+                else
+                {
+                    templateLinesGrid.ItemsSource = null;
+                }
+            }
+
+
+            // When you click a template name, show its lines on the right
+            templatesList.SelectionChanged += (_, __) =>
+            {
+                if (templatesList.SelectedItem is PartTemplate t)
+                    templateLinesGrid.ItemsSource = t.Lines;
+                else
+                    templateLinesGrid.ItemsSource = null;
+            };
+
+            // Load into Selected Parts
+            void AddTemplateToOrder(PartTemplate t)
+            {
+                var selected = GetSelectedParts(ownerTab);
+
+                foreach (var line in t.Lines)
+                {
+                    // match by material number when possible
+                    var existing = selected.FirstOrDefault(x =>
+                        !string.IsNullOrWhiteSpace(line.Material) &&
+                        string.Equals(x.Material, line.Material, StringComparison.OrdinalIgnoreCase));
+
+                    if (existing != null)
+                    {
+                        existing.Qty += line.Qty;
+                        continue;
+                    }
+
+                    // add a new line
+                    var part = new Part
+                    {
+                        Material = line.Material,
+                        Description = line.Description,
+                        Warehouse = SelectedWarehouse
+                    };
+
+                    var sel = new SelectedPartLine(part);
+                    sel.Qty = line.Qty;
+                    selected.Add(sel);
+                }
+            } 
+
+            // Add to panel
+            templatesPanel.Children.Add(templatesList);
+            templatesPanel.Children.Add(templateLinesGrid);
+
+            // Add tabs in the CORRECT order (indexes matter)
+            partsTabs.Items.Add(new TabItem { Header = "All Parts", Content = allPartsList });
+            partsTabs.Items.Add(new TabItem { Header = "Favorites", Content = favPartsList });
+            partsTabs.Items.Add(new TabItem { Header = "Templates", Content = templatesPanel });
+
+            // Initial fill
+            RefreshTemplatesUI();
+
+
+
+            // Right-click should select item under mouse (WPF doesn’t do this by default)
+            void SelectOnRightClick(ListBox lb)
+            {
+                lb.PreviewMouseRightButtonDown += (_, e) =>
+                {
+                    var dep = (DependencyObject)e.OriginalSource;
+                    var container = ItemsControl.ContainerFromElement(lb, dep) as ListBoxItem;
+                    if (container != null)
+                        lb.SelectedItem = container.DataContext;
+                };
+            }
+            SelectOnRightClick(allPartsList);
+            SelectOnRightClick(favPartsList);
+
+            // Context menu for All Parts (add/remove favorite)
+            var addFav = new MenuItem { Header = "Add to Favorites" };
+            addFav.Click += (_, __) =>
+            {
+                if (allPartsList.SelectedItem is not Part p) return;
+                if (string.IsNullOrWhiteSpace(p.Material)) return;
+
+                _favoriteMaterials.Add(p.Material);
+                _favoritesService.Save(_favoriteMaterials);
+                RefreshParts();
+            };
+
+            var removeFavFromAll = new MenuItem { Header = "Remove from Favorites" };
+            removeFavFromAll.Click += (_, __) =>
+            {
+                if (allPartsList.SelectedItem is not Part p) return;
+                if (string.IsNullOrWhiteSpace(p.Material)) return;
+
+                _favoriteMaterials.Remove(p.Material);
+                _favoritesService.Save(_favoriteMaterials);
+                RefreshParts();
+            };
+
+            allPartsList.ContextMenu = new ContextMenu();
+            allPartsList.ContextMenu.Items.Add(addFav);
+            allPartsList.ContextMenu.Items.Add(removeFavFromAll);
+
+            // Context menu for Favorites list (remove favorite)
+            var removeFav = new MenuItem { Header = "Remove from Favorites" };
+            removeFav.Click += (_, __) =>
+            {
+                if (favPartsList.SelectedItem is not Part p) return;
+                if (string.IsNullOrWhiteSpace(p.Material)) return;
+
+                _favoriteMaterials.Remove(p.Material);
+                _favoritesService.Save(_favoriteMaterials);
+                RefreshParts();
+            };
+
+            favPartsList.ContextMenu = new ContextMenu();
+            favPartsList.ContextMenu.Items.Add(removeFav);
+
+            // Add-to-order behavior (double click works on both lists)
+            void WireAddToOrder(ListBox lb)
+            {
+                lb.MouseDoubleClick += (_, __) =>
+                {
+                    if (lb.SelectedItem is Part part)
+                        AddPartToOrder(ownerTab, part);
+                };
+            }
+            WireAddToOrder(allPartsList);
+            WireAddToOrder(favPartsList);
+
+            // --- Button row (left aligned): Add to Order + Add to Favorites + Remove from Favorites (favorites tab only)
+            var buttonsRow = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                HorizontalAlignment = HorizontalAlignment.Left,
+                Margin = new Thickness(0, 10, 0, 0)
+            };
+            Grid.SetRow(buttonsRow, 2);
+
+            // Helper: get selected Part from the active tab list
+            Part? GetActiveSelectedPart()
+            {
+                if (partsTabs.SelectedIndex == 0) return allPartsList.SelectedItem as Part;
+                if (partsTabs.SelectedIndex == 1) return favPartsList.SelectedItem as Part;
+                return null;
+            }
+
             var addToOrderBtn = new Button
             {
                 Content = "Add to Order",
                 Height = 34,
-                Padding = new Thickness(14, 0, 14, 0),
-                HorizontalAlignment = HorizontalAlignment.Left,
-                Margin = new Thickness(0, 10, 0, 0)
+                Padding = new Thickness(14, 0, 14, 0)
             };
 
+            var addToFavBtn = new Button
+            {
+                Content = "Add to Favorites",
+                Height = 34,
+                Padding = new Thickness(14, 0, 14, 0),
+                Margin = new Thickness(8, 0, 0, 0)
+            };
+
+            var removeFromFavBtn = new Button
+            {
+                Content = "Remove from Favorites",
+                Height = 34,
+                Padding = new Thickness(14, 0, 14, 0),
+                Margin = new Thickness(8, 0, 0, 0),
+                Visibility = Visibility.Collapsed
+            };
+            var deleteTemplateBtnTop = new Button
+            {
+                Content = "Delete Template",
+                Height = 34,
+                Padding = new Thickness(14, 0, 14, 0),
+                Margin = new Thickness(8, 0, 0, 0),
+                Visibility = Visibility.Collapsed
+            };
+
+            UpdateButtonsForTab();
+
+
+            addToOrderBtn.Click += (_, __) =>
+            {
+                // All Parts tab
+                if (partsTabs.SelectedIndex == 0)
+                {
+                    if (allPartsList.SelectedItem is Part part)
+                        AddPartToOrder(ownerTab, part);
+                    return;
+                }
+
+                // Favorites tab
+                if (partsTabs.SelectedIndex == 1)
+                {
+                    if (favPartsList.SelectedItem is Part part)
+                        AddPartToOrder(ownerTab, part);
+                    return;
+                }
+
+                // Templates tab
+                if (partsTabs.SelectedIndex == 2)
+                {
+                    if (templatesList.SelectedItem is PartTemplate t)
+                        AddTemplateToOrder(t);
+                    return;
+                }
+            };
+
+
+
+            addToFavBtn.Click += (_, __) =>
+            {
+                var part = GetActiveSelectedPart();
+                if (part == null || string.IsNullOrWhiteSpace(part.Material)) return;
+
+                _favoriteMaterials.Add(part.Material);
+                _favoritesService.Save(_favoriteMaterials);
+                RefreshParts();
+            };
+
+            removeFromFavBtn.Click += (_, __) =>
+            {
+                var part = GetActiveSelectedPart();
+                if (part == null || string.IsNullOrWhiteSpace(part.Material)) return;
+
+                _favoriteMaterials.Remove(part.Material);
+                _favoritesService.Save(_favoriteMaterials);
+                RefreshParts();
+            };
+            deleteTemplateBtnTop.Click += (_, __) =>
+            {
+                if (templatesList.SelectedItem is not PartTemplate t) return;
+
+                _templatesService.Delete(_templates, t.Name);
+                _templatesService.Save(GetWarehouseKey(), _templates);
+
+                RefreshTemplatesUI(); // your local refresh method
+                Title = $"Template deleted: {t.Name}";
+            };
+
+            void UpdateButtonsForTab()
+            {
+                addToFavBtn.Visibility = (partsTabs.SelectedIndex == 0)
+                    ? Visibility.Visible
+                    : Visibility.Collapsed;
+
+                removeFromFavBtn.Visibility = (partsTabs.SelectedIndex == 1)
+                    ? Visibility.Visible
+                    : Visibility.Collapsed;
+
+                deleteTemplateBtnTop.Visibility = (partsTabs.SelectedIndex == 2)
+                    ? Visibility.Visible
+                    : Visibility.Collapsed;
+            }
+
+
+            buttonsRow.Children.Add(addToOrderBtn);
+            buttonsRow.Children.Add(deleteTemplateBtnTop);
+            buttonsRow.Children.Add(addToFavBtn);
+            buttonsRow.Children.Add(removeFromFavBtn);
+
+            partsPanel.Children.Add(buttonsRow);
+
+            // IMPORTANT: update this in your existing SelectionChanged
+            // (keep your RefreshParts call too)
+            partsTabs.SelectionChanged += (_, __) =>
+            {
+                UpdateButtonsForTab();
+                RefreshParts();
+            };
+
+
+            // Add controls to panel
             partsPanel.Children.Add(partsSearch);
+            partsPanel.Children.Add(partsTabs);
+            
 
-            Grid.SetRow(partsList, 1);
-            partsPanel.Children.Add(partsList);
-
-            Grid.SetRow(addToOrderBtn, 2);
-            partsPanel.Children.Add(addToOrderBtn);
-
+            // Refresh method now fills BOTH lists
             void RefreshParts()
             {
                 string q = (partsSearch.Text ?? "").Trim();
 
-                var filtered = _allParts
-                    .Where(p => string.Equals(p.Warehouse, _currentWarehouse, StringComparison.OrdinalIgnoreCase))
-                    .Where(p =>
-                        string.IsNullOrWhiteSpace(q) ||
+                var baseSet = _allParts
+                    .Where(p => string.Equals(p.Warehouse, _currentWarehouse, StringComparison.OrdinalIgnoreCase));
+
+                if (!string.IsNullOrWhiteSpace(q))
+                {
+                    baseSet = baseSet.Where(p =>
                         (p.Description?.Contains(q, StringComparison.OrdinalIgnoreCase) ?? false) ||
-                        (p.Material?.Contains(q, StringComparison.OrdinalIgnoreCase) ?? false))
+                        (p.Material?.Contains(q, StringComparison.OrdinalIgnoreCase) ?? false));
+                }
+
+                var all = baseSet.Take(250).ToList();
+
+                var fav = baseSet
+                    .Where(p => !string.IsNullOrWhiteSpace(p.Material) && _favoriteMaterials.Contains(p.Material))
                     .Take(250)
                     .ToList();
 
-                partsList.ItemsSource = filtered;
+                allPartsList.ItemsSource = all;
+                favPartsList.ItemsSource = fav;
             }
 
             partsSearch.TextChanged += (_, __) => RefreshParts();
-
-            partsList.MouseDoubleClick += (_, __) =>
-            {
-                if (partsList.SelectedItem is Part part)
-                    AddPartToOrder(ownerTab, part);
-            };
-
-            addToOrderBtn.Click += (_, __) =>
-            {
-                if (partsList.SelectedItem is Part part)
-                    AddPartToOrder(ownerTab, part);
-            };
+            
 
             RefreshParts();
 
+            // Put card into 2x2 grid (spanning rows 0-1 like you already do)
             var partsCard = MakeCard(partsPanel, new Thickness(0, 0, 8, 0));
             Grid.SetRow(partsCard, 0);
             Grid.SetColumn(partsCard, 0);
-            Grid.SetRowSpan(partsCard, 2); // <-- fills the empty top-left space now
+            Grid.SetRowSpan(partsCard, 2); // fills the empty top-left space
             grid.Children.Add(partsCard);
+
 
             // ============================================================
             // TOP-RIGHT: Movement Types + Inputs (same card)
@@ -518,14 +900,65 @@ namespace MaterialReqAppV3
             var movementPanel = new StackPanel();
             _movementPanelByTab[ownerTab] = movementPanel;
 
+            // Header row: [Pill] [Movement Type]
+            var movementHeader = new Grid { Margin = new Thickness(0, 0, 0, 10) };
+            movementHeader.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            movementHeader.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+            // Per-tab pill (binds to THIS tab's Tag)
+            var issueReturnPill = new ToggleButton
+            {
+                Style = (Style)FindResource("PillToggleStyle"),
+                Margin = new Thickness(0, 0, 10, 0),
+                VerticalAlignment = VerticalAlignment.Center,
+                IsChecked = (ownerTab.Tag as bool?) ?? false
+            };
+
+            issueReturnPill.Checked += (_, __) =>
+            {
+                ownerTab.Tag = true; // Return
+                BuildMovementOptions(ownerTab);
+                UpdateDetailsBoxForTab(ownerTab);
+            };
+
+            issueReturnPill.Unchecked += (_, __) =>
+            {
+                ownerTab.Tag = false; // Issue
+                BuildMovementOptions(ownerTab);
+                UpdateDetailsBoxForTab(ownerTab);
+            };
+
+            Grid.SetColumn(issueReturnPill, 0);
+            movementHeader.Children.Add(issueReturnPill);
+
+            var movementLabel = new TextBlock
+            {
+                Text = "Movement Type",
+                FontSize = 16,
+                FontWeight = FontWeights.SemiBold,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+
+            Grid.SetColumn(movementLabel, 1);
+            movementHeader.Children.Add(movementLabel);
+
+            // Stack that holds header + radio buttons
+            var movementStack = new StackPanel();
+            movementStack.Children.Add(movementHeader);
+            movementStack.Children.Add(movementPanel);
+
+            // Host border added ONCE
             var movementHost = new Border
             {
                 Background = System.Windows.Media.Brushes.Transparent,
                 Padding = new Thickness(0, 0, 12, 0),
-                Child = movementPanel
+                Child = movementStack
             };
+
             Grid.SetColumn(movementHost, 0);
             topRightLayout.Children.Add(movementHost);
+
+
 
             // Inputs panel (single Details box that changes based on movement type)
             var inputPanel = new StackPanel();
@@ -594,6 +1027,7 @@ namespace MaterialReqAppV3
             var selectedArea = new Grid();
             selectedArea.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
             selectedArea.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            selectedArea.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
 
             var selectedGrid = new DataGrid
             {
@@ -652,6 +1086,21 @@ namespace MaterialReqAppV3
                 Margin = new Thickness(0, 10, 0, 0)
             };
 
+            //Status for adding more than 12 line items.
+            var statusText = new TextBlock
+            {
+                Foreground = Brushes.IndianRed,
+                FontSize = 13,
+                Margin = new Thickness(0, 8, 0, 0),
+                Visibility = Visibility.Collapsed
+            };
+
+            _selectedStatusByTab[ownerTab] = statusText;
+
+            Grid.SetRow(statusText, 2);
+            selectedArea.Children.Add(statusText);
+
+
             var removeBtn = new Button
             {
                 Content = "Remove Part",
@@ -667,6 +1116,14 @@ namespace MaterialReqAppV3
                 Padding = new Thickness(14, 0, 14, 0)
             };
 
+            var saveToTemplatesBtn = new Button
+            {
+                Content = "Save to Templates",
+                Height = 34,
+                Padding = new Thickness(14, 0, 14, 0),
+                Margin = new Thickness(8, 0, 0, 0)
+            };
+
             btnRow.Children.Add(removeBtn);
             btnRow.Children.Add(clearBtn);
 
@@ -677,9 +1134,57 @@ namespace MaterialReqAppV3
                 var list = GetSelectedParts(ownerTab);
                 if (line.Qty > 1) line.Qty -= 1;
                 else list.Remove(line);
+                ClearTabStatus(ownerTab);
             };
 
-            clearBtn.Click += (_, __) => GetSelectedParts(ownerTab).Clear();
+            saveToTemplatesBtn.Click += (_, __) =>
+            {
+                var lines = GetSelectedParts(ownerTab);
+                if (lines.Count == 0)
+                {
+                    // Small message box is ok since you asked for it
+                    MessageBox.Show("No selected parts to save.", "Templates", MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
+
+                // Suggest a name based on current reason or tab title
+                string suggested = GetTabReason(ownerTab).Trim();
+                if (string.IsNullOrWhiteSpace(suggested))
+                    suggested = GetTabTitle(ownerTab).Trim();
+
+                var dlg = new TemplateNameWindow(suggested) { Owner = this };
+                if (dlg.ShowDialog() != true) return;
+
+                string name = dlg.TemplateName;
+
+                var template = new PartTemplate
+                {
+                    Name = name,
+                    Lines = lines.Select(x => new TemplateLine
+                    {
+                        Material = x.Material,
+                        Description = x.Description,
+                        Qty = x.Qty
+                    }).ToList()
+                };
+
+                _templatesService.Upsert(_templates, template);
+                _templatesService.Save(GetWarehouseKey(), _templates);
+
+                RefreshTemplatesUI(name);
+                Title = $"Template saved: {name}";
+            };
+
+
+            clearBtn.Click += (_, __) =>
+            {
+                GetSelectedParts(ownerTab).Clear();
+                ClearTabStatus(ownerTab);
+            };
+
+            btnRow.Children.Add(saveToTemplatesBtn);
+
+
 
             // Delete key matches Remove Part behavior
             selectedGrid.PreviewKeyDown += (_, e) =>
@@ -708,7 +1213,6 @@ namespace MaterialReqAppV3
             return grid;
         }
 
-
         private string GetTabReason(TabItem tab) => tab.ToolTip?.ToString() ?? "";
         private void SetTabReason(TabItem tab, string reason) => tab.ToolTip = reason;
 
@@ -733,9 +1237,12 @@ namespace MaterialReqAppV3
 
         private void GeneratePdf_Click(object sender, RoutedEventArgs e)
         {
-            // Output folder (use settings if provided; otherwise bin\Output)
-            string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+            // Save current textbox value into selected tab
+            if (SiteTabs.SelectedItem is TabItem current && current != PlusTab && SiteNameBox != null)
+                SetTabReason(current, SiteNameBox.Text ?? "");
 
+            // Output folder
+            string baseDir = AppDomain.CurrentDomain.BaseDirectory;
             string outDir =
                 !string.IsNullOrWhiteSpace(_settings?.PdfOutputFolder)
                     ? _settings.PdfOutputFolder.Trim()
@@ -743,144 +1250,78 @@ namespace MaterialReqAppV3
 
             Directory.CreateDirectory(outDir);
 
-            // Output filename uses selected tab reason/title (just like you had)
-            string fileLabel = "MaterialReq";
-            if (SiteTabs.SelectedItem is TabItem selectedTab && selectedTab != PlusTab)
-            {
-                fileLabel = (GetTabReason(selectedTab) ?? "").Trim();
-                if (string.IsNullOrWhiteSpace(fileLabel))
-                    fileLabel = (GetTabTitle(selectedTab) ?? "").Trim();
-            }
-
-            foreach (char c in Path.GetInvalidFileNameChars())
-                fileLabel = fileLabel.Replace(c, '_');
-
-            string stamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-            string outFile = Path.Combine(outDir, $"{fileLabel}_MERGED_{stamp}.pdf");
-
-            // Create merged output PDF
-            using var outDoc = new PdfDocument();
-
-            bool addedAny = false;
-
-            foreach (var item in SiteTabs.Items)
-            {
-                if (item is not TabItem tab) continue;
-                if (tab == PlusTab) continue;
-
-                // Optional: skip totally blank tabs (no parts + no DocHeader)
-                var lines = GetSelectedParts(tab);
-                string docHeader = (GetTabReason(tab) ?? "").Trim();
-                if (lines.Count == 0 && string.IsNullOrWhiteSpace(docHeader))
-                    continue;
-
-                bool isReturn = GetIsReturnForTab(tab);
-                string templatePath = GetTemplatePath(isReturn);
-                if (!File.Exists(templatePath))
-                    continue; // silent skip; no message boxes
-
-                // MovementType code
-                string mtFull = GetMovementType(tab) ?? "";
-                string mtCode = ExtractMovementCode(mtFull);
-                if (string.IsNullOrWhiteSpace(mtCode))
-                    mtCode = isReturn ? "262" : "261";
-
-                // Only ONE field filled based on mtCode
-                string costCenter = "";
-                string wbs = "";
-                string workOrder = "";
-                string workOrderUsed = "";
-
-                if (mtCode == "201" || mtCode == "202")
-                    costCenter = (GetCostCenter(tab) ?? "").Trim();
-                else if (mtCode == "221" || mtCode == "222")
-                    wbs = (GetWbs(tab) ?? "").Trim();
-                else
-                {
-                    if (isReturn && mtCode == "962")
-                        workOrderUsed = (GetWorkOrder(tab) ?? "").Trim();
-                    else
-                        workOrder = (GetWorkOrder(tab) ?? "").Trim();
-                }
-
-                using var loaded = new PdfLoadedDocument(templatePath);
-
-                // Header
-                //SetPdfTextField(loaded, "CompanyName", _settings?.CompanyName ?? "");
-                SetPdfTextField(loaded, "Name", _settings?.Name ?? "");
-                SetPdfTextField(loaded, "Date", DateTime.Now.ToString("MM/dd/yyyy"));
-                SetPdfTextField(loaded, "DocHeader", docHeader);
-                SetPdfTextField(loaded, "MovementType", mtCode);
-
-                // Assignment
-                SetPdfTextField(loaded, "CostCenter", costCenter);
-                SetPdfTextField(loaded, "Wbs", wbs);
-                SetPdfTextField(loaded, "WorkOrder", workOrder);
-                SetPdfTextField(loaded, "WorkOrderUsed", workOrderUsed);
-
-                // Lines 1..12
-                for (int i = 1; i <= 12; i++)
-                {
-                    var line = (i - 1 < lines.Count) ? lines[i - 1] : null;
-
-                    SetPdfTextField(loaded, $"DESCRIPTION{i}", line?.Description ?? "");
-                    SetPdfTextField(loaded, $"MATERIAL{i}", line?.Material ?? "");
-                    SetPdfTextField(loaded, $"QUANTITY{i}", line != null ? line.Qty.ToString() : "");
-                }
-
-                // Flatten for reliable printing
-                if (loaded.Form != null)
-                    loaded.Form.Flatten = true;
-
-                // Import this filled page(s) into merged output
-                outDoc.ImportPageRange(loaded, 0, loaded.Pages.Count - 1);
-
-                addedAny = true;
-            }
-
-            if (!addedAny)
+            var candidateTabs = GetCandidateTabs();
+            if (candidateTabs.Count == 0)
             {
                 Title = "Nothing to generate (all tabs blank).";
                 return;
             }
 
-            using var fs = File.Create(outFile);
-            outDoc.Save(fs);
+            var rows = new List<PrintTabSummary>();
 
-            Title = "Created: " + outFile;
-        }
-
-
-
-        private string GetSettingsPath()
-        {
-            string user = Environment.UserName; // windows login username
-            string dir = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "MaterialReqAppV3");
-
-            return Path.Combine(dir, $"settings_{user}.json");
-        }
-
-        private UserSettings LoadSettings()
-        {
-            string path = GetSettingsPath();
-            string user = Environment.UserName;
-
-            if (File.Exists(path))
+            foreach (var tab in candidateTabs)
             {
-                try
+                bool isReturn = GetIsReturnForTab(tab);
+
+                // Tab label: prefer DocHeader (site/reason). fallback to tab title.
+                string tabLabel = (GetDocHeaderText(tab) ?? "").Trim();
+                if (string.IsNullOrWhiteSpace(tabLabel))
+                    tabLabel = GetTabTitle(tab);
+
+                // movement code and the single reference value
+                string mtFull = GetMovementType(tab) ?? "";
+                string mtCode = ExtractMovementCode(mtFull);
+                if (string.IsNullOrWhiteSpace(mtCode))
+                    mtCode = isReturn ? "262" : "261";
+
+                string refValue = "";
+                if (mtCode == "201" || mtCode == "202")
+                    refValue = (GetCostCenter(tab) ?? "").Trim();
+                else if (mtCode == "221" || mtCode == "222")
+                    refValue = (GetWbs(tab) ?? "").Trim();
+                else
+                    refValue = (GetWorkOrder(tab) ?? "").Trim();  // includes 962 case (still a WO value)
+
+                var parts = new List<PrintPartLine>();
+                foreach (var line in GetSelectedParts(tab))
                 {
-                    var json = File.ReadAllText(path);
-                    var s = JsonSerializer.Deserialize<UserSettings>(json) ?? new UserSettings();
-                    if (string.IsNullOrWhiteSpace(s.EmployeeId))
-                        s.EmployeeId = user;
-                    return s;
+                    parts.Add(new PrintPartLine
+                    {
+                        Qty = line.Qty,
+                        Description = line.Description,
+                        Material = line.Material
+                    });
                 }
-                catch { /* ignore and fall back */ }
+
+                string reason = (GetDocHeaderText(tab) ?? "").Trim();   // your Site#/Reason
+                bool missingReason = string.IsNullOrWhiteSpace(reason);
+
+                // MissingRef should only matter if there are parts selected
+                bool missingRef = parts.Count > 0 && string.IsNullOrWhiteSpace(refValue);
+
+                rows.Add(new PrintTabSummary
+                {
+                    Tab = tabLabel,
+                    Type = isReturn ? "Return" : "Issue",
+                    RefValue = refValue,
+                    Parts = parts,
+                    MissingReason = missingReason,
+                    MissingRef = missingRef
+                });
+
             }
 
-            return new UserSettings { EmployeeId = user };
+            // show summary
+            var summary = new SummaryWindow(rows, $"Warehouse: {SelectedWarehouse}   •   Tabs: {rows.Count}") { Owner = this };
+
+            if (summary.ShowDialog() != true)
+                return;
+            string outFile = GenerateMergedPdf(candidateTabs, outDir);
+            Title = "Created: " + outFile;
+
+            // OPTIONAL: open folder and highlight file
+            // System.Diagnostics.Process.Start("explorer.exe", $"/select,\"{outFile}\"");
+
         }
 
         private void OpenSettings_Click(object sender, RoutedEventArgs e)
@@ -895,25 +1336,13 @@ namespace MaterialReqAppV3
 
                 System.Windows.MessageBox.Show("Settings saved!", "Settings",
                     MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-        }       
+                _settings = _settingsService.Load();
+                TryLoadParts();
+                RefreshPartsList();
 
-        private void TestCsv_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                var path = _settings?.CsvPath ?? "";
-                var parts = _partsService.LoadFromCsv(path);
-
-                var preview = string.Join("\n", parts.Take(5).Select(p => p.ToString()));
-                MessageBox.Show($"Loaded {parts.Count} parts.\n\nFirst 5:\n{preview}");
             }
-            catch (Exception ex)
-            {
-                MessageBox.Show("CSV load failed:\n" + ex.Message);
-            }
-        }
-
+        }              
+        
         private void TryLoadParts()
         {
             try
@@ -964,15 +1393,32 @@ namespace MaterialReqAppV3
             return selectedWarehouse.Trim();
         }
 
-        private void AddPartToOrder(TabItem ownerTab, Part part)
+        private void AddPartToOrder(TabItem tab, Part part, int qtyToAdd = 1)
         {
-            var list = GetSelectedParts(ownerTab);
-            var existing = list.FirstOrDefault(x => x.Material == part.Material);
+            if (part == null) return;
 
+            var list = GetSelectedParts(tab);
+
+            // If already there, just increase qty (doesn't count as a new line item)
+            var existing = list.FirstOrDefault(x => x.Material == part.Material);
             if (existing != null)
-                existing.Qty += 1;
-            else
-                list.Add(new SelectedPartLine(part));
+            {
+                existing.Qty += qtyToAdd;
+                ClearTabStatus(tab);
+                return;
+            }
+
+            // New line item would exceed max
+            if (list.Count >= MaxLineItemsPerTab)
+            {
+                SetTabStatus(tab, $"Max {MaxLineItemsPerTab} line items per site/tab.");
+                return;
+            }
+
+            var newLine = new SelectedPartLine(part) { Qty = qtyToAdd };
+            list.Add(newLine);
+
+            ClearTabStatus(tab);
         }
 
         private void IssueReturnToggle_Changed(object sender, RoutedEventArgs e)
@@ -987,9 +1433,7 @@ namespace MaterialReqAppV3
             });
         }
 
-
         private enum DetailField { CostCenter, Wbs, WorkOrder }
-
         private DetailField GetRequiredField(TabItem tab)
         {
             string mt = GetMovementType(tab);
@@ -1007,7 +1451,6 @@ namespace MaterialReqAppV3
         private string GetCostCenter(TabItem tab) => _costCenterByTab.TryGetValue(tab, out var v) ? v : "";
         private string GetWbs(TabItem tab) => _wbsByTab.TryGetValue(tab, out var v) ? v : "";
         private string GetWorkOrder(TabItem tab) => _workOrderByTab.TryGetValue(tab, out var v) ? v : "";
-
         private void SetCostCenter(TabItem tab, string v) => _costCenterByTab[tab] = v;
         private void SetWbs(TabItem tab, string v) => _wbsByTab[tab] = v;
         private void SetWorkOrder(TabItem tab, string v) => _workOrderByTab[tab] = v;
@@ -1050,19 +1493,395 @@ namespace MaterialReqAppV3
             return movementText.Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? "";
         }
 
-        private static void SetPdfTextField(PdfLoadedDocument doc, string fieldName, string value)
+        private static void SetPdfTextField(PdfLoadedDocument doc, string fieldName, string? value)
         {
             if (doc.Form == null) return;
 
-            foreach (PdfField f in doc.Form.Fields)
+            try
             {
-                if (string.Equals(f.Name, fieldName, StringComparison.OrdinalIgnoreCase) &&
-                    f is PdfLoadedTextBoxField tb)
-                {
+                // IMPORTANT: this indexer throws if the name is wrong
+                var field = doc.Form.Fields[fieldName];
+
+                if (field is Syncfusion.Pdf.Parsing.PdfLoadedTextBoxField tb)
                     tb.Text = value ?? "";
-                    return;
+                else if (field is Syncfusion.Pdf.Parsing.PdfLoadedCheckBoxField cb)
+                    cb.Checked = string.Equals(value, "true", StringComparison.OrdinalIgnoreCase);
+                else
+                {
+                    // field exists but isn't a textbox/checkbox we handle
+                    System.Diagnostics.Debug.WriteLine($"Field '{fieldName}' exists but is type {field.GetType().Name}");
                 }
             }
+            catch (ArgumentException)
+            {
+                // Dump all field names to the Output window (Debug)
+                var names = new List<string>();
+                for (int i = 0; i < doc.Form.Fields.Count; i++)
+                    names.Add(doc.Form.Fields[i].Name);
+
+                System.Diagnostics.Debug.WriteLine($"❌ PDF field not found: '{fieldName}'");
+                System.Diagnostics.Debug.WriteLine("✅ Available fields:");
+                foreach (var n in names.OrderBy(x => x))
+                    System.Diagnostics.Debug.WriteLine("  - " + n);
+
+                // Don’t crash the app
+                return;
+            }
+        }
+
+        private string GetDocHeaderText(TabItem tab)
+        {
+            // DocHeader should ONLY be the user-entered Site#/Reason.
+            // If empty -> write nothing.
+            return (GetTabReason(tab) ?? "").Trim();
+        }        
+
+        private static void SetMovementTypeRadio(PdfLoadedDocument loaded, string movementCode)
+    {
+        if (loaded?.Form?.Fields == null) return;
+        if (string.IsNullOrWhiteSpace(movementCode)) return;
+
+        // Your templates might have either name (you had a space issue earlier)
+        string[] possibleNames = { "MovementType", "Movement Type" };
+
+        foreach (PdfField f in loaded.Form.Fields)
+        {
+            if (!possibleNames.Any(n => string.Equals(f.Name, n, StringComparison.OrdinalIgnoreCase)))
+                continue;
+
+            // MovementType is a RADIO button list in your template
+            if (f is PdfLoadedRadioButtonListField rb)
+            {
+                // Most reliable: select by matching OptionValue (e.g., "261", "202", "962")
+                foreach (PdfLoadedRadioButtonItem item in rb.Items)
+                {
+                    if (string.Equals(item.OptionValue, movementCode, StringComparison.OrdinalIgnoreCase))
+                    {
+                        item.Selected = true;
+                        return;
+                    }
+                }
+
+                // Fallback: try SelectedValue (still valid in Syncfusion)
+                rb.SelectedValue = movementCode;
+                return;
+            }
+        }
+    }
+
+        private string GetWarehouseKey()
+        {
+            // ex: "Building D" -> "building_d"
+            var s = (_currentWarehouse ?? "").Trim().ToLowerInvariant();
+            s = s.Replace(" ", "_");
+            return string.IsNullOrWhiteSpace(s) ? "unknown" : s;
+        }
+
+        private void Home_Click(object sender, RoutedEventArgs e)
+        {
+            if (HasWorkInProgress())
+            {
+                var result = MessageBox.Show(
+                    "Are you sure you want to go Home?\n\n" +
+                    "You will lose all selected parts and entered details for your current tabs.",
+                    "Go Home",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Warning);
+
+                if (result != MessageBoxResult.Yes)
+                    return;
+            }
+
+            var w = new WarehouseSelectWindow();
+            w.Show();
+            Close();
+        }
+
+        private bool HasWorkInProgress()
+        {
+            foreach (var item in SiteTabs.Items)
+            {
+                if (item is not TabItem tab || tab == PlusTab)
+                    continue;
+
+                // Selected parts count
+                if (GetSelectedParts(tab).Count > 0)
+                    return true;
+
+                // Reason/Site # text (stored in ToolTip)
+                if (!string.IsNullOrWhiteSpace(GetTabReason(tab)))
+                    return true;
+
+                // If you want, you can also include movement/details here later.
+            }
+
+            return false;
+        }
+        
+        private string GetNextDefaultBlankTitle()
+    {
+        // We treat:
+        // "Blank"      => number 1
+        // "Blank (2)"  => number 2
+        // etc.
+        var used = new HashSet<int>();
+
+        foreach (var item in SiteTabs.Items)
+        {
+            if (item is not TabItem t) continue;
+            if (t == PlusTab) continue;
+
+            string title = GetTabTitle(t).Trim();
+
+            // Match: Blank or Blank (N)
+            var m = Regex.Match(title, @"^Blank(?:\s*\((\d+)\))?$", RegexOptions.IgnoreCase);
+            if (!m.Success) continue;
+
+            if (!m.Groups[1].Success)
+                used.Add(1);
+            else if (int.TryParse(m.Groups[1].Value, out int n))
+                used.Add(n);
+        }
+
+        // Find the smallest missing positive number
+        int next = 1;
+        while (used.Contains(next)) next++;
+
+        return next == 1 ? "Blank" : $"Blank ({next})";
+    }
+
+        private void UpdateTabCloseButtonsVisibility()
+        {
+            int siteTabs = SiteTabs.Items.Count - 1; // exclude PlusTab
+            bool showClose = siteTabs > 1;
+
+            foreach (var item in SiteTabs.Items)
+            {
+                if (item is not TabItem tab || tab == PlusTab)
+                    continue;
+
+                if (tab.Header is StackPanel sp)
+                {
+                    // Find the Border we tagged as CloseHit
+                    foreach (var child in sp.Children)
+                    {
+                        if (child is Border b && (b.Tag as string) == "CloseHit")
+                        {
+                            b.Visibility = showClose ? Visibility.Visible : Visibility.Collapsed;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        private string GetPdfName()
+        {
+            string employeeId = (_settings?.EmployeeId ?? Environment.UserName).Trim();
+            string name = (_settings?.Name ?? "").Trim();
+
+            if (string.IsNullOrWhiteSpace(name))
+                return employeeId;
+
+            return $"{name} ({employeeId})";
+        }
+        
+        private static bool IsBlankTabName(string? title)
+    {
+        var t = (title ?? "").Trim();
+        return t.Length == 0 || t.StartsWith("Blank", StringComparison.OrdinalIgnoreCase);
+    }
+
+        private string GetDocHeaderForTab(TabItem tab)
+    {
+        // Prefer the per-tab reason (ToolTip)
+        string reason = (GetTabReason(tab) ?? "").Trim();
+        if (!string.IsNullOrWhiteSpace(reason))
+            return reason;
+
+        // If reason is empty and tab is any "Blank...", then DocHeader should be empty
+        string title = (GetTabTitle(tab) ?? "").Trim();
+        if (IsBlankTabName(title))
+            return "";
+
+        // Otherwise fall back to the tab title (if user renamed it)
+        return title;
+    }
+
+        private string BuildPdfFileName(List<TabItem> tabsIncluded, int pageCount)
+    {
+        // Use DocHeader if present; otherwise fall back to tab title
+        var pieces = tabsIncluded
+            .Select(t =>
+            {
+                var s = GetDocHeaderForTab(t).Trim();
+                if (string.IsNullOrWhiteSpace(s))
+                    s = GetTabTitle(t).Trim();
+
+                // sanitize invalid filename chars
+                foreach (char c in Path.GetInvalidFileNameChars())
+                    s = s.Replace(c, '_');
+
+                return s;
+            })
+            .Where(s => !string.IsNullOrWhiteSpace(s))
+            .ToList();
+
+        if (pieces.Count == 0)
+            pieces.Add("Output");
+
+        string dateToken = DateTime.Now
+            .ToString("ddMMMyyyy", CultureInfo.InvariantCulture)
+            .ToUpperInvariant(); // 01FEB2026
+
+        string joined = string.Join("_", pieces);
+
+        return $"{joined}_{dateToken}_{pageCount}page.pdf";
+    }
+
+        private void SetTabStatus(TabItem tab, string message)
+        {
+            if (_selectedStatusByTab.TryGetValue(tab, out var tb))
+            {
+                tb.Text = message;
+                tb.Visibility = string.IsNullOrWhiteSpace(message) ? Visibility.Collapsed : Visibility.Visible;
+            }
+        }
+
+        private void ClearTabStatus(TabItem tab) => SetTabStatus(tab, "");        
+
+        private bool IsBlankTabTitle(string title)
+    {
+        title = (title ?? "").Trim();
+        if (title.Equals("Blank", StringComparison.OrdinalIgnoreCase)) return true;
+        if (title.StartsWith("Blank (", StringComparison.OrdinalIgnoreCase)) return true;
+        return false;
+    }
+
+        // IMPORTANT: DocHeader should ONLY be the user's Site#/Reason (never fall back to tab title)
+        private string GetDocHeaderForPdf(TabItem tab)
+    {
+        string title = GetTabTitle(tab);
+        if (IsBlankTabTitle(title))
+            return "";
+
+        string reason = (GetTabReason(tab) ?? "").Trim();
+        if (string.IsNullOrWhiteSpace(reason))
+            return "";
+
+        return reason;
+    }
+
+        private List<TabItem> GetCandidateTabs()
+    {
+        var candidateTabs = new List<TabItem>();
+
+        foreach (var item in SiteTabs.Items)
+        {
+            if (item is not TabItem tab) continue;
+            if (tab == PlusTab) continue;
+
+            var lines = GetSelectedParts(tab);
+            string docHeader = GetDocHeaderForPdf(tab);
+
+            // Skip totally empty
+            if (lines.Count == 0 && string.IsNullOrWhiteSpace(docHeader))
+                continue;
+
+            bool isReturn = GetIsReturnForTab(tab);
+            string templatePath = GetTemplatePath(isReturn);
+            if (!File.Exists(templatePath))
+                continue;
+
+            candidateTabs.Add(tab);
+        }
+
+        return candidateTabs;
+    }
+
+        private string GenerateMergedPdf(List<TabItem> candidateTabs, string outDir)
+        {
+            using var outDoc = new PdfDocument();
+            var printedTabs = new List<TabItem>();
+
+            foreach (var tab in candidateTabs)
+            {
+                var lines = GetSelectedParts(tab);
+
+                bool isReturn = GetIsReturnForTab(tab);
+                string templatePath = GetTemplatePath(isReturn);
+                if (!File.Exists(templatePath))
+                    continue;
+
+                // MovementType code
+                string mtFull = GetMovementType(tab) ?? "";
+                string mtCode = ExtractMovementCode(mtFull);
+                if (string.IsNullOrWhiteSpace(mtCode))
+                    mtCode = isReturn ? "262" : "261";
+
+                // Single ref field
+                string costCenter = "";
+                string wbs = "";
+                string workOrder = "";
+                string workOrderUsed = "";
+
+                if (mtCode == "201" || mtCode == "202")
+                    costCenter = (GetCostCenter(tab) ?? "").Trim();
+                else if (mtCode == "221" || mtCode == "222")
+                    wbs = (GetWbs(tab) ?? "").Trim();
+                else
+                {
+                    if (isReturn && mtCode == "962")
+                        workOrderUsed = (GetWorkOrder(tab) ?? "").Trim();
+                    else
+                        workOrder = (GetWorkOrder(tab) ?? "").Trim();
+                }
+
+                using var loaded = new PdfLoadedDocument(templatePath);
+
+                // Header
+                SetPdfTextField(loaded, "Name", GetPdfName());
+                SetPdfTextField(loaded, "Date", DateTime.Now.ToString("MM/dd/yyyy"));
+                SetPdfTextField(loaded, "DocHeader", GetDocHeaderForPdf(tab)); // <- important
+
+                // Assignment
+                SetPdfTextField(loaded, "CostCenter", costCenter);
+                SetPdfTextField(loaded, "Wbs", wbs);
+                SetPdfTextField(loaded, "WorkOrder", workOrder);
+                SetPdfTextField(loaded, "WorkOrderUsed", workOrderUsed);
+
+                // Lines 1..12
+                for (int i = 1; i <= 12; i++)
+                {
+                    var line = (i - 1 < lines.Count) ? lines[i - 1] : null;
+
+                    SetPdfTextField(loaded, $"DESCRIPTION{i}", line?.Description ?? "");
+                    SetPdfTextField(loaded, $"MATERIAL{i}", line?.Material ?? "");
+                    SetPdfTextField(loaded, $"QUANTITY{i}", line != null ? line.Qty.ToString() : "");
+                }
+
+                SetMovementTypeRadio(loaded, mtCode);
+
+                // Flatten
+                if (loaded.Form != null)
+                {
+                    loaded.Form.SetDefaultAppearance(false);
+                    loaded.Form.FlattenFields();
+                }
+
+                // Merge
+                outDoc.ImportPageRange(loaded, 0, loaded.Pages.Count - 1);
+                printedTabs.Add(tab);
+            }
+
+            if (printedTabs.Count == 0 || outDoc.Pages.Count == 0)
+                throw new InvalidOperationException("No pages were added to the PDF.");
+
+            string outFile = Path.Combine(outDir, BuildPdfFileName(printedTabs, outDoc.Pages.Count));
+            using var fs = File.Create(outFile);
+            outDoc.Save(fs);
+
+            return outFile;
         }
 
 
