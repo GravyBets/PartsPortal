@@ -22,5 +22,3 @@ To-Do List
 
 -If Cost Center/WBS/Work Order isn't filled out, give a status when trying to generate pdf. 
 
--Summary Page, subtext is getting updated somewhere. Find it. 
-
