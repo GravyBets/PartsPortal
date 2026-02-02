@@ -1,0 +1,36 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- =========================
+         DARK THEME
+         ========================= -->
+
+    <!-- App + cards -->
+    <SolidColorBrush x:Key="AppBackground" Color="#0F121A"/>
+    <SolidColorBrush x:Key="CardBackground" Color="#171B26"/>
+    <SolidColorBrush x:Key="CardBorder" Color="#2D364A"/>
+
+    <!-- Surfaces used inside cards -->
+    <SolidColorBrush x:Key="SurfaceBg" Color="#1A1F2C"/>
+    <SolidColorBrush x:Key="SurfaceBorder" Color="#2D364A"/>
+
+    <!-- Text -->
+    <SolidColorBrush x:Key="TextPrimary" Color="#ECEFF4"/>
+    <SolidColorBrush x:Key="TextSecondary" Color="#AAB3C6"/>
+
+    <!-- Primary brand (calmer dark blue) -->
+    <SolidColorBrush x:Key="PrimaryBg" Color="#1E3A8A"/>
+    <SolidColorBrush x:Key="PrimaryBorder" Color="#1E40AF"/>
+
+    <!-- Tile background (subtle fill so buttons aren’t washed out) -->
+    <SolidColorBrush x:Key="TileFill" Color="#1B2331"/>
+    <SolidColorBrush x:Key="TileFillHover" Color="#202A3B"/>
+    <SolidColorBrush x:Key="TileFillPressed" Color="#162033"/>
+
+    <!-- Overlays / Misc -->
+    <SolidColorBrush x:Key="HoverOverlay" Color="#14FFFFFF"/>
+    <SolidColorBrush x:Key="PressedOverlay" Color="#22FFFFFF"/>
+    <SolidColorBrush x:Key="WatermarkText" Color="#7C879A"/>
+
+
+</ResourceDictionary>

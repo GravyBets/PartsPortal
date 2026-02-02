@@ -6,10 +6,13 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+	  <ApplicationIcon>Assets\MaterialReqAppIcon.ico</ApplicationIcon>
 	  
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Assets\MaterialReqAppIcon.ico" />
     <None Remove="Templates\Material_Requisition_Issue_Fillable.pdf" />
     <None Remove="Templates\Material_Requisition_Return_Fillable.pdf" />
   </ItemGroup>
@@ -26,6 +29,12 @@
   <ItemGroup>
     <PackageReference Include="Syncfusion.Licensing" Version="32.1.19" />
     <PackageReference Include="Syncfusion.Pdf.Net.Core" Version="32.1.19" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\MaterialReqAppIcon.ico">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
   </ItemGroup>
 
 </Project>

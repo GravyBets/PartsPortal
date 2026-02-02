@@ -1,10 +1,17 @@
-﻿using System;
+﻿using MaterialReqAppV3.Models;
+using MaterialReqAppV3.Services;
+using Syncfusion.Pdf;
+using Syncfusion.Pdf.Interactive;
+using Syncfusion.Pdf.Parsing;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Windows;
@@ -13,16 +20,17 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
-using MaterialReqAppV3.Models;
-using MaterialReqAppV3.Services;
-using Syncfusion.Pdf;
-using Syncfusion.Pdf.Interactive;
-using Syncfusion.Pdf.Parsing;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Security.Principal;
+using System.Runtime.Versioning;
+
 
 
 
 namespace MaterialReqAppV3
 {
+    [SupportedOSPlatform("windows")]
     public partial class MainWindow : Window
     {
         public string SelectedWarehouse { get; }
@@ -139,6 +147,19 @@ namespace MaterialReqAppV3
         {
             InitializeComponent();
 
+            //Message Window if App is running in Adminstrator Mode
+            if (IsAppElevated())
+            {
+                MessageBox.Show(
+                    "This app is running as Administrator.\n\n" +
+                    "If Outlook is NOT running as Administrator, emailing may fail.\n\n" +
+                    "Fix: close this app and reopen it normally (do not 'Run as administrator').",
+                    "Elevation Warning",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
+
+
             // 1) Warehouse + header first
             SelectedWarehouse = selectedWarehouse;
             _currentWarehouse = NormalizeWarehouse(selectedWarehouse);
@@ -250,9 +271,7 @@ namespace MaterialReqAppV3
 
                 BuildMovementOptions(tab);
                 UpdateDetailsBoxForTab(tab);
-            }
-
-            Title = System.IO.Path.GetFileName(GetSelectedTabTemplatePath());
+            }           
         }
 
         private TabItem CreateSiteTab(string header)
@@ -805,12 +824,22 @@ namespace MaterialReqAppV3
             {
                 if (templatesList.SelectedItem is not PartTemplate t) return;
 
+                var result = MessageBox.Show(
+                    $"Delete template '{t.Name}'?\n\nThis cannot be undone.",
+                    "Delete Template",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Warning);
+
+                if (result != MessageBoxResult.Yes)
+                    return;
+
                 _templatesService.Delete(_templates, t.Name);
                 _templatesService.Save(GetWarehouseKey(), _templates);
 
-                RefreshTemplatesUI(); // your local refresh method
+                RefreshTemplatesUI();
                 Title = $"Template deleted: {t.Name}";
             };
+
 
             void UpdateButtonsForTab()
             {
@@ -1224,105 +1253,7 @@ namespace MaterialReqAppV3
 
             string baseDir = AppDomain.CurrentDomain.BaseDirectory; // bin\Debug\net8.0-windows\
             return System.IO.Path.Combine(baseDir, "Templates", fileName);
-        }        
-
-        private string GetSelectedTabTemplatePath()
-        {
-            if (SiteTabs.SelectedItem is not TabItem tab || tab == PlusTab)
-                return GetTemplatePath(isReturn: false); // safe fallback
-
-            bool isReturn = GetIsReturnForTab(tab);
-            return GetTemplatePath(isReturn);
-        }
-
-        private void GeneratePdf_Click(object sender, RoutedEventArgs e)
-        {
-            // Save current textbox value into selected tab
-            if (SiteTabs.SelectedItem is TabItem current && current != PlusTab && SiteNameBox != null)
-                SetTabReason(current, SiteNameBox.Text ?? "");
-
-            // Output folder
-            string baseDir = AppDomain.CurrentDomain.BaseDirectory;
-            string outDir =
-                !string.IsNullOrWhiteSpace(_settings?.PdfOutputFolder)
-                    ? _settings.PdfOutputFolder.Trim()
-                    : Path.Combine(baseDir, "Output");
-
-            Directory.CreateDirectory(outDir);
-
-            var candidateTabs = GetCandidateTabs();
-            if (candidateTabs.Count == 0)
-            {
-                Title = "Nothing to generate (all tabs blank).";
-                return;
-            }
-
-            var rows = new List<PrintTabSummary>();
-
-            foreach (var tab in candidateTabs)
-            {
-                bool isReturn = GetIsReturnForTab(tab);
-
-                // Tab label: prefer DocHeader (site/reason). fallback to tab title.
-                string tabLabel = (GetDocHeaderText(tab) ?? "").Trim();
-                if (string.IsNullOrWhiteSpace(tabLabel))
-                    tabLabel = GetTabTitle(tab);
-
-                // movement code and the single reference value
-                string mtFull = GetMovementType(tab) ?? "";
-                string mtCode = ExtractMovementCode(mtFull);
-                if (string.IsNullOrWhiteSpace(mtCode))
-                    mtCode = isReturn ? "262" : "261";
-
-                string refValue = "";
-                if (mtCode == "201" || mtCode == "202")
-                    refValue = (GetCostCenter(tab) ?? "").Trim();
-                else if (mtCode == "221" || mtCode == "222")
-                    refValue = (GetWbs(tab) ?? "").Trim();
-                else
-                    refValue = (GetWorkOrder(tab) ?? "").Trim();  // includes 962 case (still a WO value)
-
-                var parts = new List<PrintPartLine>();
-                foreach (var line in GetSelectedParts(tab))
-                {
-                    parts.Add(new PrintPartLine
-                    {
-                        Qty = line.Qty,
-                        Description = line.Description,
-                        Material = line.Material
-                    });
-                }
-
-                string reason = (GetDocHeaderText(tab) ?? "").Trim();   // your Site#/Reason
-                bool missingReason = string.IsNullOrWhiteSpace(reason);
-
-                // MissingRef should only matter if there are parts selected
-                bool missingRef = parts.Count > 0 && string.IsNullOrWhiteSpace(refValue);
-
-                rows.Add(new PrintTabSummary
-                {
-                    Tab = tabLabel,
-                    Type = isReturn ? "Return" : "Issue",
-                    RefValue = refValue,
-                    Parts = parts,
-                    MissingReason = missingReason,
-                    MissingRef = missingRef
-                });
-
-            }
-
-            // show summary
-            var summary = new SummaryWindow(rows, $"Warehouse: {SelectedWarehouse}   •   Tabs: {rows.Count}") { Owner = this };
-
-            if (summary.ShowDialog() != true)
-                return;
-            string outFile = GenerateMergedPdf(candidateTabs, outDir);
-            Title = "Created: " + outFile;
-
-            // OPTIONAL: open folder and highlight file
-            // System.Diagnostics.Process.Start("explorer.exe", $"/select,\"{outFile}\"");
-
-        }
+        }              
 
         private void OpenSettings_Click(object sender, RoutedEventArgs e)
         {
@@ -1685,7 +1616,19 @@ namespace MaterialReqAppV3
 
             return $"{name} ({employeeId})";
         }
-        
+
+        private string GetEmailDisplayName()
+        {
+            // Use Settings Name only (no EmployeeID)
+            string name = (_settings?.Name ?? "").Trim();
+
+            // Fallback if they never filled it out
+            if (string.IsNullOrWhiteSpace(name))
+                name = Environment.UserName;
+
+            return name;
+        }
+
         private static bool IsBlankTabName(string? title)
     {
         var t = (title ?? "").Trim();
@@ -1799,7 +1742,7 @@ namespace MaterialReqAppV3
         return candidateTabs;
     }
 
-        private string GenerateMergedPdf(List<TabItem> candidateTabs, string outDir)
+        private (string OutFile, int Pages) GenerateMergedPdf(List<TabItem> candidateTabs, string outDir)
         {
             using var outDoc = new PdfDocument();
             var printedTabs = new List<TabItem>();
@@ -1881,9 +1824,412 @@ namespace MaterialReqAppV3
             using var fs = File.Create(outFile);
             outDoc.Save(fs);
 
-            return outFile;
+            return (outFile, outDoc.Pages.Count); ;
         }
 
+        private bool SendPdfEmailOutlook(string pdfPath, List<PrintTabSummary>? rows, int pages, bool openDraft)
+        {
+            if (string.IsNullOrWhiteSpace(pdfPath) || !File.Exists(pdfPath))
+                throw new FileNotFoundException("PDF not found.", pdfPath);
+
+            rows ??= new List<PrintTabSummary>();
+
+            // Recipients
+            string to = (_settings?.EmailTo ?? "").Trim();
+            string cc = (_settings?.EmailCc ?? "").Trim();
+
+            const string requiredCc = "smartgridradio@centerpointenergy.com";
+
+            if (string.IsNullOrWhiteSpace(cc))
+            {
+                cc = requiredCc;
+            }
+            else if (!cc.Contains(requiredCc, StringComparison.OrdinalIgnoreCase))
+            {
+                cc = cc + "; " + requiredCc; // Outlook supports ; separated
+            }
+
+            if (string.IsNullOrWhiteSpace(to) && string.IsNullOrWhiteSpace(cc))
+            {
+                MessageBox.Show("Email To/CC is blank. Add recipients in Settings → Email.",
+                    "Email", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return false;
+            }
+
+            //Email Subject
+            string dateToken = DateTime.Now.ToString("MM/dd/yyyy");
+            string typeToken = GetSubjectIssueReturnToken(rows);
+
+            string subject = $"Material {typeToken} - {GetEmailDisplayName()} - {dateToken} - {pages} page(s)";
+
+
+            // Body
+            string body = BuildEmailBody(rows, pages);
+
+            object? outlookApp = null;
+            object? mailItem = null;
+            object? attachments = null;
+
+            bool didAction = false;
+
+            try
+            {
+                outlookApp = OutlookCom.GetOrStartOutlook();
+
+                // Create MailItem (0 = olMailItem)
+                mailItem = outlookApp.GetType().InvokeMember(
+                    "CreateItem",
+                    System.Reflection.BindingFlags.InvokeMethod,
+                    null,
+                    outlookApp,
+                    new object[] { 0 });
+
+                if (mailItem == null)
+                    throw new InvalidOperationException("Outlook CreateItem returned null.");
+
+                // Set fields
+                SetComProperty(mailItem, "To", to);
+                SetComProperty(mailItem, "CC", cc);
+                SetComProperty(mailItem, "Subject", subject);
+                SetComProperty(mailItem, "Body", body);
+
+                // Attach PDF
+                attachments = GetComProperty(mailItem, "Attachments");
+                if (attachments == null)
+                    throw new InvalidOperationException("Outlook Attachments collection was null.");
+
+                attachments.GetType().InvokeMember("Add",
+                    System.Reflection.BindingFlags.InvokeMethod, null, attachments,
+                    new object[] { pdfPath });
+
+                // Draft vs Send
+                if (openDraft)
+                {
+                    // false = don't modal-block the app; Outlook will open inspector
+                    mailItem.GetType().InvokeMember("Display",
+                        System.Reflection.BindingFlags.InvokeMethod, null, mailItem, new object[] { false });
+
+                    didAction = true; // draft opened
+                }
+                else
+                {
+                    mailItem.GetType().InvokeMember("Send",
+                        System.Reflection.BindingFlags.InvokeMethod, null, mailItem, null);
+
+                    didAction = true; // send invoked
+                }
+            }
+            catch (COMException ex)
+            {
+                MessageBox.Show(
+                    "Outlook email failed.\n\n" +
+                    $"HRESULT: 0x{ex.HResult:X8}\n" +
+                    ex.Message + "\n\n" +
+                    "Fixes:\n" +
+                    "• Open Outlook (classic) manually once, finish any prompts, then retry.\n" +
+                    "• If Outlook is hung, end OUTLOOK.EXE in Task Manager.\n" +
+                    "• Ensure your app is not running as Administrator.\n" +
+                    "• If you only have New Outlook, COM automation may fail.",
+                    "Email", MessageBoxButton.OK, MessageBoxImage.Error);
+
+                return false;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Outlook email failed:\n\n" + ex.Message,
+                    "Email", MessageBoxButton.OK, MessageBoxImage.Error);
+
+                return false;
+            }
+            finally
+            {
+                SafeReleaseComObject(attachments);
+                SafeReleaseComObject(mailItem);
+                SafeReleaseComObject(outlookApp);
+            }
+
+            return didAction;
+        }
+
+        private static void SetComProperty(object? target, string name, object? value)
+        {
+            if (target == null) throw new ArgumentNullException(nameof(target));
+            target.GetType().InvokeMember(name,
+                System.Reflection.BindingFlags.SetProperty, null, target, new object?[] { value });
+        }
+
+        private static object? GetComProperty(object? target, string name)
+        {
+            if (target == null) throw new ArgumentNullException(nameof(target));
+            return target.GetType().InvokeMember(name,
+                System.Reflection.BindingFlags.GetProperty, null, target, null);
+        }
+
+        private static void SafeReleaseComObject(object? obj)
+        {
+            try
+            {
+                if (obj != null && Marshal.IsComObject(obj))
+                    Marshal.FinalReleaseComObject(obj);
+            }
+            catch { /* ignore */ }
+        }
+
+        private string BuildEmailBody(List<PrintTabSummary> rows, int pages)
+        {
+            rows ??= new List<PrintTabSummary>();
+
+            var lines = new List<string>
+            {
+                $"Attached is the Material Requisition PDF {pages} page(s).",
+                "",
+                "Summary:"
+            };
+
+            foreach (var r in rows)
+            {
+                string site = (r.Tab ?? "").Trim();
+                if (string.IsNullOrWhiteSpace(site))
+                    site = "(blank)";
+
+                string type = (r.Type ?? "").Trim();
+                if (string.IsNullOrWhiteSpace(type))
+                    type = "(unknown)";
+
+                string label = (r.RefLabel ?? "").Trim();
+                if (string.IsNullOrWhiteSpace(label))
+                    label = "WorkOrder";
+
+                string val = (r.RefValue ?? "").Trim();
+                if (string.IsNullOrWhiteSpace(val))
+                    val = "(missing)";
+
+                // ✅ "# of parts, not line items" = sum of quantities
+                int partCount = 0;
+                if (r.Parts != null)
+                    partCount = r.Parts.Sum(p => Math.Max(0, p.Qty));
+
+                lines.Add($"- {site} | {type} | {label}: {val} | {partCount} parts");
+            }
+
+            lines.Add("");
+            lines.Add("Thank you!");
+            lines.Add("");
+            lines.Add(GetEmailDisplayName());
+
+            return string.Join(Environment.NewLine, lines);
+        }
+
+        private async void OpenSummary_Click(object sender, RoutedEventArgs e)
+        {
+            // Save current textbox value into selected tab
+            if (SiteTabs.SelectedItem is TabItem current && current != PlusTab && SiteNameBox != null)
+                SetTabReason(current, SiteNameBox.Text ?? "");
+
+            // Output folder
+            string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+            string outDir =
+                !string.IsNullOrWhiteSpace(_settings?.PdfOutputFolder)
+                    ? _settings.PdfOutputFolder.Trim()
+                    : Path.Combine(baseDir, "Output");
+
+            Directory.CreateDirectory(outDir);
+
+            var candidateTabs = GetCandidateTabs();
+            if (candidateTabs.Count == 0)
+            {
+                Title = "Nothing to generate (all tabs blank).";
+                return;
+            }
+
+            // Build summary rows
+            var rows = new List<PrintTabSummary>();
+
+            foreach (var tab in candidateTabs)
+            {
+                bool isReturn = GetIsReturnForTab(tab);
+
+                // Tab label: prefer DocHeader (site/reason). fallback to tab title.
+                string tabLabel = (GetDocHeaderText(tab) ?? "").Trim();
+                if (string.IsNullOrWhiteSpace(tabLabel))
+                    tabLabel = GetTabTitle(tab);
+
+                // movement code and the single reference value
+                string mtFull = GetMovementType(tab) ?? "";
+                string mtCode = ExtractMovementCode(mtFull);
+                if (string.IsNullOrWhiteSpace(mtCode))
+                    mtCode = isReturn ? "262" : "261";
+
+                string refLabel;
+                string refValue;
+
+                if (mtCode == "201" || mtCode == "202")
+                {
+                    refLabel = "CostCenter";
+                    refValue = (GetCostCenter(tab) ?? "").Trim();
+                }
+                else if (mtCode == "221" || mtCode == "222")
+                {
+                    refLabel = "WBS";
+                    refValue = (GetWbs(tab) ?? "").Trim();
+                }
+                else
+                {
+                    refLabel = "WorkOrder";
+                    refValue = (GetWorkOrder(tab) ?? "").Trim(); // includes 962 case (still WO value)
+                }
+
+
+                var parts = GetSelectedParts(tab)
+                    .Select(line => new PrintPartLine
+                    {
+                        Qty = line.Qty,
+                        Description = line.Description,
+                        Material = line.Material
+                    })
+                    .ToList();
+
+                string reason = (GetDocHeaderText(tab) ?? "").Trim();
+                bool missingReason = string.IsNullOrWhiteSpace(reason);
+
+                // only "missing ref" if they actually have parts selected
+                bool missingRef = parts.Count > 0 && string.IsNullOrWhiteSpace(refValue);
+
+                rows.Add(new PrintTabSummary
+                {
+                    Tab = tabLabel,
+                    Type = isReturn ? "Return" : "Issue",
+                    RefLabel = refLabel, // CC/WBS/WO
+                    RefValue = refValue, //Movement Type (261, 262, etc)
+                    Parts = parts,
+                    MissingReason = missingReason,
+                    MissingRef = missingRef
+                });
+            }
+
+            if (rows.Any(r => r.MissingRef))
+            {
+                MessageBox.Show(
+                    "One or more tabs are missing the required Cost Center / WBS / Work Order.\n\n" +
+                    "You can still review the Summary window to see which tab is missing it.",
+                    "Missing Required Reference",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
+
+
+            // SHOW summary first (this is what you were missing)
+            var summary = new SummaryWindow(
+                rows,
+                "Yellow = missing Site#/Reason   •   Red = missing required reference #"
+            )
+            { Owner = this };
+
+            bool? ok = summary.ShowDialog();
+            if (ok != true)
+                return; // user canceled
+
+            // Now generate the PDF (after the user confirmed)
+            string outFile;
+            int pages;
+            try
+            {
+                (outFile, pages) = GenerateMergedPdf(candidateTabs, outDir);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("PDF generation failed:\n\n" + ex.Message, "Generate PDF",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            // Do the chosen action
+            switch (summary.Action)
+            {
+                case SummaryWindow.SummaryAction.EmailDraft:
+                    await SendPdfEmailOutlookStaAsync(outFile, rows, pages, openDraft: true);
+                    break;
+
+                case SummaryWindow.SummaryAction.Email:
+                    {
+                        bool sent = await SendPdfEmailOutlookStaAsync(outFile, rows, pages, openDraft: false);
+                        if (sent)
+                        {
+                            MessageBox.Show(
+                                "Email sent successfully.",
+                                "Email",
+                                MessageBoxButton.OK,
+                                MessageBoxImage.Information);
+                        }
+                        break;
+                    }
+
+                case SummaryWindow.SummaryAction.GenerateOnly:
+                default:
+                    try
+                    {
+                        Process.Start(new ProcessStartInfo
+                        {
+                            FileName = outFile,
+                            UseShellExecute = true // required to open with default PDF viewer
+                        });
+                    }
+                    catch { }
+
+                    break;
+            }
+            Title = "Created: " + outFile;
+        }
+
+        private Task<bool> SendPdfEmailOutlookStaAsync(string pdfPath, List<PrintTabSummary>? rows, int pages, bool openDraft)
+        {
+            var tcs = new TaskCompletionSource<bool>(
+                TaskCreationOptions.RunContinuationsAsynchronously);
+
+            var thread = new Thread(() =>
+            {
+                try
+                {
+                    bool ok = SendPdfEmailOutlook(pdfPath, rows, pages, openDraft);
+                    tcs.SetResult(ok);
+                }
+                catch (Exception ex)
+                {
+                    tcs.SetException(ex);
+                }
+            });
+
+            thread.IsBackground = true;
+            thread.SetApartmentState(ApartmentState.STA);
+            thread.Start();
+
+            return tcs.Task;
+        }
+
+        private static string GetSubjectIssueReturnToken(List<PrintTabSummary>? rows)
+        {
+            rows ??= new List<PrintTabSummary>();
+
+            var types = rows
+                .Select(r => (r.Type ?? "").Trim())
+                .Where(t => t.Length > 0)
+                .Select(t => t.Equals("Return", StringComparison.OrdinalIgnoreCase) ? "Return"
+                            : t.Equals("Issue", StringComparison.OrdinalIgnoreCase) ? "Issue"
+                            : t)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            if (types.Count == 1) return types[0];
+            if (types.Count > 1) return "Issue AND Return";   // mixed tabs
+            return "Material"; // fallback
+        }
+
+        private static bool IsAppElevated()
+        {
+            using var identity = WindowsIdentity.GetCurrent();
+            var principal = new WindowsPrincipal(identity);
+            return principal.IsInRole(WindowsBuiltInRole.Administrator);
+        }
 
     }
 }

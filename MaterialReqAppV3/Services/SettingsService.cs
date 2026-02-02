@@ -32,10 +32,7 @@ namespace MaterialReqAppV3
                     var json = File.ReadAllText(path);
                     var s = JsonSerializer.Deserialize<UserSettings>(json) ?? new UserSettings();
 
-                    // Always ensure EmployeeId is set
-                    if (string.IsNullOrWhiteSpace(s.EmployeeId))
-                        s.EmployeeId = user;
-
+                    ApplyDefaults(s, user);
                     return s;
                 }
                 catch
@@ -44,8 +41,11 @@ namespace MaterialReqAppV3
                 }
             }
 
-            return new UserSettings { EmployeeId = user };
+            var fresh = new UserSettings { EmployeeId = user };
+            ApplyDefaults(fresh, user);
+            return fresh;
         }
+
 
         public void Save(UserSettings settings)
         {
@@ -60,5 +60,21 @@ namespace MaterialReqAppV3
 
             File.WriteAllText(path, json);
         }
+
+        private static void ApplyDefaults(UserSettings s, string user)
+        {
+            // Always ensure EmployeeId is set
+            if (string.IsNullOrWhiteSpace(s.EmployeeId))
+                s.EmployeeId = user;
+
+            // Email defaults / migration
+            if (string.IsNullOrWhiteSpace(s.EmailSubjectTemplate))
+                s.EmailSubjectTemplate = "Material Requisition - {Warehouse} - {Date}";
+
+            // If you want: keep draft default true unless explicitly set
+            // (bool already defaults to false in C#, but you set it true in the model;
+            // this just protects against old files that might have it missing/false if you ever change defaults)
+        }
+
     }
 }

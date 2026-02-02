@@ -1,31 +1,53 @@
-﻿using MaterialReqAppV3.Models;
-using Microsoft.Win32;
+﻿using Microsoft.Win32;
+using System;
+using System.IO;
 using System.Windows;
+using MaterialReqAppV3.Models;
 
 namespace MaterialReqAppV3
 {
     public partial class SettingsWindow : Window
     {
-        
+        // This is the edited copy the caller will read when DialogResult == true
         public UserSettings Settings { get; private set; }
 
-        public SettingsWindow(UserSettings settings)
+        public SettingsWindow(UserSettings currentSettings)
         {
             InitializeComponent();
 
-            Settings = settings;
+            // Work on a clone so Cancel doesn't mutate the app settings
+            Settings = Clone(currentSettings);
 
-            NameBox.Text = Settings.Name;
-            EmployeeIdBox.Text = Settings.EmployeeId;
-            TruckBox.Text = Settings.TruckNumber;
-            PdfFolderBox.Text = Settings.PdfOutputFolder;
-            CsvPathBox.Text = Settings.CsvPath;
+            // Ensure EmployeeId is always set
+            if (string.IsNullOrWhiteSpace(Settings.EmployeeId))
+                Settings.EmployeeId = Environment.UserName;
+
+            DataContext = Settings;
+        }
+
+        private static UserSettings Clone(UserSettings s)
+        {
+            return new UserSettings
+            {
+                Name = s.Name ?? "",
+                EmployeeId = s.EmployeeId ?? "",
+                TruckNumber = s.TruckNumber ?? "",
+                PdfOutputFolder = s.PdfOutputFolder ?? "",
+                CsvPath = s.CsvPath ?? "",
+
+                EmailTo = s.EmailTo ?? "",
+                EmailCc = s.EmailCc ?? "",
+                EmailSubjectTemplate = string.IsNullOrWhiteSpace(s.EmailSubjectTemplate)
+                    ? "Material Requisition - {Warehouse} - {Date}"
+                    : s.EmailSubjectTemplate,
+                EmailOpenDraftInsteadOfSend = s.EmailOpenDraftInsteadOfSend
+            };
         }
 
         private void BrowsePdfFolder_Click(object sender, RoutedEventArgs e)
         {
-            // WPF-only folder picker workaround (no WinForms)
-            var dlg = new Microsoft.Win32.OpenFileDialog
+            // "Pick folder" trick using OpenFileDialog
+            var dlg = new OpenFileDialog
             {
                 Title = "Select PDF output folder",
                 CheckFileExists = false,
@@ -36,12 +58,11 @@ namespace MaterialReqAppV3
 
             if (dlg.ShowDialog() == true)
             {
-                var folder = System.IO.Path.GetDirectoryName(dlg.FileName);
+                var folder = Path.GetDirectoryName(dlg.FileName);
                 if (!string.IsNullOrWhiteSpace(folder))
-                    PdfFolderBox.Text = folder;
+                    Settings.PdfOutputFolder = folder;   // ✅ updates bound TextBox automatically
             }
         }
-
 
         private void BrowseCsv_Click(object sender, RoutedEventArgs e)
         {
@@ -52,20 +73,14 @@ namespace MaterialReqAppV3
             };
 
             if (dlg.ShowDialog() == true)
-                CsvPathBox.Text = dlg.FileName;
+                Settings.CsvPath = dlg.FileName;         // ✅ updates bound TextBox automatically
         }
 
         private void Save_Click(object sender, RoutedEventArgs e)
         {
-            Settings.Name = (NameBox.Text ?? "").Trim();
-            Settings.TruckNumber = (TruckBox.Text ?? "").Trim();
-            Settings.PdfOutputFolder = (PdfFolderBox.Text ?? "").Trim();
-            Settings.CsvPath = (CsvPathBox.Text ?? "").Trim();
-
-            DialogResult = true;
+            DialogResult = true; // caller will read Settings and save it
             Close();
         }
-
 
         private void Cancel_Click(object sender, RoutedEventArgs e)
         {

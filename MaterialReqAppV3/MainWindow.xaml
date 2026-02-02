@@ -4,50 +4,49 @@
         Title="Material Requisition App"
         WindowStartupLocation="CenterScreen"
         WindowState="Maximized"
-        Background="{DynamicResource AppBg}">
+        Background="{DynamicResource AppBackground}"
+        Icon="Assets/MaterialReqAppIcon.ico">
 
     <Window.Resources>
 
-        <!-- =========================
-             SOFT THEME (LIGHT)
-             ========================= -->
-        <SolidColorBrush x:Key="AppBg" Color="#F3F5F8"/>
-        <SolidColorBrush x:Key="SurfaceBg" Color="#FAFBFC"/>
-        <SolidColorBrush x:Key="SurfaceBorder" Color="#D7DCE3"/>
-        <SolidColorBrush x:Key="TextPrimary" Color="#1F2937"/>
-        <SolidColorBrush x:Key="TextSecondary" Color="#4B5563"/>
-        <SolidColorBrush x:Key="HoverOverlay" Color="#14000000"/>
-
-        <!-- TextBox with watermark (uses Tag as the watermark text) -->
-        <Style x:Key="WatermarkTextBoxStyle" TargetType="TextBox">
-            <Setter Property="Padding" Value="8,3"/>
+                <!-- TextBox with watermark (uses Tag as the watermark text) -->
+        <Style x:Key="WatermarkTextBoxStyle" 
+               TargetType="TextBox">
+            <Setter Property="Padding" 
+                    Value="8,3"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="TextBox">
                         <Grid>
                             <Border Background="{TemplateBinding Background}"
-                    BorderBrush="{TemplateBinding BorderBrush}"
-                    BorderThickness="{TemplateBinding BorderThickness}"
-                    CornerRadius="6"/>
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="6"/>
 
                             <TextBlock x:Name="Watermark"
-                       Text="{TemplateBinding Tag}"
-                       Foreground="#9AA3AF"
-                       Margin="{TemplateBinding Padding}"
-                       VerticalAlignment="Center"
-                       IsHitTestVisible="False"
-                       Visibility="Collapsed"/>
+                                       Text="{TemplateBinding Tag}"
+                                       Foreground="{DynamicResource WatermarkText}"
+                                       Margin="{TemplateBinding Padding}"
+                                       VerticalAlignment="Center"
+                                       IsHitTestVisible="False"
+                                       Visibility="Collapsed"/>
 
                             <ScrollViewer x:Name="PART_ContentHost"
-                          Margin="{TemplateBinding Padding}"/>
+                                          Margin="{TemplateBinding Padding}"/>
                         </Grid>
 
                         <ControlTemplate.Triggers>
-                            <Trigger Property="Text" Value="">
-                                <Setter TargetName="Watermark" Property="Visibility" Value="Visible"/>
+                            <Trigger Property="Text" 
+                                     Value="">
+                                <Setter TargetName="Watermark" 
+                                        Property="Visibility" 
+                                        Value="Visible"/>
                             </Trigger>
-                            <Trigger Property="IsKeyboardFocused" Value="True">
-                                <Setter TargetName="Watermark" Property="Visibility" Value="Collapsed"/>
+                            <Trigger Property="IsKeyboardFocused" 
+                                     Value="True">
+                                <Setter TargetName="Watermark" 
+                                        Property="Visibility" 
+                                        Value="Collapsed"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -112,8 +111,8 @@
                                     Width="22"
                                     Height="22"
                                     CornerRadius="11"
-                                    Background="#F1F3F5"
-                                    BorderBrush="#CFCFCF"
+                                    Background="{DynamicResource CardBackground}"
+                                    BorderBrush="{DynamicResource CardBorder}"
                                     BorderThickness="1"
                                     HorizontalAlignment="Right"
                                     Margin="2">
@@ -262,7 +261,7 @@
         <Style x:Key="AttachedTabItemStyle" TargetType="TabItem">
             <Setter Property="Margin" Value="0,0,2,0"/>
             <Setter Property="Padding" Value="12,6"/>
-            <Setter Property="Background" Value="#E9EDF3"/>
+            <Setter Property="Background" Value="{DynamicResource TileFill}"/>
             <Setter Property="BorderBrush" Value="{DynamicResource SurfaceBorder}"/>
             <Setter Property="BorderThickness" Value="1"/>
 
@@ -270,50 +269,71 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="TabItem">
                         <Border x:Name="Bd"
-                        Background="{TemplateBinding Background}"
-                        BorderBrush="{TemplateBinding BorderBrush}"
-                        BorderThickness="{TemplateBinding BorderThickness}"
-                        CornerRadius="8,8,0,0"
-                        Padding="{TemplateBinding Padding}">
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="8,8,0,0"
+                                Padding="{TemplateBinding Padding}">
+                            
                             <Grid>
                                 <!-- Header only -->
                                 <ContentPresenter x:Name="HeaderPresenter"
-                                          ContentSource="Header"
-                                          VerticalAlignment="Center"
-                                          HorizontalAlignment="Center"
-                                          TextElement.FontWeight="SemiBold"
-                                          TextElement.Foreground="{DynamicResource TextSecondary}"/>
+                                                  ContentSource="Header"
+                                                  VerticalAlignment="Center"
+                                                  HorizontalAlignment="Center"
+                                                  TextElement.FontWeight="SemiBold"
+                                                  TextElement.Foreground="{DynamicResource TextSecondary}"/>
 
                                 <!-- Selected indicator -->
                                 <Border x:Name="Indicator"
-                                Height="3"
-                                VerticalAlignment="Bottom"
-                                HorizontalAlignment="Stretch"
-                                Background="#3B82F6"
-                                Opacity="0"/>
+                                        Height="3"
+                                        VerticalAlignment="Bottom"
+                                        HorizontalAlignment="Stretch"
+                                        Background="{DynamicResource PrimaryBg}"
+                                        Opacity="0"/>
                             </Grid>
                         </Border>
 
                         <ControlTemplate.Triggers>
                             <!-- Selected tab -->
-                            <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource SurfaceBg}"/>
-                                <Setter TargetName="Bd" Property="BorderThickness" Value="1,1,1,0"/>
-                                <Setter TargetName="Bd" Property="Margin" Value="0,0,2,-1"/>
+                            <Trigger Property="IsSelected" 
+                                     Value="True">
+                                <Setter TargetName="Bd" 
+                                        Property="Background" 
+                                        Value="{DynamicResource SurfaceBg}"/>
+                                <Setter TargetName="Bd" 
+                                        Property="BorderThickness" 
+                                        Value="1,1,1,0"/>
+                                <Setter TargetName="Bd" 
+                                        Property="Margin" 
+                                        Value="0,0,2,-1"/>
 
-                                <Setter TargetName="HeaderPresenter" Property="TextElement.FontWeight" Value="Bold"/>
-                                <Setter TargetName="HeaderPresenter" Property="TextElement.Foreground" Value="{DynamicResource TextPrimary}"/>
-                                <Setter TargetName="Indicator" Property="Opacity" Value="1"/>
+                                <Setter TargetName="HeaderPresenter" 
+                                        Property="TextElement.FontWeight" 
+                                        Value="Bold"/>
+                                <Setter TargetName="HeaderPresenter" 
+                                        Property="TextElement.Foreground" 
+                                        Value="{DynamicResource TextPrimary}"/>
+                                <Setter TargetName="Indicator" 
+                                        Property="Opacity" 
+                                        Value="1"/>
                             </Trigger>
 
                             <!-- Hover -->
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="#EEF2F7"/>
-                                <Setter TargetName="HeaderPresenter" Property="TextElement.Foreground" Value="{DynamicResource TextPrimary}"/>
+                            <Trigger Property="IsMouseOver" 
+                                     Value="True">
+                                <Setter TargetName="Bd" 
+                                        Property="Background" 
+                                        Value="{DynamicResource TileFillHover}"/>
+                                <Setter TargetName="HeaderPresenter" 
+                                        Property="TextElement.Foreground" 
+                                        Value="{DynamicResource TextPrimary}"/>
                             </Trigger>
 
-                            <Trigger Property="IsEnabled" Value="False">
-                                <Setter Property="Opacity" Value="0.6"/>
+                            <Trigger Property="IsEnabled" 
+                                     Value="False">
+                                <Setter Property="Opacity" 
+                                        Value="0.6"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -334,32 +354,39 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Border x:Name="Bd"
-                        Background="{TemplateBinding Background}"
-                        CornerRadius="8">
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="8">
                             <ContentPresenter
-                        HorizontalAlignment="Center"
-                        VerticalAlignment="Center"/>
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"/>
                         </Border>
+                        
                         <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="#14000000"/>
+                            <Trigger Property="IsMouseOver" 
+                                     Value="True">
+                                <Setter TargetName="Bd" 
+                                        Property="Background" 
+                                        Value="{DynamicResource HoverOverlay}"/>
                             </Trigger>
-                            <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="#22000000"/>
+                            
+                            <Trigger Property="IsPressed" 
+                                     Value="True">
+                                <Setter TargetName="Bd" 
+                                        Property="Background" 
+                                        Value="{DynamicResource PressedOverlay}"/>
                             </Trigger>
-                            <Trigger Property="IsEnabled" Value="False">
-                                <Setter Property="Opacity" Value="0.5"/>
+                            
+                            <Trigger Property="IsEnabled" 
+                                     Value="False">
+                                <Setter Property="Opacity" 
+                                        Value="0.5"/>
                             </Trigger>
+                            
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
         </Style>
-
-
-
-
-
 
     </Window.Resources>
 
@@ -573,11 +600,11 @@
          BOTTOM BAR
          ======================= -->
         <Grid Grid.Row="2" Margin="0,10,0,0">
-            <Button Content="Generate PDF"
+            <Button Content="Summary"
                 HorizontalAlignment="Right"
                 Height="34"
                 Padding="18,0"
-                Click="GeneratePdf_Click"/>
+                Click="OpenSummary_Click"/>
         </Grid>
     </Grid>
 

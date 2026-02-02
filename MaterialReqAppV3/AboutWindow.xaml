@@ -1,0 +1,39 @@
+﻿<Window x:Class="MaterialReqAppV3.AboutWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="About"
+        Height="320" Width="520"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        Background="{DynamicResource AppBackground}"
+        Icon="pack://application:,,,/Assets/MaterialReqAppIcon.ico">
+    <Grid Margin="18">
+        <Border CornerRadius="18"
+                Background="{DynamicResource CardBackground}"
+                BorderBrush="{DynamicResource CardBorder}"
+                BorderThickness="1"
+                Padding="18">
+            <StackPanel>
+                <TextBlock Text="Material Requisition"
+                           FontSize="22"
+                           FontWeight="Bold"
+                           Foreground="{DynamicResource TextPrimary}"/>
+                <TextBlock x:Name="VersionText"
+                           Margin="0,6,0,0"
+                           Foreground="{DynamicResource TextSecondary}"/>
+
+                <TextBlock Margin="0,14,0,0"
+                           TextWrapping="Wrap"
+                           Foreground="{DynamicResource TextSecondary}"
+                           Text="Attribution: icon credit will be added here (per your license info)."/>
+
+                <Button Content="Close"
+                        Margin="0,18,0,0"
+                        Width="120"
+                        Height="34"
+                        HorizontalAlignment="Left"
+                        Click="Close_Click"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>

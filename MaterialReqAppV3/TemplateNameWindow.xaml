@@ -5,7 +5,8 @@
         SizeToContent="WidthAndHeight"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
-        ShowInTaskbar="False">
+        ShowInTaskbar="False"
+        Icon="Assets/MaterialReqAppIcon.ico">
 
     <Grid Margin="12">
         <Grid.RowDefinitions>

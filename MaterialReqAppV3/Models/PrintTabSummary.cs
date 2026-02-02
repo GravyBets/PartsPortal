@@ -10,6 +10,8 @@ namespace MaterialReqAppV3.Models
         public List<PrintPartLine> Parts { get; set; } = new();
         public bool MissingReason { get; set; }
         public bool MissingRef { get; set; }
+        public string RefLabel { get; set; } = "";   // "CostCenter", "WBS", or "WorkOrder"
+
     }
 
     public class PrintPartLine

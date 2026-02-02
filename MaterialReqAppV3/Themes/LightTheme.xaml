@@ -2,13 +2,35 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <!-- =========================
-         SOFT THEME (LIGHT)
+         LIGHT THEME
          ========================= -->
-    <SolidColorBrush x:Key="AppBg" Color="#F3F5F8"/>
+
+    <!-- App + cards -->
+    <SolidColorBrush x:Key="AppBackground" Color="#F3F5F8"/>
+    <SolidColorBrush x:Key="CardBackground" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="CardBorder" Color="#D7DCE3"/>
+
+    <!-- Surfaces used inside cards -->
     <SolidColorBrush x:Key="SurfaceBg" Color="#FAFBFC"/>
     <SolidColorBrush x:Key="SurfaceBorder" Color="#D7DCE3"/>
-    <SolidColorBrush x:Key="TextPrimary" Color="#1F2937"/>
-    <SolidColorBrush x:Key="TextSecondary" Color="#4B5563"/>
+
+    <!-- Text -->
+    <SolidColorBrush x:Key="TextPrimary" Color="#0F172A"/>
+    <SolidColorBrush x:Key="TextSecondary" Color="#475569"/>
+
+    <!-- Primary brand -->
+    <SolidColorBrush x:Key="PrimaryBg" Color="#2563EB"/>
+    <SolidColorBrush x:Key="PrimaryBorder" Color="#1D4ED8"/>
+
+    <!-- Tile background (this will fix the “washed out” look) -->
+    <SolidColorBrush x:Key="TileFill" Color="#F3F6FA"/>
+    <SolidColorBrush x:Key="TileFillHover" Color="#E9EEF6"/>
+    <SolidColorBrush x:Key="TileFillPressed" Color="#DEE6F2"/>
+
+    <!-- Overlays / Misc -->
     <SolidColorBrush x:Key="HoverOverlay" Color="#14000000"/>
+    <SolidColorBrush x:Key="PressedOverlay" Color="#22000000"/>
+    <SolidColorBrush x:Key="WatermarkText" Color="#9AA3AF"/>
+
 
 </ResourceDictionary>

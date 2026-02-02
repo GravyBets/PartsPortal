@@ -3,48 +3,397 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:MaterialReqAppV3"
         mc:Ignorable="d"
-        Title="WarehouseSelectWindow" 
-        Height="450" 
-        Width="800"
-        WindowStartupLocation="CenterScreen">
-    <Grid Margin="20">
+        Title="Select Warehouse"
+        Height="560"
+        Width="920"
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="NoResize"
+        Background="{DynamicResource AppBackground}"
+        Icon="Assets/MaterialReqAppIcon.ico">
 
+    <Window.Resources>
+
+        <!-- Card -->
+        <Style x:Key="Card" TargetType="Border">
+            <Setter Property="CornerRadius" Value="18"/>
+            <Setter Property="Background" Value="{DynamicResource CardBackground}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource CardBorder}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="18"/>
+        </Style>
+
+
+        <!-- Light/Dark slider toggle (no clipping: thumb snaps Left/Right with inset) -->
+        <Style x:Key="ThemeSliderToggleStyle" TargetType="ToggleButton">
+            <Setter Property="Width" Value="92"/>
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="BorderThickness" Value="2"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource CardBorder}"/>
+            <Setter Property="Background" Value="#E2E8F0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border x:Name="Track"
+                        CornerRadius="16"
+                        Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}">
+                            <!-- A little inner padding prevents edge clipping -->
+                            <Grid Margin="3" ClipToBounds="True">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Icons -->
+                                <TextBlock x:Name="Sun"
+                                   Grid.Column="0"
+                                   Text="☀"
+                                   FontSize="14"
+                                   VerticalAlignment="Center"
+                                   HorizontalAlignment="Center"
+                                   Foreground="#0F172A"
+                                   Opacity="0.80"/>
+
+                                <TextBlock x:Name="Moon"
+                                   Grid.Column="1"
+                                   Text="🌙"
+                                   FontSize="14"
+                                   VerticalAlignment="Center"
+                                   HorizontalAlignment="Center"
+                                   Foreground="#0F172A"
+                                   Opacity="0.55"/>
+
+                                <!-- Thumb spans both columns so it can align left/right -->
+                                <Border x:Name="Thumb"
+                                Grid.ColumnSpan="2"
+                                Panel.ZIndex="5"
+                                Width="40"
+                                CornerRadius="14"
+                                Background="#F8FAFC"
+                                BorderBrush="#CBD5E1"
+                                BorderThickness="1"
+                                HorizontalAlignment="Left"
+                                Margin="1,0,1,0"/>
+                            </Grid>
+                        </Border>
+
+                        <ControlTemplate.Triggers>
+
+                            <!-- Checked = Dark -->
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Track" Property="Background" Value="{DynamicResource PrimaryBg}"/>
+                                <Setter TargetName="Track" Property="BorderBrush" Value="{DynamicResource PrimaryBorder}"/>
+
+                                <!-- Snap thumb to the right (no hard-coded X movement) -->
+                                <Setter TargetName="Thumb" Property="HorizontalAlignment" Value="Right"/>
+
+                                <Setter TargetName="Moon" Property="Opacity" Value="0.85"/>
+                                <Setter TargetName="Sun" Property="Opacity" Value="0.55"/>
+                                <Setter TargetName="Thumb" Property="BorderBrush" Value="#94A3B8"/>
+                            </Trigger>
+
+                            <!-- Hover -->
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Track" Property="BorderBrush" Value="#94A3B8"/>
+                            </Trigger>
+
+                            <!-- Disabled -->
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.55"/>
+                            </Trigger>
+
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+
+        <!-- Tile button -->
+        <Style x:Key="TileButton" TargetType="Button">
+            <Setter Property="Height" Value="78"/>
+            <Setter Property="FontSize" Value="18"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+
+            <!-- subtle filled surface -->
+            <Setter Property="Background" Value="{DynamicResource TileFill}"/>
+
+            <Setter Property="BorderBrush" Value="{DynamicResource CardBorder}"/>
+            <Setter Property="BorderThickness" Value="2"/>
+            <Setter Property="Padding" Value="18,0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="16">
+                            <ContentPresenter VerticalAlignment="Center"
+                                              HorizontalAlignment="Center"/>
+                        </Border>
+
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" 
+                                     Value="True">
+                                <Setter Property="Background" 
+                                        Value="{DynamicResource TileFillHover}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" 
+                                     Value="True">
+                                <Setter Property="Background" 
+                                        Value="{DynamicResource TileFillPressed}"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" 
+                                     Value="False">
+                                <Setter Property="Opacity" 
+                                        Value="0.6"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+
+        <!-- Primary tile (Building D) -->
+        <Style x:Key="PrimaryTileButton" TargetType="Button" BasedOn="{StaticResource TileButton}">
+            <!-- Let it stretch to match the 3-row stack -->
+            <Setter Property="Height" Value="NaN"/>
+            <Setter Property="MinHeight" Value="0"/>
+
+            <Setter Property="FontSize" Value="22"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Background" Value="{DynamicResource PrimaryBg}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBorder}"/>
+            <Setter Property="BorderThickness" Value="2"/>
+
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="VerticalContentAlignment" Value="Top"/>
+
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        CornerRadius="18">
+                            <ContentPresenter Margin="18"
+                                      HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                      VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                        </Border>
+
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="{DynamicResource PrimaryBorder}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Background" Value="#1E40AF"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.55"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+
+        <!-- Footer link button -->
+        <Style x:Key="FooterButton" TargetType="Button">
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondary}"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="10,6"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="10">
+                            <ContentPresenter VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+    </Window.Resources>
+
+    <Grid Margin="18">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <TextBlock Text="Select the warehouse you are ordering parts for:"
-               FontSize="20"
-               FontWeight="SemiBold"
-               Margin="0,0,0,20"/>
+        <!-- Header -->
+        <Border Style="{StaticResource Card}" Grid.Row="0">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
 
-        <UniformGrid Grid.Row="1" Rows="2" Columns="2">
+                <!-- Title/Sub -->
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="Select Warehouse"
+                       FontSize="22"
+                       FontWeight="Bold"
+                       Foreground="{DynamicResource TextPrimary}"/>
+                    <TextBlock Text="Choose the warehouse you are ordering parts for."
+                       Margin="0,4,0,0"
+                       Foreground="{DynamicResource TextSecondary}"/>
+                </StackPanel>
 
-            <Button Content="Warehouse - Building D"
-                FontSize="18"
-                Margin="10"
-                Click="Warehouse_Click"/>
+                <!-- Light/Dark slider toggle (right) -->
+                <ToggleButton Grid.Column="1"
+                      x:Name="ThemeToggle"
+                      Style="{StaticResource ThemeSliderToggleStyle}"
+                      VerticalAlignment="Center"
+                      Margin="12,0,0,0"
+                      ToolTip="Toggle Light / Dark mode"
+                      Checked="ThemeToggle_Checked"
+                      Unchecked="ThemeToggle_Unchecked"/>
+            </Grid>
+        </Border>
 
-            <Button Content="Warehouse - Building B"
-                FontSize="18"
-                Margin="10"
-                Click="Warehouse_Click"/>
 
-            <Button Content="Warehouse - Building A"
-                FontSize="18"
-                Margin="10"
-                Click="Warehouse_Click"/>
+        <!-- Body -->
+        <Border Style="{StaticResource Card}" Grid.Row="1" Margin="0,14,0,14">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="2*"/>
+                    <ColumnDefinition Width="3*"/>
+                </Grid.ColumnDefinitions>
 
-            <Button Content="Warehouse - Building F"
-                FontSize="18"
-                Margin="10"
-                Click="Warehouse_Click"/>
+                <!-- Headers -->
+                <TextBlock Grid.Column="0"
+                   Text="Primary"
+                   FontWeight="Bold"
+                   Foreground="{DynamicResource TextSecondary}"
+                   Margin="2,0,0,10"/>
 
-        </UniformGrid>
+                <TextBlock Grid.Column="1"
+                   Text="Other Warehouses"
+                   FontWeight="Bold"
+                   Foreground="{DynamicResource TextSecondary}"
+                   Margin="2,0,0,10"/>
 
+                <!-- Shared rows for tiles -->
+                <Grid Grid.ColumnSpan="2" Margin="0,26,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="2*"/>
+                        <ColumnDefinition Width="3*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Primary spans all 3 rows (same height as the full stack) -->
+                    <Button Grid.Column="0"
+                    Grid.Row="0"
+                    Grid.RowSpan="3"
+                    Style="{StaticResource PrimaryTileButton}"
+                    Tag="Warehouse - Building D"
+                    Click="Warehouse_Click"
+                    Margin="0,0,14,0">
+                        <StackPanel>
+                            <TextBlock Text="Warehouse - Building D"
+                               FontSize="22"
+                               FontWeight="SemiBold"
+                               Foreground="White"/>
+                            <TextBlock Text="Meter Lab"
+                               FontSize="14"
+                               Foreground="#DCE7FF"
+                               Margin="0,8,0,0"/>
+                        </StackPanel>
+                    </Button>
+
+                    <!-- Other warehouses (A first, then B, then F) -->
+                    <Button Grid.Column="1"
+                    Grid.Row="0"
+                    Style="{StaticResource TileButton}"
+                    Tag="Warehouse - Building A"
+                    Click="Warehouse_Click"
+                    Margin="0,0,0,10">
+                        <StackPanel>
+                            <TextBlock Text="Warehouse - Building A"
+                               FontSize="18"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextPrimary}"
+                               HorizontalAlignment="Center"/>
+                            <TextBlock Text="Central"
+                               FontSize="13"
+                               Foreground="{DynamicResource TextSecondary}"
+                               Margin="0,6,0,0"
+                               HorizontalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+
+                    <Button Grid.Column="1"
+                    Grid.Row="1"
+                    Style="{StaticResource TileButton}"
+                    Tag="Warehouse - Building B"
+                    Click="Warehouse_Click"
+                    Margin="0,0,0,10">
+                        <StackPanel>
+                            <TextBlock Text="Warehouse - Building B"
+                               FontSize="18"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextPrimary}"
+                               HorizontalAlignment="Center"/>
+                            <TextBlock Text="Substation"
+                               FontSize="13"
+                               Foreground="{DynamicResource TextSecondary}"
+                               Margin="0,6,0,0"
+                               HorizontalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+
+                    <Button Grid.Column="1"
+                    Grid.Row="2"
+                    Style="{StaticResource TileButton}"
+                    Tag="Warehouse - Building F"
+                    Click="Warehouse_Click">
+                        <StackPanel>
+                            <TextBlock Text="Warehouse - Building F"
+                               FontSize="18"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextPrimary}"
+                               HorizontalAlignment="Center"/>
+                            <TextBlock Text="Transmission"
+                               FontSize="13"
+                               Foreground="{DynamicResource TextSecondary}"
+                               Margin="0,6,0,0"
+                               HorizontalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                </Grid>
+            </Grid>
+        </Border>
+
+
+
+        <!-- Footer buttons -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center">
+            <Button Style="{StaticResource FooterButton}" Content="About App" Click="About_Click" Margin="0,0,18,0"/>
+            <Button Style="{StaticResource FooterButton}" Content="Bug / Feature Request" Click="BugFeature_Click"/>
+        </StackPanel>
     </Grid>
-
 </Window>
