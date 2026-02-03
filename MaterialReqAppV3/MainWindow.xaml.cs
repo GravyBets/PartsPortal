@@ -457,17 +457,22 @@ namespace MaterialReqAppV3
 
             Border MakeCard(UIElement child, Thickness margin)
             {
-                return new Border
+                var b = new Border
                 {
-                    Background = (System.Windows.Media.Brush)FindResource("SurfaceBg"),
-                    BorderBrush = (System.Windows.Media.Brush)FindResource("SurfaceBorder"),
                     BorderThickness = new Thickness(1),
                     CornerRadius = new CornerRadius(12),
                     Padding = new Thickness(12),
                     Margin = margin,
                     Child = child
                 };
+
+                // ✅ Dynamic theme tracking
+                b.SetResourceReference(Border.BackgroundProperty, "SurfaceBg");
+                b.SetResourceReference(Border.BorderBrushProperty, "SurfaceBorder");
+
+                return b;
             }
+
 
             // ============================================================
             // LEFT: Parts Browser (search + tabs + Add button) spans rows 0-1

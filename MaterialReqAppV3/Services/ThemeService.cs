@@ -8,6 +8,8 @@ namespace MaterialReqAppV3.Services
     {
         public static bool IsDark { get; private set; }
 
+        public static event EventHandler? ThemeChanged;
+
         private static readonly Uri LightUri = new Uri("Themes/LightTheme.xaml", UriKind.Relative);
         private static readonly Uri DarkUri = new Uri("Themes/DarkTheme.xaml", UriKind.Relative);
 
@@ -20,22 +22,22 @@ namespace MaterialReqAppV3.Services
 
             var dictionaries = app.Resources.MergedDictionaries;
 
-            // Remove existing theme dictionary if present
+            // Find current theme dictionary (if any)
             var existingTheme = dictionaries.FirstOrDefault(d =>
                 d.Source != null &&
-                (d.Source.OriginalString.EndsWith("Themes/LightTheme.xaml", StringComparison.OrdinalIgnoreCase) ||
-                 d.Source.OriginalString.EndsWith("Themes/DarkTheme.xaml", StringComparison.OrdinalIgnoreCase) ||
-                 d.Source.OriginalString.EndsWith("LightTheme.xaml", StringComparison.OrdinalIgnoreCase) ||
+                (d.Source.OriginalString.EndsWith("LightTheme.xaml", StringComparison.OrdinalIgnoreCase) ||
                  d.Source.OriginalString.EndsWith("DarkTheme.xaml", StringComparison.OrdinalIgnoreCase)));
 
             if (existingTheme != null)
                 dictionaries.Remove(existingTheme);
 
-            // Add the requested theme dictionary LAST so it wins
-            dictionaries.Add(new ResourceDictionary
-            {
-                Source = dark ? DarkUri : LightUri
-            });
+            var next = new ResourceDictionary { Source = dark ? DarkUri : LightUri };
+
+            // ✅ Theme must be LAST so it wins
+            dictionaries.Add(next);
+
+            ThemeChanged?.Invoke(null, EventArgs.Empty);
         }
+
     }
 }

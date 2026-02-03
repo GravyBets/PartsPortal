@@ -1,8 +1,10 @@
 ﻿using MaterialReqAppV3.Models;
 using MaterialReqAppV3.Services;
 using System;
+using System.Diagnostics;
 using System.Reflection;
 using System.Windows;
+using System.Windows.Controls;
 
 namespace MaterialReqAppV3
 {
@@ -18,60 +20,138 @@ namespace MaterialReqAppV3
 
         private void Cancel_Click(object sender, RoutedEventArgs e) => Close();
 
+     
+
         private void Send_Click(object sender, RoutedEventArgs e)
         {
-            string kind = ((TypeCombo.SelectedItem as System.Windows.Controls.ComboBoxItem)?.Content?.ToString() ?? "Bug").Trim();
-            string text = (DetailsBox.Text ?? "").Trim();
+            // HARD-CODED recipients (not from settings)
+            const string to = "smartgridradio@centerpointenergy.com";
+            const string cc = "alexander.pletan@centerpointenergy.com";
 
-            if (string.IsNullOrWhiteSpace(text))
-            {
-                MessageBox.Show("Please enter details first.", "Bug/Feature", MessageBoxButton.OK, MessageBoxImage.Information);
-                return;
-            }
+            string type =
+                (TypeCombo.SelectedItem as ComboBoxItem)?.Content?.ToString()
+                ?? "Bug";
 
-            // Pick recipient: from settings if provided, otherwise you’ll replace this once
-            string to = (_settings.BugReportToEmail ?? "").Trim();
-            if (string.IsNullOrWhiteSpace(to))
-                to = "YOUR.EMAIL@COMPANY.COM"; // <-- replace once, or set in Settings later
+            string details = (DetailsBox.Text ?? "").Trim();
 
-            var v = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "";
-            string subject = $"MaterialReqApp - {kind} - v{v} - {Environment.UserName} - {DateTime.Now:MM/dd/yyyy}";
+            // If you’re using watermark text inside the textbox, ignore it if user never typed
+            // (only needed if your watermark inserts actual text into DetailsBox.Text)
+            if (string.IsNullOrWhiteSpace(details))
+                {
+                    MessageBox.Show("Please enter details before creating the email draft.",
+                        "Bug / Feature", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
 
-            string body =
-                $"{kind} report\n\n" +
-                $"User: {Environment.UserName}\n" +
-                $"Machine: {Environment.MachineName}\n" +
-                $"Time: {DateTime.Now}\n" +
-                $"Version: {v}\n\n" +
-                "Details:\n" +
-                text;
+            string subject = $"Material Req App - {type} - {DateTime.Now:yyyy-MM-dd HH:mm}";
+
+            string body = BuildBugFeatureEmailBody(type, details);
+
+            object? outlookApp = null;
+            object? mailItem = null;
 
             try
             {
-                object outlookApp = OutlookCom.GetOrStartOutlook();
+                outlookApp = OutlookCom.GetOrStartOutlook();
 
-                object mailItem = outlookApp.GetType().InvokeMember(
+                // 0 = olMailItem
+                mailItem = outlookApp.GetType().InvokeMember(
                     "CreateItem",
                     BindingFlags.InvokeMethod,
                     null,
                     outlookApp,
                     new object[] { 0 });
 
-                // basic COM set
-                mailItem.GetType().InvokeMember("To", BindingFlags.SetProperty, null, mailItem, new object[] { to });
-                mailItem.GetType().InvokeMember("Subject", BindingFlags.SetProperty, null, mailItem, new object[] { subject });
-                mailItem.GetType().InvokeMember("Body", BindingFlags.SetProperty, null, mailItem, new object[] { body });
+            if (mailItem == null)
+                throw new InvalidOperationException("Outlook CreateItem returned null.");
 
-                // open draft
-                mailItem.GetType().InvokeMember("Display", BindingFlags.InvokeMethod, null, mailItem, new object[] { false });
-            }
+                SetComProperty(mailItem, "To", to);
+                SetComProperty(mailItem, "CC", cc);
+                SetComProperty(mailItem, "Subject", subject);
+                SetComProperty(mailItem, "Body", body);
+
+                // Open as draft (non-modal)
+                mailItem.GetType().InvokeMember(
+                    "Display",
+                    BindingFlags.InvokeMethod,
+                    null,
+                    mailItem,
+                    new object[] { false });
+
+                Close();
+                }
             catch (Exception ex)
             {
-                MessageBox.Show("Could not open Outlook draft:\n\n" + ex.Message, "Bug/Feature",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
+                 MessageBox.Show("Failed to open Outlook draft:\n\n" + ex.Message,
+                    "Bug / Feature", MessageBoxButton.OK, MessageBoxImage.Error);
             }
-
-            Close();
+                finally
+            {
+                SafeReleaseComObject(mailItem);
+                SafeReleaseComObject(outlookApp);
+            }
         }
+
+    private static string BuildBugFeatureEmailBody(string type, string details)
+    {
+        // App version info
+        var asm = Assembly.GetEntryAssembly() ?? Assembly.GetExecutingAssembly();
+        string appVersion = asm.GetName().Version?.ToString() ?? "(unknown)";
+        string exePath = asm.Location ?? "";
+        string fileVersion = "(unknown)";
+
+        try
+        {
+            if (!string.IsNullOrWhiteSpace(exePath))
+                fileVersion = FileVersionInfo.GetVersionInfo(exePath).FileVersion ?? "(unknown)";
+        }
+        catch { /* ignore */ }
+
+        // Machine/user info
+        string machine = Environment.MachineName;
+        string user = Environment.UserName;
+        string domain = Environment.UserDomainName;
+        string os = Environment.OSVersion.ToString();
+        string dotnet = Environment.Version.ToString(); // runtime version
+
+        string timestamp = DateTime.Now.ToString("MM/dd/yyyy hh:mm tt");
+
+        return
+            $"{details}\n\n" +
+            "----------------------------------------\n" +
+            $"Type: {type}\n" +
+            $"Time: {timestamp}\n" +
+            $"PC: {machine}\n" +
+            $"User: {domain}\\{user}\n" +
+            $"OS: {os}\n" +
+            $".NET: {dotnet}\n" +
+            $"App Version: {appVersion}\n" +
+            $"File Version: {fileVersion}\n" +
+            $"App Path: {exePath}\n" +
+            "----------------------------------------\n";
     }
+
+    // Helpers (keep these if you already have them)
+    private static void SetComProperty(object target, string name, object? value)
+    {
+        target.GetType().InvokeMember(
+            name,
+            BindingFlags.SetProperty,
+            null,
+            target,
+            new object?[] { value });
+    }
+
+    private static void SafeReleaseComObject(object? obj)
+    {
+        try
+        {
+            if (obj != null && System.Runtime.InteropServices.Marshal.IsComObject(obj))
+                System.Runtime.InteropServices.Marshal.FinalReleaseComObject(obj);
+        }
+        catch { }
+    }
+
+
+}
 }

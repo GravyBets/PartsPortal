@@ -5,6 +5,10 @@
     <TargetFramework>net8.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+	  <Version>3.2.2</Version>
+	  <AssemblyVersion>3.2.2.0</AssemblyVersion>
+	  <FileVersion>3.2.2.0</FileVersion>
+	  <InformationalVersion>3.2.2 (Not Released)</InformationalVersion>
     <UseWPF>true</UseWPF>
     <ApplicationManifest>app.manifest</ApplicationManifest>
 	  <ApplicationIcon>Assets\MaterialReqAppIcon.ico</ApplicationIcon>
@@ -12,6 +16,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Assets\CenterPointLogo_DarkText.png" />
+    <None Remove="Assets\CenterPointLogo_LightText.png" />
     <None Remove="Assets\MaterialReqAppIcon.ico" />
     <None Remove="Templates\Material_Requisition_Issue_Fillable.pdf" />
     <None Remove="Templates\Material_Requisition_Return_Fillable.pdf" />
@@ -32,6 +38,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Resource Include="Assets\CenterPointLogo_DarkText.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Assets\CenterPointLogo_LightText.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
     <Resource Include="Assets\MaterialReqAppIcon.ico">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Resource>

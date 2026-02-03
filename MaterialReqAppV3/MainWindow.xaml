@@ -5,6 +5,11 @@
         WindowStartupLocation="CenterScreen"
         WindowState="Maximized"
         Background="{DynamicResource AppBackground}"
+        TextElement.Foreground="{DynamicResource TextPrimary}"
+        TextElement.FontSize="13"
+        FontFamily="Segoe UI"
+        UseLayoutRounding="True"
+        SnapsToDevicePixels="True"
         Icon="Assets/MaterialReqAppIcon.ico">
 
     <Window.Resources>
