@@ -10,49 +10,7 @@
     <Window.Resources>
 
                 <!-- TextBox with watermark (uses Tag as the watermark text) -->
-        <Style x:Key="WatermarkTextBoxStyle" 
-               TargetType="TextBox">
-            <Setter Property="Padding" 
-                    Value="8,3"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="TextBox">
-                        <Grid>
-                            <Border Background="{TemplateBinding Background}"
-                                    BorderBrush="{TemplateBinding BorderBrush}"
-                                    BorderThickness="{TemplateBinding BorderThickness}"
-                                    CornerRadius="6"/>
-
-                            <TextBlock x:Name="Watermark"
-                                       Text="{TemplateBinding Tag}"
-                                       Foreground="{DynamicResource WatermarkText}"
-                                       Margin="{TemplateBinding Padding}"
-                                       VerticalAlignment="Center"
-                                       IsHitTestVisible="False"
-                                       Visibility="Collapsed"/>
-
-                            <ScrollViewer x:Name="PART_ContentHost"
-                                          Margin="{TemplateBinding Padding}"/>
-                        </Grid>
-
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="Text" 
-                                     Value="">
-                                <Setter TargetName="Watermark" 
-                                        Property="Visibility" 
-                                        Value="Visible"/>
-                            </Trigger>
-                            <Trigger Property="IsKeyboardFocused" 
-                                     Value="True">
-                                <Setter TargetName="Watermark" 
-                                        Property="Visibility" 
-                                        Value="Collapsed"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
+        
 
         <!-- Hover-only close "hit area" (used by your CreateTabHeader code) -->
         <Style x:Key="TabCloseHitStyle" TargetType="Border">

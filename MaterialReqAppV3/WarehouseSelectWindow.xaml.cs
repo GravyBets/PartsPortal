@@ -15,6 +15,11 @@ namespace MaterialReqAppV3
         public WarehouseSelectWindow()
         {
             InitializeComponent();
+            Loaded += (_, __) =>
+            {
+                ThemeToggle.IsChecked = _settings.IsDarkMode;
+            };
+
 
             // Load settings once
             _settings = _settingsService.Load();

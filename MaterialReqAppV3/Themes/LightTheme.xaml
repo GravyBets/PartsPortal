@@ -17,20 +17,36 @@
     <!-- Text -->
     <SolidColorBrush x:Key="TextPrimary" Color="#0F172A"/>
     <SolidColorBrush x:Key="TextSecondary" Color="#475569"/>
+    <SolidColorBrush x:Key="WatermarkText" Color="#9AA3AF"/>
 
-    <!-- Primary brand -->
+    <!-- Input (TextBox) border colors -->
+    <SolidColorBrush x:Key="InputBorderHover" Color="#94A3B8"/>
+    <SolidColorBrush x:Key="InputBorderFocus" Color="#2563EB"/>
+
+    <!-- Primary button hover/pressed -->
+    <SolidColorBrush x:Key="PrimaryBgHover" Color="#1D4ED8"/>
+    <SolidColorBrush x:Key="PrimaryBgPressed" Color="#1E40AF"/>
+
+
+    <!-- Primary brand/Accents -->
     <SolidColorBrush x:Key="PrimaryBg" Color="#2563EB"/>
     <SolidColorBrush x:Key="PrimaryBorder" Color="#1D4ED8"/>
 
     <!-- Tile background (this will fix the “washed out” look) -->
-    <SolidColorBrush x:Key="TileFill" Color="#F3F6FA"/>
+    <SolidColorBrush x:Key="TileFill" Color="#F3F6FA"/>    
     <SolidColorBrush x:Key="TileFillHover" Color="#E9EEF6"/>
     <SolidColorBrush x:Key="TileFillPressed" Color="#DEE6F2"/>
+
+    <!-- Compat keys (some styles still reference these names) -->
+    <SolidColorBrush x:Key="TileHoverBg" Color="#E9EEF6"/>
+    <SolidColorBrush x:Key="TilePressedBg" Color="#DEE6F2"/>
 
     <!-- Overlays / Misc -->
     <SolidColorBrush x:Key="HoverOverlay" Color="#14000000"/>
     <SolidColorBrush x:Key="PressedOverlay" Color="#22000000"/>
-    <SolidColorBrush x:Key="WatermarkText" Color="#9AA3AF"/>
+    <SolidColorBrush x:Key="BorderHover" Color="#94A3B8"/>
+
+
 
 
 </ResourceDictionary>

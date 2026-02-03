@@ -2,102 +2,215 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Settings"
-        Height="420"
-        Width="620"
+        Height="600"
+        Width="860"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
+        Background="{DynamicResource AppBackground}"
         Icon="Assets/MaterialReqAppIcon.ico">
 
-    <Grid Margin="14">
+    <Window.Resources>
+
+        <!-- Labels -->
+        <Style x:Key="FormLabel" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondary}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Margin" Value="0,0,12,12"/>
+        </Style>
+
+        <!-- Modern TextBox -->
+        <Style x:Key="ModernTextBox" TargetType="TextBox">
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="Padding" Value="10,5"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+            <Setter Property="Background" Value="{DynamicResource SurfaceBg}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource SurfaceBorder}"/>
+            <Setter Property="BorderThickness" Value="1.5"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border x:Name="Bd"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="10">
+                            <ScrollViewer x:Name="PART_ContentHost"
+                                          Margin="0"
+                                          Padding="{TemplateBinding Padding}"/>
+                        </Border>
+
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource BorderHover}"/>
+                            </Trigger>
+
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource PrimaryBg}"/>
+                            </Trigger>
+
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.60"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Readonly variant (slightly muted) -->
+        <Style x:Key="ModernTextBoxReadOnly" TargetType="TextBox" BasedOn="{StaticResource ModernTextBox}">
+            <Setter Property="IsReadOnly" Value="True"/>
+            <Setter Property="Opacity" Value="0.85"/>
+        </Style>
+
+    </Window.Resources>
+
+    <Grid Margin="16">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- Tabs -->
-        <TabControl Grid.Row="0">
+        <!-- ===== Header Card ===== -->
+        <Border Grid.Row="0"
+                Background="{DynamicResource CardBackground}"
+                BorderBrush="{DynamicResource CardBorder}"
+                BorderThickness="1"
+                CornerRadius="16"
+                Padding="18"
+                Margin="0,0,0,14">
+            <StackPanel>
+                <TextBlock Text="Settings"
+                           FontSize="22"
+                           FontWeight="Bold"
+                           Foreground="{DynamicResource TextPrimary}"/>
+                <TextBlock Text="Update your info, paths, and email recipients."
+                           Margin="0,4,0,0"
+                           Foreground="{DynamicResource TextSecondary}"/>
+            </StackPanel>
+        </Border>
 
-            <!-- GENERAL TAB -->
-            <TabItem Header="General">
-                <Grid Margin="12">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="160"/>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
+        <!-- ===== Form Card ===== -->
+        <Border Grid.Row="1"
+                Background="{DynamicResource CardBackground}"
+                BorderBrush="{DynamicResource CardBorder}"
+                BorderThickness="1"
+                CornerRadius="16"
+                Padding="18">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="170"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="120"/>
+                </Grid.ColumnDefinitions>
 
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <!-- Name -->
+                    <RowDefinition Height="Auto"/>
+                    <!-- Emp -->
+                    <RowDefinition Height="Auto"/>
+                    <!-- Truck -->
+                    <RowDefinition Height="Auto"/>
+                    <!-- Pdf -->
+                    <RowDefinition Height="Auto"/>
+                    <!-- Csv -->
+                    <RowDefinition Height="Auto"/>
+                    <!-- Divider -->
+                    <RowDefinition Height="Auto"/>
+                    <!-- Email To -->
+                    <RowDefinition Height="Auto"/>
+                    <!-- Email CC -->
+                </Grid.RowDefinitions>
 
-                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Name:" VerticalAlignment="Center" Margin="0,0,10,10"/>
-                    <TextBox x:Name="NameBox"
-                             Grid.Row="0" Grid.Column="1"
-                             Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}"
-                             Margin="0,0,0,10"/>
+                <!-- Name -->
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="Name:" Style="{StaticResource FormLabel}"/>
+                <TextBox Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2"
+                         Style="{StaticResource ModernTextBox}"
+                         Margin="0,0,0,12"
+                         Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}"/>
 
-                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Employee ID:" VerticalAlignment="Center" Margin="0,0,10,10"/>
-                    <TextBox x:Name="EmployeeIdBox"
-                             Grid.Row="1" Grid.Column="1"
-                             Text="{Binding EmployeeId, UpdateSourceTrigger=PropertyChanged}"
-                             Margin="0,0,0,10"
-                             IsReadOnly="True"/>
+                <!-- Employee ID -->
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="Employee ID:" Style="{StaticResource FormLabel}"/>
+                <TextBox Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2"
+                         Style="{StaticResource ModernTextBoxReadOnly}"
+                         Margin="0,0,0,12"
+                         Text="{Binding EmployeeId, UpdateSourceTrigger=PropertyChanged}"/>
 
-                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Truck #:" VerticalAlignment="Center" Margin="0,0,10,10"/>
-                    <TextBox x:Name="TruckBox"
-                             Grid.Row="2" Grid.Column="1"
-                             Text="{Binding TruckNumber, UpdateSourceTrigger=PropertyChanged}"
-                             Margin="0,0,0,10"/>
+                <!-- Truck -->
+                <TextBlock Grid.Row="2" Grid.Column="0" Text="Truck #:" Style="{StaticResource FormLabel}"/>
+                <TextBox Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2"
+                         Style="{StaticResource ModernTextBox}"
+                         Margin="0,0,0,12"
+                         Text="{Binding TruckNumber, UpdateSourceTrigger=PropertyChanged}"/>
 
-                    <TextBlock Grid.Row="3" Grid.Column="0" Text="PDF Output Folder:" VerticalAlignment="Center" Margin="0,0,10,10"/>
-                    <TextBox x:Name="PdfFolderBox"
-                             Grid.Row="3" Grid.Column="1"
-                             Text="{Binding PdfOutputFolder, UpdateSourceTrigger=PropertyChanged}"
-                             Margin="0,0,10,10"/>
-                    <Button Grid.Row="3" Grid.Column="2"
-                            Content="Browse..." Padding="12,4" Margin="0,0,0,10"
-                            Click="BrowsePdfFolder_Click"/>
+                <!-- PDF Output Folder -->
+                <TextBlock Grid.Row="3" Grid.Column="0" Text="PDF Output Folder:" Style="{StaticResource FormLabel}"/>
+                <TextBox Grid.Row="3" Grid.Column="1"
+                         Style="{StaticResource ModernTextBox}"
+                         Margin="0,0,10,12"
+                         Text="{Binding PdfOutputFolder, UpdateSourceTrigger=PropertyChanged}"/>
+                <Button Grid.Row="3" Grid.Column="2"
+                        Content="Browse..."
+                        Height="34"
+                        VerticalAlignment="Top"
+                        Style="{StaticResource SecondaryButtonStyle}"
+                        Click="BrowsePdfFolder_Click"/>
 
-                    <TextBlock Grid.Row="4" Grid.Column="0" Text="Parts CSV Path:" VerticalAlignment="Center"/>
-                    <TextBox x:Name="CsvPathBox"
-                             Grid.Row="4" Grid.Column="1"
-                             Text="{Binding CsvPath, UpdateSourceTrigger=PropertyChanged}"
-                             Margin="0,0,10,0"/>
-                    <Button Grid.Row="4" Grid.Column="2"
-                            Content="Browse..." Padding="12,4"
-                            Click="BrowseCsv_Click"/>
-                </Grid>
-            </TabItem>
+                <!-- Parts CSV Path -->
+                <TextBlock Grid.Row="4" Grid.Column="0" Text="Parts CSV Path:" Style="{StaticResource FormLabel}"/>
+                <TextBox Grid.Row="4" Grid.Column="1"
+                         Style="{StaticResource ModernTextBox}"
+                         Margin="0,0,10,12"
+                         Text="{Binding CsvPath, UpdateSourceTrigger=PropertyChanged}"/>
+                <Button Grid.Row="4" Grid.Column="2"
+                        Content="Browse..."
+                        Height="34"
+                        VerticalAlignment="Top"
+                        Style="{StaticResource SecondaryButtonStyle}"
+                        Click="BrowseCsv_Click"/>
 
-            <!-- EMAIL TAB -->
-            <TabItem Header="Email">
-                <StackPanel Margin="12">
+                <!-- Divider -->
+                <Border Grid.Row="5" Grid.ColumnSpan="3"
+                        Height="1"
+                        Background="{DynamicResource CardBorder}"
+                        Opacity="0.7"
+                        Margin="0,6,0,16"/>
 
-                    <TextBlock Text="To" FontWeight="SemiBold" Margin="0,0,0,4"/>
-                    <TextBox Text="{Binding EmailTo, UpdateSourceTrigger=PropertyChanged}"
-                             Height="28" Margin="0,0,0,10"/>
+                <!-- Email To -->
+                <TextBlock Grid.Row="6" Grid.Column="0" Text="Email To:" Style="{StaticResource FormLabel}"/>
+                <TextBox Grid.Row="6" Grid.Column="1" Grid.ColumnSpan="2"
+                         Style="{StaticResource ModernTextBox}"
+                         Margin="0,0,0,12"
+                         Text="{Binding EmailTo, UpdateSourceTrigger=PropertyChanged}"/>
 
-                    <TextBlock Text="CC" FontWeight="SemiBold" Margin="0,0,0,4"/>
-                    <TextBox Text="{Binding EmailCc, UpdateSourceTrigger=PropertyChanged}"
-                             Height="28" Margin="0,0,0,10"/>
+                <!-- Email CC -->
+                <TextBlock Grid.Row="7" Grid.Column="0" Text="Email CC:" Style="{StaticResource FormLabel}"/>
+                <TextBox Grid.Row="7" Grid.Column="1" Grid.ColumnSpan="2"
+                         Style="{StaticResource ModernTextBox}"
+                         Text="{Binding EmailCc, UpdateSourceTrigger=PropertyChanged}"/>
+            </Grid>
+        </Border>
 
-                                        
-                </StackPanel>
-            </TabItem>
-
-        </TabControl>
-
-        <!-- Bottom buttons -->
-        <StackPanel Grid.Row="1"
+        <!-- ===== Bottom Buttons ===== -->
+        <StackPanel Grid.Row="2"
                     Orientation="Horizontal"
                     HorizontalAlignment="Right"
                     Margin="0,14,0,0">
-            <Button Content="Cancel" Width="90" Margin="0,0,10,0" Click="Cancel_Click"/>
-            <Button Content="Save" Width="90" Click="Save_Click"/>
+            <Button Content="Cancel"
+                    Width="110"
+                    Height="36"
+                    Margin="0,0,10,0"
+                    Style="{StaticResource SecondaryButtonStyle}"
+                    Click="Cancel_Click"/>
+            <Button Content="Save"
+                    Width="110"
+                    Height="36"
+                    Style="{StaticResource PrimaryButtonStyle}"
+                    Click="Save_Click"/>
         </StackPanel>
+
     </Grid>
 </Window>

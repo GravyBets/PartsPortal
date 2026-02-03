@@ -18,6 +18,15 @@
     <SolidColorBrush x:Key="TextPrimary" Color="#ECEFF4"/>
     <SolidColorBrush x:Key="TextSecondary" Color="#AAB3C6"/>
 
+    <!-- Input (TextBox) border colors -->
+    <SolidColorBrush x:Key="InputBorderHover" Color="#6B7A97"/>
+    <SolidColorBrush x:Key="InputBorderFocus" Color="#4F7DFF"/>
+
+    <!-- Primary button hover/pressed -->
+    <SolidColorBrush x:Key="PrimaryBgHover" Color="#2747A6"/>
+    <SolidColorBrush x:Key="PrimaryBgPressed" Color="#223D93"/>
+
+
     <!-- Primary brand (calmer dark blue) -->
     <SolidColorBrush x:Key="PrimaryBg" Color="#1E3A8A"/>
     <SolidColorBrush x:Key="PrimaryBorder" Color="#1E40AF"/>
@@ -27,10 +36,17 @@
     <SolidColorBrush x:Key="TileFillHover" Color="#202A3B"/>
     <SolidColorBrush x:Key="TileFillPressed" Color="#162033"/>
 
+    <!-- Compat keys (some styles still reference these names) -->
+    <SolidColorBrush x:Key="TileHoverBg" Color="#202A3B"/>
+    <SolidColorBrush x:Key="TilePressedBg" Color="#162033"/>
+
+
     <!-- Overlays / Misc -->
     <SolidColorBrush x:Key="HoverOverlay" Color="#14FFFFFF"/>
     <SolidColorBrush x:Key="PressedOverlay" Color="#22FFFFFF"/>
     <SolidColorBrush x:Key="WatermarkText" Color="#7C879A"/>
+    <SolidColorBrush x:Key="BorderHover" Color="#475569"/>
+
 
 
 </ResourceDictionary>

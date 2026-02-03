@@ -1181,6 +1181,10 @@ namespace MaterialReqAppV3
                 if (string.IsNullOrWhiteSpace(suggested))
                     suggested = GetTabTitle(ownerTab).Trim();
 
+                // if the default tab title is "Blank" / "Blank (2)" etc, don't suggest it
+                if (Regex.IsMatch(suggested, @"^Blank(\s*\(\d+\))?$", RegexOptions.IgnoreCase))
+                    suggested = "";
+
                 var dlg = new TemplateNameWindow(suggested) { Owner = this };
                 if (dlg.ShowDialog() != true) return;
 

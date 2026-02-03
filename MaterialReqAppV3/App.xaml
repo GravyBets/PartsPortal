@@ -2,19 +2,22 @@
 <Application x:Class="MaterialReqAppV3.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:local="clr-namespace:MaterialReqAppV3"
-             StartupUri="WarehouseSelectWindow.xaml">
+             xmlns:local="clr-namespace:MaterialReqAppV3">
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
 
-                <!-- Default theme -->
+                <!-- Global control styles -->
+                <ResourceDictionary Source="Themes/Controls.xaml"/>
+
+                <!-- Your other shared styles -->
+                <ResourceDictionary Source="Styles/SharedStyles.xaml"/>
+
+                <!-- Theme LAST so it wins -->
                 <ResourceDictionary Source="Themes/LightTheme.xaml"/>
 
-                <!-- Your other shared styles dictionaries (if any) -->
-                <!-- <ResourceDictionary Source="Styles/Controls.xaml"/> -->
-
             </ResourceDictionary.MergedDictionaries>
+
         </ResourceDictionary>
     </Application.Resources>
 

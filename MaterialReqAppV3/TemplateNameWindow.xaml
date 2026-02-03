@@ -6,26 +6,120 @@
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
         ShowInTaskbar="False"
+        Background="{DynamicResource AppBackground}"
         Icon="Assets/MaterialReqAppIcon.ico">
 
-    <Grid Margin="12">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
+    <Window.Resources>
 
-        <TextBlock Text="Template name:" Margin="0,0,0,6"/>
+        <!-- Base dialog button -->
+        <Style x:Key="DialogButton" TargetType="Button">
+            <Setter Property="Height" Value="34"/>
+            <Setter Property="MinWidth" Value="96"/>
+            <Setter Property="Padding" Value="14,0"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+            <Setter Property="Background" Value="{DynamicResource SurfaceBg}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource SurfaceBorder}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="10">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource CardBorder}"/>
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource TileHoverBg}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource TilePressedBg}"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.6"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
 
-        <TextBox x:Name="NameBox"
-                 Grid.Row="1"
-                 MinWidth="280"
-                 Height="28"
-                 Margin="0,0,0,12"/>
+        <!-- Primary button -->
+        <Style x:Key="DialogPrimaryButton" TargetType="Button" BasedOn="{StaticResource DialogButton}">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Background" Value="{DynamicResource PrimaryBg}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBorder}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+        </Style>
 
-        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
-            <Button Content="Cancel" Width="90" Margin="0,0,8,0" IsCancel="True"/>
-            <Button x:Name="OkBtn" Content="Save" Width="90" IsDefault="True" Click="Ok_Click"/>
-        </StackPanel>
+    </Window.Resources>
+
+    <Grid Margin="16">
+        <Border Background="{DynamicResource CardBackground}"
+                BorderBrush="{DynamicResource CardBorder}"
+                BorderThickness="2"
+                CornerRadius="16"
+                Padding="16"
+                MinWidth="520">
+
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <!-- title -->
+                    <RowDefinition Height="Auto"/>
+                    <!-- label -->
+                    <RowDefinition Height="Auto"/>
+                    <!-- textbox -->
+                    <RowDefinition Height="Auto"/>
+                    <!-- buttons -->
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0"
+                           Text="Save template"
+                           FontSize="18"
+                           FontWeight="Bold"
+                           Foreground="{DynamicResource TextPrimary}"
+                           Margin="0,0,0,10"/>
+
+                <TextBlock Grid.Row="1"
+                           Text="Template name"
+                           Foreground="{DynamicResource TextSecondary}"
+                           Margin="0,0,0,6"/>
+
+                <TextBox x:Name="NameBox"
+                         Grid.Row="2"
+                         Height="32"
+                         Margin="0,0,0,14"
+                         HorizontalAlignment="Stretch"
+                         Style="{StaticResource WatermarkTextBoxStyle}"
+                         Tag="e.g., Tower Swap Kit"
+                         Background="{DynamicResource SurfaceBg}"
+                         BorderBrush="{DynamicResource SurfaceBorder}"
+                         BorderThickness="1"
+                         Foreground="{DynamicResource TextPrimary}"/>
+
+                <StackPanel Grid.Row="3"
+                            Orientation="Horizontal"
+                            HorizontalAlignment="Right">
+                    <Button Content="Cancel"
+                            Margin="0,0,10,0"
+                            IsCancel="True"
+                            Style="{StaticResource DialogButton}"/>
+
+                    <Button x:Name="OkBtn"
+                            Content="Save"
+                            IsDefault="True"
+                            Click="Ok_Click"
+                            Style="{StaticResource DialogPrimaryButton}"/>
+                </StackPanel>
+
+            </Grid>
+        </Border>
     </Grid>
 </Window>

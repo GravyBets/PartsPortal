@@ -144,11 +144,13 @@
                                      Value="True">
                                 <Setter Property="Background" 
                                         Value="{DynamicResource TileFillHover}"/>
+                                <Setter Property="BorderBrush" Value="#B9C2D0"/>
                             </Trigger>
                             <Trigger Property="IsPressed" 
                                      Value="True">
                                 <Setter Property="Background" 
                                         Value="{DynamicResource TileFillPressed}"/>
+                                <Setter Property="BorderBrush" Value="#B9C2D0"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" 
                                      Value="False">
