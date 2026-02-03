@@ -83,5 +83,17 @@ namespace MaterialReqAppV3
             var w = new BugFeatureWindow(_settings) { Owner = this };
             w.ShowDialog();
         }
+
+        //USED FOR TESTING ONLY. DELETE AFTER UI IS BUILT
+        private void OpenModernPreview_Click(object sender, RoutedEventArgs e)
+        {
+            string selected = "";
+            var w = new MainWindowModern(selected)
+            {
+                Owner = this
+            };
+            w.Show();
+            
+        }
     }
 }

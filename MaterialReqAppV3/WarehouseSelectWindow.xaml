@@ -240,6 +240,9 @@
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
+        
+        
+
 
         <!-- Header -->
         <Border Style="{StaticResource Card}" Grid.Row="0">
@@ -259,6 +262,17 @@
                        Margin="0,4,0,0"
                        Foreground="{DynamicResource TextSecondary}"/>
                 </StackPanel>
+
+                <!-- TEST MainWindow BUTTON -->
+                <Button 
+                        ToolTip="Modern Preview"
+                        Margin="583,7,40,6"
+                        Click="OpenModernPreview_Click">
+                    <TextBlock FontFamily="Segoe MDL2 Assets"
+                               FontSize="16"
+                               Foreground="{DynamicResource TextPrimary}"
+                               Text="&#xE8A7;"/>
+                </Button>
 
                 <!-- Light/Dark slider toggle (right) -->
                 <ToggleButton Grid.Column="1"

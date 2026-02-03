@@ -31,7 +31,7 @@ using System.Runtime.Versioning;
 namespace MaterialReqAppV3
 {
     [SupportedOSPlatform("windows")]
-    public partial class MainWindow : Window
+    public partial class MainWindowModern : Window
     {
         public string SelectedWarehouse { get; }
         private TextBox? SiteNameBox;
@@ -143,7 +143,7 @@ namespace MaterialReqAppV3
             return list;
         }
 
-        public MainWindow(string selectedWarehouse)
+        public MainWindowModern(string selectedWarehouse)
         {
             InitializeComponent();
 
@@ -2239,8 +2239,6 @@ namespace MaterialReqAppV3
             var principal = new WindowsPrincipal(identity);
             return principal.IsInRole(WindowsBuiltInRole.Administrator);
         }
-
-        
 
     }
 }
