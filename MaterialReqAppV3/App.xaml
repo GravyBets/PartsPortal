@@ -8,10 +8,7 @@
             <ResourceDictionary.MergedDictionaries>
 
                 <!-- Global control styles -->
-                <ResourceDictionary Source="Themes/Controls.xaml"/>
-
-                <!-- Your other shared styles -->
-                <ResourceDictionary Source="Styles/SharedStyles.xaml"/>
+                <ResourceDictionary Source="Themes/Controls.xaml"/>                
 
                 <!-- Theme LAST so it wins -->
                 <ResourceDictionary Source="Themes/LightTheme.xaml"/>

@@ -1,0 +1,54 @@
+﻿<UserControl x:Class="MaterialReqAppV3.Views.SiteTabContent"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:views="clr-namespace:MaterialReqAppV3.Views">
+
+    
+
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- LEFT: Parts Browser (spans both rows) -->
+        <Border Grid.Row="0"
+                Grid.Column="0"
+                Grid.RowSpan="2"
+                Style="{StaticResource SurfaceCardStyle}"
+                Margin="0,0,8,0">
+
+            <views:PartsBrowserView x:Name="Parts"
+                                   x:FieldModifier="public"/>
+        </Border>
+
+        <!-- TOP-RIGHT: Movement + Inputs -->
+        <Border Grid.Row="0"
+                Grid.Column="1"
+                Style="{StaticResource SurfaceCardStyle}"
+                Margin="8,0,0,8">
+
+            <!-- We'll plug MovementDetailsView here next -->
+            <Grid>
+                <TextBlock Text="Movement + Inputs goes here"
+                           Foreground="{DynamicResource TextSecondary}"/>
+            </Grid>
+        </Border>
+
+        <!-- BOTTOM-RIGHT: Selected Parts -->
+        <Border Grid.Row="1"
+                Grid.Column="1"
+                Style="{StaticResource SurfaceCardStyle}"
+                Margin="8,8,0,0">
+
+            <views:SelectedPartsView x:Name="Selected"
+                                    x:FieldModifier="public"/>
+        </Border>
+
+    </Grid>
+</UserControl>

@@ -7,7 +7,15 @@
         <Setter Property="BorderBrush" Value="{DynamicResource CardBorder}"/>
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="CornerRadius" Value="16"/>
-        <Setter Property="Padding" Value="18"/>
+        <Setter Property="Padding" Value="16"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="Effect">
+            <Setter.Value>
+                <DropShadowEffect BlurRadius="14"
+                              ShadowDepth="2"
+                              Opacity="0.18"/>
+            </Setter.Value>
+        </Setter>
     </Style>
 
     <!-- Modern TextBox -->
@@ -15,6 +23,7 @@
         <Setter Property="Height" Value="32"/>
         <Setter Property="Padding" Value="10,5"/>
         <Setter Property="FontSize" Value="13"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
         <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
         <Setter Property="Background" Value="{DynamicResource SurfaceBg}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource SurfaceBorder}"/>
@@ -57,197 +66,70 @@
         </Setter>
     </Style>
 
-    <!-- =========================
-     Modern ComboBox (global)
-     ========================= -->
-
-    <!-- Items -->
-    <Style x:Key="ModernComboBoxItem" TargetType="ComboBoxItem">
-        <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
-        <Setter Property="Background" Value="Transparent"/>
-        <Setter Property="Padding" Value="12,8"/>
-        <Setter Property="Margin" Value="2"/>
-        <Setter Property="HorizontalContentAlignment" Value="Left"/>
-        <Setter Property="VerticalContentAlignment" Value="Center"/>
-        <Setter Property="Template">
-            <Setter.Value>
-                <ControlTemplate TargetType="ComboBoxItem">
-                    <Border x:Name="Bd"
-                        Background="{TemplateBinding Background}"
-                        CornerRadius="10">
-                        <ContentPresenter Margin="{TemplateBinding Padding}"
-                                      HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                      VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
-                    </Border>
-
-                    <ControlTemplate.Triggers>
-                        <Trigger Property="IsHighlighted" Value="True">
-                            <Setter TargetName="Bd" Property="Background" Value="{DynamicResource TileFillHover}"/>
-                        </Trigger>
-                        <Trigger Property="IsSelected" Value="True">
-                            <Setter TargetName="Bd" Property="Background" Value="{DynamicResource TileFillPressed}"/>
-                        </Trigger>
-                        <Trigger Property="IsEnabled" Value="False">
-                            <Setter Property="Opacity" Value="0.55"/>
-                        </Trigger>
-                    </ControlTemplate.Triggers>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
-    </Style>
-
-    <!-- ComboBox -->
-    <Style x:Key="ModernComboBox" TargetType="ComboBox">
-        <!-- Make it narrower by default -->
-        <Setter Property="Width" Value="160"/>
-        <Setter Property="MinWidth" Value="140"/>
-
-        <Setter Property="Height" Value="34"/>
-        <Setter Property="FontSize" Value="13"/>
-        <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
-        <Setter Property="Background" Value="{DynamicResource SurfaceBg}"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource SurfaceBorder}"/>
-        <Setter Property="BorderThickness" Value="1.5"/>
-        <Setter Property="Padding" Value="12,0,44,0"/>
-        <Setter Property="ItemContainerStyle" Value="{StaticResource ModernComboBoxItem}"/>
-        <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto"/>
+    <!-- Modern TextBox WITH watermark (uses Tag for watermark text) -->
+    <Style x:Key="ModernWatermarkTextBox"
+       TargetType="TextBox"
+       BasedOn="{StaticResource ModernTextBox}">
 
         <Setter Property="Template">
             <Setter.Value>
-                <ControlTemplate TargetType="ComboBox">
-                    <!-- ✅ FIX #1: force default foreground inside template -->
-                    <Grid SnapsToDevicePixels="True"
-                      TextElement.Foreground="{Binding Foreground, RelativeSource={RelativeSource TemplatedParent}}">
+                <ControlTemplate TargetType="TextBox">
+                    <Grid>
 
-                        <!-- Outer -->
                         <Border x:Name="Bd"
                             Background="{TemplateBinding Background}"
                             BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}"
                             CornerRadius="10"/>
 
-                        <!-- Click-anywhere toggle -->
-                        <ToggleButton x:Name="PART_DropDownToggle"
-                                  Focusable="False"
-                                  IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
-                                  Background="Transparent"
-                                  BorderThickness="0"
-                                  Cursor="Hand">
+                        <!-- Watermark overlay -->
+                        <TextBlock x:Name="Watermark"
+                               Text="{TemplateBinding Tag}"
+                               Foreground="{DynamicResource WatermarkText}"
+                               Margin="{TemplateBinding Padding}"
+                               VerticalAlignment="Center"
+                               IsHitTestVisible="False"
+                               Visibility="Collapsed"/>
 
-                            <!-- Kill default ToggleButton visuals -->
-                            <ToggleButton.Template>
-                                <ControlTemplate TargetType="ToggleButton">
-                                    <ContentPresenter/>
-                                </ControlTemplate>
-                            </ToggleButton.Template>
-
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="44"/>
-                                </Grid.ColumnDefinitions>
-
-                                <!-- Selected value (LEFT) -->
-                                <Border Grid.Column="0"
-                                        Background="Transparent"
-                                        Padding="12,0,8,0">
-                                    <TextBlock VerticalAlignment="Center"
-                                               HorizontalAlignment="Left"
-                                               Foreground="{TemplateBinding Foreground}"
-                                               TextTrimming="CharacterEllipsis"
-                                               TextWrapping="NoWrap">
-                                        <TextBlock.Text>
-                                            <PriorityBinding>
-                                                <!-- If SelectedItem is ComboBoxItem -->
-                                                <Binding Path="SelectedItem.Content"
-                                                         RelativeSource="{RelativeSource TemplatedParent}" />
-                                                <!-- If SelectedItem is a plain string/object -->
-                                                <Binding Path="SelectedItem"
-                                                         RelativeSource="{RelativeSource TemplatedParent}" />
-                                            </PriorityBinding>
-                                        </TextBlock.Text>
-                                    </TextBlock>
-                                </Border>
-
-
-                                <!-- Arrow (RIGHT) -->
-                                <Border x:Name="ArrowBd"
-                                        Grid.Column="1"
-                                        Margin="6,6,6,6"
-                                        Background="{DynamicResource TileFill}"
-                                        BorderBrush="{DynamicResource SurfaceBorder}"
-                                        BorderThickness="1"
-                                        CornerRadius="8">
-                                    <Path x:Name="Arrow"
-                                          Data="M 0 0 L 6 6 L 12 0 Z"
-                                          Fill="{DynamicResource TextSecondary}"
-                                          HorizontalAlignment="Center"
-                                          VerticalAlignment="Center"/>
-                                </Border>
-                            </Grid>
-                        </ToggleButton>
-
-                        <!-- Popup -->
-                        <Popup x:Name="PART_Popup"
-                           Placement="Bottom"
-                           PlacementTarget="{Binding RelativeSource={RelativeSource TemplatedParent}}"
-                           HorizontalOffset="0"
-                           VerticalOffset="6"
-                           AllowsTransparency="True"
-                           Focusable="False"
-                           IsOpen="{TemplateBinding IsDropDownOpen}"
-                           PopupAnimation="Fade">
-                            <Border Background="{DynamicResource CardBackground}"
-                                BorderBrush="{DynamicResource CardBorder}"
-                                BorderThickness="1"
-                                CornerRadius="12"
-                                Padding="6"
-                                MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}"
-                                TextElement.Foreground="{DynamicResource TextPrimary}">
-                                <ScrollViewer VerticalScrollBarVisibility="{TemplateBinding ScrollViewer.VerticalScrollBarVisibility}">
-                                    <ItemsPresenter/>
-                                </ScrollViewer>
-                            </Border>
-                        </Popup>
+                        <ScrollViewer x:Name="PART_ContentHost"
+                                  Padding="{TemplateBinding Padding}"/>
                     </Grid>
 
                     <ControlTemplate.Triggers>
-                        <!-- Hover: thicker border + nicer arrow -->
-                        <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="Bd" Property="BorderBrush" Value="#6B7280"/>
-                            <Setter TargetName="Bd" Property="BorderThickness" Value="2"/>
-                            <Setter TargetName="ArrowBd" Property="Background" Value="{DynamicResource TileFillHover}"/>
-                            <Setter TargetName="ArrowBd" Property="BorderBrush" Value="#6B7280"/>
-                            <Setter TargetName="Arrow" Property="Fill" Value="{DynamicResource TextPrimary}"/>
+
+                        <!-- Show watermark when empty -->
+                        <Trigger Property="Text" Value="">
+                            <Setter TargetName="Watermark" Property="Visibility" Value="Visible"/>
                         </Trigger>
 
-                        <!-- Keyboard focus -->
+                        <!-- Hide watermark when focused (even if empty) 
                         <Trigger Property="IsKeyboardFocusWithin" Value="True">
-                            <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource PrimaryBg}"/>
-                            <Setter TargetName="Bd" Property="BorderThickness" Value="2"/>
+                            <Setter TargetName="Watermark" Property="Visibility" Value="Collapsed"/>
+                        </Trigger-->
+
+                        <!-- Hover -->
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource InputBorderHover}"/>
+                            <Setter TargetName="Bd" Property="BorderThickness" Value="1.5"/>
+                            <Setter TargetName="Bd" Property="Background" Value="{DynamicResource TileFillHover}"/>
                         </Trigger>
 
-                        <!-- Open -->
-                        <Trigger Property="IsDropDownOpen" Value="True">
-                            <Setter TargetName="Arrow" Property="RenderTransform">
-                                <Setter.Value>
-                                    <RotateTransform Angle="180" CenterX="6" CenterY="3"/>
-                                </Setter.Value>
-                            </Setter>
-                            <Setter TargetName="ArrowBd" Property="Background" Value="{DynamicResource TileFillHover}"/>
-                            <Setter TargetName="ArrowBd" Property="BorderBrush" Value="#6B7280"/>
+                        <!-- Focus -->
+                        <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource InputBorderFocus}"/>
+                            <Setter TargetName="Bd" Property="BorderThickness" Value="2"/>
                         </Trigger>
 
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter Property="Opacity" Value="0.60"/>
                         </Trigger>
+
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
     </Style>
-
-
+    
     <!-- Secondary button -->
     <Style x:Key="SecondaryButtonStyle" TargetType="Button">
         <Setter Property="Height" Value="36"/>
@@ -411,13 +293,412 @@
         </Setter>
     </Style>
 
+    <!-- Part list item -->
+    <DataTemplate x:Key="PartItemTemplate">
+        <Grid Margin="0,4">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <TextBlock Grid.Row="0"
+                   Text="{Binding Description}"
+                   FontSize="13"
+                   FontWeight="SemiBold"
+                   Foreground="{DynamicResource TextPrimary}"
+                   TextWrapping="NoWrap"
+                   TextTrimming="CharacterEllipsis"/>
+
+            <TextBlock Grid.Row="1"
+                   Text="{Binding Material}"
+                   FontSize="11"
+                   Foreground="{DynamicResource TextSecondary}"
+                   Margin="0,2,0,0"
+                   TextWrapping="NoWrap"
+                   TextTrimming="CharacterEllipsis"/>
+        </Grid>
+    </DataTemplate>
+
+    <!-- Selected part display (DataGrid template column) -->
+    <DataTemplate x:Key="SelectedPartDisplayTemplate">
+        <Grid Margin="0,4">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <TextBlock Grid.Row="0"
+                   Text="{Binding Description}"
+                   FontSize="13"
+                   FontWeight="SemiBold"
+                   Foreground="{DynamicResource TextPrimary}"
+                   TextWrapping="NoWrap"
+                   TextTrimming="CharacterEllipsis"/>
+
+            <TextBlock Grid.Row="1"
+                   Text="{Binding Material}"
+                   FontSize="11"
+                   Foreground="{DynamicResource TextSecondary}"
+                   Margin="0,2,0,0"
+                   TextWrapping="NoWrap"
+                   TextTrimming="CharacterEllipsis"/>
+        </Grid>
+    </DataTemplate>
+
+    <!-- Surface Card container (embeddd content) -->
+    <Style x:Key="SurfaceCardStyle" TargetType="Border">
+        <Setter Property="Background" Value="{DynamicResource SurfaceBg}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource SurfaceBorder}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="12"/>
+        <Setter Property="Padding" Value="12"/>
+    </Style>
+
+    <!-- ListBoxItem selection/hover that respects your themes -->
+    <Style x:Key="ThemedListBoxItemStyle" TargetType="ListBoxItem">
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+        <Setter Property="Padding" Value="8,6"/>
+        <Setter Property="Margin" Value="0,2"/>
+        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ListBoxItem">
+                    <Border x:Name="Bd"
+                        Background="Transparent"
+                        CornerRadius="10">
+                        <ContentPresenter/>
+                    </Border>
+
+                    <ControlTemplate.Triggers>
+
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd"
+                                Property="Background"
+                                Value="{DynamicResource HoverOverlay}"/>
+                        </Trigger>
+
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="Bd"
+                                Property="Background"
+                                Value="{DynamicResource TileFillPressed}"/>
+                        </Trigger>
+
+                        <!-- Selected + hover gets a slightly clearer fill -->
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsSelected" Value="True"/>
+                                <Condition Property="IsMouseOver" Value="True"/>
+                            </MultiTrigger.Conditions>
+                            <Setter TargetName="Bd"
+                                Property="Background"
+                                Value="{DynamicResource TileFillHover}"/>
+                        </MultiTrigger>
+
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.55"/>
+                        </Trigger>
+
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    
+ <!--Modern ComboBox (global)-->
+     <!-- Items -->
+    <Style x:Key="ModernComboBoxItem" TargetType="ComboBoxItem">
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Padding" Value="12,8"/>
+        <Setter Property="Margin" Value="2"/>
+        <Setter Property="HorizontalContentAlignment" Value="Left"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ComboBoxItem">
+                    <Border x:Name="Bd"
+                    Background="{TemplateBinding Background}"
+                    CornerRadius="10">
+                        <ContentPresenter Margin="{TemplateBinding Padding}"
+                                  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                  VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                    </Border>
+
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsHighlighted" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{DynamicResource TileFillHover}"/>
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{DynamicResource TileFillPressed}"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.55"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ComboBox -->
+    <Style x:Key="ModernComboBox" TargetType="ComboBox">
+        <!-- Make it narrower by default -->
+        <Setter Property="Width" Value="160"/>
+        <Setter Property="MinWidth" Value="140"/>
+
+        <Setter Property="Height" Value="34"/>
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+        <Setter Property="Background" Value="{DynamicResource SurfaceBg}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource SurfaceBorder}"/>
+        <Setter Property="BorderThickness" Value="1.5"/>
+        <Setter Property="Padding" Value="12,0,44,0"/>
+        <Setter Property="ItemContainerStyle" Value="{StaticResource ModernComboBoxItem}"/>
+        <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto"/>
+
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ComboBox">
+                    <!-- ✅ FIX #1: force default foreground inside template -->
+                    <Grid SnapsToDevicePixels="True"
+                  TextElement.Foreground="{Binding Foreground, RelativeSource={RelativeSource TemplatedParent}}">
+
+                        <!-- Outer -->
+                        <Border x:Name="Bd"
+                        Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        CornerRadius="10"/>
+
+                        <!-- Click-anywhere toggle -->
+                        <ToggleButton x:Name="PART_DropDownToggle"
+                              Focusable="False"
+                              IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
+                              Background="Transparent"
+                              BorderThickness="0"
+                              Cursor="Hand">
+
+                            <!-- Kill default ToggleButton visuals -->
+                            <ToggleButton.Template>
+                                <ControlTemplate TargetType="ToggleButton">
+                                    <ContentPresenter/>
+                                </ControlTemplate>
+                            </ToggleButton.Template>
+
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="44"/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Selected value (LEFT) -->
+                                <Border Grid.Column="0"
+                                    Background="Transparent"
+                                    Padding="12,0,8,0">
+                                    <TextBlock VerticalAlignment="Center"
+                                           HorizontalAlignment="Left"
+                                           Foreground="{TemplateBinding Foreground}"
+                                           TextTrimming="CharacterEllipsis"
+                                           TextWrapping="NoWrap">
+                                        <TextBlock.Text>
+                                            <PriorityBinding>
+                                                <!-- If SelectedItem is ComboBoxItem -->
+                                                <Binding Path="SelectedItem.Content"
+                                                     RelativeSource="{RelativeSource TemplatedParent}" />
+                                                <!-- If SelectedItem is a plain string/object -->
+                                                <Binding Path="SelectedItem"
+                                                     RelativeSource="{RelativeSource TemplatedParent}" />
+                                            </PriorityBinding>
+                                        </TextBlock.Text>
+                                    </TextBlock>
+                                </Border>
+
+
+                                <!-- Arrow (RIGHT) -->
+                                <Border x:Name="ArrowBd"
+                                    Grid.Column="1"
+                                    Margin="6,6,6,6"
+                                    Background="{DynamicResource TileFill}"
+                                    BorderBrush="{DynamicResource SurfaceBorder}"
+                                    BorderThickness="1"
+                                    CornerRadius="8">
+                                    <Path x:Name="Arrow"
+                                      Data="M 0 0 L 6 6 L 12 0 Z"
+                                      Fill="{DynamicResource TextSecondary}"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center"/>
+                                </Border>
+                            </Grid>
+                        </ToggleButton>
+
+                        <!-- Popup -->
+                        <Popup x:Name="PART_Popup"
+                       Placement="Bottom"
+                       PlacementTarget="{Binding RelativeSource={RelativeSource TemplatedParent}}"
+                       HorizontalOffset="0"
+                       VerticalOffset="6"
+                       AllowsTransparency="True"
+                       Focusable="False"
+                       IsOpen="{TemplateBinding IsDropDownOpen}"
+                       PopupAnimation="Fade">
+                            <Border Background="{DynamicResource CardBackground}"
+                            BorderBrush="{DynamicResource CardBorder}"
+                            BorderThickness="1"
+                            CornerRadius="12"
+                            Padding="6"
+                            MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}"
+                            TextElement.Foreground="{DynamicResource TextPrimary}">
+                                <ScrollViewer VerticalScrollBarVisibility="{TemplateBinding ScrollViewer.VerticalScrollBarVisibility}">
+                                    <ItemsPresenter/>
+                                </ScrollViewer>
+                            </Border>
+                        </Popup>
+                    </Grid>
+
+                    <ControlTemplate.Triggers>
+                        <!-- Hover: thicker border + nicer arrow -->
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="#6B7280"/>
+                            <Setter TargetName="Bd" Property="BorderThickness" Value="2"/>
+                            <Setter TargetName="ArrowBd" Property="Background" Value="{DynamicResource TileFillHover}"/>
+                            <Setter TargetName="ArrowBd" Property="BorderBrush" Value="#6B7280"/>
+                            <Setter TargetName="Arrow" Property="Fill" Value="{DynamicResource TextPrimary}"/>
+                        </Trigger>
+
+                        <!-- Keyboard focus -->
+                        <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource PrimaryBg}"/>
+                            <Setter TargetName="Bd" Property="BorderThickness" Value="2"/>
+                        </Trigger>
+
+                        <!-- Open -->
+                        <Trigger Property="IsDropDownOpen" Value="True">
+                            <Setter TargetName="Arrow" Property="RenderTransform">
+                                <Setter.Value>
+                                    <RotateTransform Angle="180" CenterX="6" CenterY="3"/>
+                                </Setter.Value>
+                            </Setter>
+                            <Setter TargetName="ArrowBd" Property="Background" Value="{DynamicResource TileFillHover}"/>
+                            <Setter TargetName="ArrowBd" Property="BorderBrush" Value="#6B7280"/>
+                        </Trigger>
+
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.60"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+<!--Modern ComboBox End -->
+    
+    <!-- Radio Buttons -->
+    <Style TargetType="RadioButton">
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+    </Style>
+
+    <!-- Pill toggle style (Issue/Return) -->
+    <Style x:Key="PillToggleStyle" TargetType="ToggleButton">
+        <Setter Property="Width" Value="92"/>
+        <Setter Property="Height" Value="26"/>
+        <Setter Property="Background" Value="{DynamicResource SurfaceBg}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource SurfaceBorder}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Cursor" Value="Hand"/>
+
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ToggleButton">
+                    <Grid>
+                        <!-- Pill background -->
+                        <Border x:Name="Pill"
+                             Background="{TemplateBinding Background}"
+                             BorderBrush="{TemplateBinding BorderBrush}"
+                             BorderThickness="{TemplateBinding BorderThickness}"
+                             CornerRadius="13">
+                            <Grid Margin="10,0,10,0">
+                                <TextBlock x:Name="Label"
+                                        Text="Issue"
+                                        Foreground="{TemplateBinding Foreground}"
+                                        VerticalAlignment="Center"
+                                        HorizontalAlignment="Center"/>
+                            </Grid>
+                        </Border>
+
+                        <!-- Knob -->
+                        <Border x:Name="Knob"
+                             Width="22"
+                             Height="22"
+                             CornerRadius="11"
+                             Background="{DynamicResource CardBackground}"
+                             BorderBrush="{DynamicResource CardBorder}"
+                             BorderThickness="1"
+                             HorizontalAlignment="Right"
+                             Margin="2">
+                            <Border.Effect>
+                                <DropShadowEffect BlurRadius="8" 
+                                               ShadowDepth="1" 
+                                               Opacity="0.18"/>
+                            </Border.Effect>
+                        </Border>
+                    </Grid>
+
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" 
+                              Value="True">
+                            <Setter TargetName="Label" 
+                                 Property="Text" 
+                                 Value="Return"/>
+                            <Setter TargetName="Label" 
+                                 Property="Foreground" 
+                                 Value="#B91C1C"/>
+                            <!-- red -->
+                            <Setter TargetName="Pill" 
+                                 Property="BorderBrush" 
+                                 Value="#FCA5A5"/>
+                            <!-- soft red border -->
+                            <Setter TargetName="Knob" 
+                                 Property="HorizontalAlignment" 
+                                 Value="Left"/>
+                        </Trigger>
+                        <Trigger Property="IsChecked" 
+                              Value="False">
+                            <Setter TargetName="Label" 
+                                 Property="Foreground" 
+                                 Value="{DynamicResource TextPrimary}"/>
+                            <Setter TargetName="Pill" 
+                                 Property="BorderBrush" 
+                                 Value="{DynamicResource SurfaceBorder}"/>
+                        </Trigger>
+
+
+
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Pill" Property="BorderBrush" Value="#BFC6D1"/>
+                        </Trigger>
+
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.6"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <!-- Make modern styles the defaults app-wide -->
     <Style TargetType="TextBox" BasedOn="{StaticResource ModernTextBox}"/>
     <Style TargetType="ComboBox" BasedOn="{StaticResource ModernComboBox}"/>
     <Style TargetType="Button" BasedOn="{StaticResource SecondaryButtonStyle}"/>
 
-
-
+    <!--Backwards compatibility (FIX THIS LATER) -->
+    <Style x:Key="WatermarkTextBoxStyle"
+       TargetType="TextBox"
+       BasedOn="{StaticResource ModernWatermarkTextBox}"/>
 
 
 </ResourceDictionary>

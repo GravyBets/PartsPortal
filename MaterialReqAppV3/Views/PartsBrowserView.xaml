@@ -1,0 +1,220 @@
+﻿<UserControl x:Class="MaterialReqAppV3.Views.PartsBrowserView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+
+    <UserControl.Resources>
+        <!-- Qty column text style (what you created in code) -->
+        <Style x:Key="QtyCellTextStyle" TargetType="TextBlock">
+            <Setter Property="TextAlignment" Value="Center"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+        </Style>
+
+        <!-- Button base (reuse your existing button styles) -->
+        <Style x:Key="PartsActionButton"
+               TargetType="Button"
+               BasedOn="{StaticResource SecondaryButtonStyle}">
+            <Setter Property="Height" Value="34"/>
+            <Setter Property="Padding" Value="14,0"/>
+        </Style>
+    </UserControl.Resources>
+
+    <!-- Equivalent of partsPanel Grid -->
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <!-- search -->
+            <RowDefinition Height="*"/>
+            <!-- tabs -->
+            <RowDefinition Height="Auto"/>
+            <!-- button row -->
+        </Grid.RowDefinitions>
+
+        <!-- Search -->
+        <TextBox x:Name="PartsSearchBox"
+                 x:FieldModifier="public"
+                 Grid.Row="0"
+                 Height="34"
+                 Margin="0,0,0,10"
+                 Tag="Search parts..."
+                 Style="{StaticResource ModernWatermarkTextBox}"/>
+
+        <!-- Inner tabs -->
+        <TabControl x:Name="PartsTabs"
+                    x:FieldModifier="public"
+                    Grid.Row="1"
+                    Margin="0"
+                    Padding="0">
+
+            <!-- ALL PARTS -->
+            <TabItem Header="All Parts">
+                <ListBox x:Name="AllPartsListBox"
+                         x:FieldModifier="public"
+                         BorderThickness="0"
+                         Background="Transparent"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                         ScrollViewer.VerticalScrollBarVisibility="Auto"
+                         ItemTemplate="{StaticResource PartItemTemplate}"
+                         ItemContainerStyle="{StaticResource ThemedListBoxItemStyle}">
+                    <ListBox.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem Header="Add to Favorites" x:Name="AddFavMenuItem"/>
+                            <MenuItem Header="Remove from Favorites" x:Name="RemoveFavFromAllMenuItem"/>
+                        </ContextMenu>
+                    </ListBox.ContextMenu>
+                </ListBox>
+            </TabItem>
+
+            <!-- FAVORITES -->
+            <TabItem Header="Favorites">
+                <ListBox x:Name="FavPartsListBox"
+                         x:FieldModifier="public"
+                         BorderThickness="0"
+                         Background="Transparent"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                         ScrollViewer.VerticalScrollBarVisibility="Auto"
+                         ItemTemplate="{StaticResource PartItemTemplate}"
+                         ItemContainerStyle="{StaticResource ThemedListBoxItemStyle}">
+                    <ListBox.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem Header="Remove from Favorites" x:Name="RemoveFavMenuItem"/>
+                        </ContextMenu>
+                    </ListBox.ContextMenu>
+                </ListBox>
+            </TabItem>
+
+            <!-- TEMPLATES -->
+            <TabItem Header="Templates">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="220"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Names list -->
+                    <ListBox x:Name="TemplatesListBox"
+                             Grid.Column="0"
+                             BorderThickness="0"
+                             Background="Transparent"
+                             DisplayMemberPath="Name">
+                        <ListBox.ItemContainerStyle>
+                            <Style TargetType="ListBoxItem">
+                                <Setter Property="FontSize" Value="14"/>
+                                <Setter Property="Padding" Value="6,4"/>
+                            </Style>
+                        </ListBox.ItemContainerStyle>
+                    </ListBox>
+
+                    <!-- Preview grid -->
+                    <DataGrid x:Name="TemplateLinesGrid"
+                              Grid.Column="1"
+                              Margin="10,0,0,0"
+                              AutoGenerateColumns="False"
+                              CanUserAddRows="False"
+                              HeadersVisibility="Column"
+                              GridLinesVisibility="None"
+                              BorderThickness="0"
+                              Background="Transparent"
+                              IsReadOnly="True"
+                              RowHeight="44"
+                              FontSize="14"
+                              ColumnHeaderHeight="30"
+                              ItemsSource="{Binding SelectedItem.Lines, ElementName=TemplatesListBox}">
+
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Qty"
+                                                Width="50"
+                                                Binding="{Binding Qty}"
+                                                ElementStyle="{StaticResource QtyCellTextStyle}"/>
+
+                            <DataGridTemplateColumn Header="Part"
+                                                    Width="*"
+                                                    CellTemplate="{StaticResource SelectedPartDisplayTemplate}"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+            </TabItem>
+        </TabControl>
+
+        <!-- Button row -->
+        <StackPanel Grid.Row="2"
+            Orientation="Horizontal"
+            HorizontalAlignment="Left"
+            Margin="0,10,0,0">
+
+            <!-- Add to Order (always visible) -->
+            <Button x:Name="AddToOrderButton"
+                    x:FieldModifier="public"
+                    Style="{StaticResource PrimaryButtonStyle}"
+                    Height="34"
+                    Padding="14,0"
+                    Content="Add to Order"/>
+
+            <!-- Delete Template (Templates tab only = index 2) -->
+            <Button x:Name="DeleteTemplateButton"
+                    x:FieldModifier="public"
+                    Margin="8,0,0,0"
+                    Content="Delete Template">
+                <Button.Style>
+                    <Style TargetType="Button"
+                           BasedOn="{StaticResource PartsActionButton}">
+                        <Setter Property="Visibility" 
+                                Value="Collapsed"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding SelectedIndex, ElementName=PartsTabs}" 
+                                         Value="2">
+                                <Setter Property="Visibility" 
+                                        Value="Visible"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+            </Button>
+
+            <!-- Add to Favorites (All Parts tab only = index 0) -->
+            <Button x:Name="AddToFavoritesButton"
+                    x:FieldModifier="public"
+                    Margin="8,0,0,0"
+                    Content="Add to Favorites">
+                <Button.Style>
+                    <Style TargetType="Button"
+                           BasedOn="{StaticResource PartsActionButton}">
+                        <Setter Property="Visibility" 
+                                Value="Collapsed"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding SelectedIndex, ElementName=PartsTabs}" 
+                                         Value="0">
+                                <Setter Property="Visibility" 
+                                        Value="Visible"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+            </Button>
+
+            <!-- Remove from Favorites (Favorites tab only = index 1) -->
+            <Button x:Name="RemoveFromFavoritesButton"
+                    x:FieldModifier="public"
+                    Margin="8,0,0,0"
+                    Content="Remove from Favorites">
+                <Button.Style>
+                    <Style TargetType="Button"
+                           BasedOn="{StaticResource PartsActionButton}">
+                        <Setter Property="Visibility" 
+                                Value="Collapsed"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding SelectedIndex, ElementName=PartsTabs}" 
+                                         Value="1">
+                                <Setter Property="Visibility" 
+                                        Value="Visible"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+            </Button>
+
+        </StackPanel>
+
+    </Grid>
+</UserControl>
