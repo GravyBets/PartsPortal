@@ -114,6 +114,7 @@ namespace MaterialReqAppV3
                 {
                     Content = opt,
                     GroupName = "MovementType_" + tab.GetHashCode(), // isolate per tab
+                    Style = (Style)FindResource("MovementRadioButtonStyle"),
                     Margin = new Thickness(0, 4, 0, 4),
                     Foreground = (System.Windows.Media.Brush)FindResource("TextPrimary"),
                     IsChecked = string.Equals(GetMovementType(tab), opt, StringComparison.OrdinalIgnoreCase)
@@ -167,7 +168,7 @@ namespace MaterialReqAppV3
             // 2) Load settings + parts
             _settings = _settingsService.Load();
             TryLoadParts();
-            RefreshPartsListForSelectedTab();
+            
 
 
             // Load Favorites
@@ -270,6 +271,8 @@ namespace MaterialReqAppV3
 
                 BuildMovementOptions(tab);
                 UpdateDetailsBoxForTab(tab);
+                RefreshPartsList(tab);
+                RefreshTemplatesUI(tab);
             }           
         }
 
@@ -278,10 +281,10 @@ namespace MaterialReqAppV3
             var tab = new TabItem();
             tab.Tag = false; // default: Material Issue
             tab.Header = CreateTabHeader(header, tab);
-            var content = new Views.SiteTabContent();
-            tab.Content = content;
 
             SetTabReason(tab, "");
+            tab.Content = CreateTabContentLayout(tab);   // ✅ always create the wired XAML host
+           
             return tab;
         }
 
@@ -299,6 +302,7 @@ namespace MaterialReqAppV3
                 Margin = new Thickness(0, 0, 6, 0),
                 VerticalAlignment = VerticalAlignment.Center
             };
+
 
             var closeHit = new Border
             {
@@ -333,15 +337,18 @@ namespace MaterialReqAppV3
                 int closingIndex = SiteTabs.Items.IndexOf(ownerTab);
 
                 // cleanup per-tab state before removing the tab
+                _partsViewByTab.Remove(ownerTab);
+                _selectedViewByTab.Remove(ownerTab);
+
                 _selectedPartsByTab.Remove(ownerTab);
                 _movementTypeByTab.Remove(ownerTab);
                 _movementPanelByTab.Remove(ownerTab);
-
                 _detailsBoxByTab.Remove(ownerTab);
                 _costCenterByTab.Remove(ownerTab);
                 _wbsByTab.Remove(ownerTab);
                 _workOrderByTab.Remove(ownerTab);
                 _selectedStatusByTab.Remove(ownerTab);
+
 
 
                 // Remove it
@@ -412,19 +419,18 @@ namespace MaterialReqAppV3
             if (currentSiteTabCount >= MaxSiteTabs)
             {
                 MessageBox.Show("Max of 4 site tabs.");
-                // go back to last real tab
                 SiteTabs.SelectedIndex = SiteTabs.Items.Count - 2;
                 return;
             }
 
             string header = GetNextDefaultBlankTitle();
 
+            var newTab = CreateSiteTab(header); //content is already wired here
 
-            var newTab = CreateSiteTab(header);
+            
             SiteTabs.Items.Insert(SiteTabs.Items.Count - 1, newTab);
             SiteTabs.SelectedItem = newTab;
             UpdateTabCloseButtonsVisibility();
-
 
             SetTabReason(newTab, ""); // start empty so watermark shows
 
@@ -443,84 +449,26 @@ namespace MaterialReqAppV3
             return tab.Header?.ToString() ?? "";
         }
 
-
-
-
         private UIElement CreateTabContentLayout(TabItem ownerTab)
         {
-            // Main 2-column layout:
-            // Left = Parts Browser (spans both rows)
-            // Right = Top: Movement+Details, Bottom: Selected Parts
+            // XAML owns layout now
+            var host = new Views.SiteTabContent();
 
-            var grid = new Grid { Margin = new Thickness(10) };
+            // Wire the ACTUAL instances in the XAML host
+            WirePartsBrowser(ownerTab, host.Parts);
+            WireMovementDetails(ownerTab, host.Movement);
+            WireSelectedParts(ownerTab, host.Selected);
 
-            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
-
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-
-            Border MakeCard(UIElement child, Thickness margin)
-            {
-                var b = new Border
-                {
-                    BorderThickness = new Thickness(1),
-                    CornerRadius = new CornerRadius(12),
-                    Padding = new Thickness(12),
-                    Margin = margin,
-                    Child = child
-                };
-
-                b.SetResourceReference(Border.BackgroundProperty, "SurfaceBg");
-                b.SetResourceReference(Border.BorderBrushProperty, "SurfaceBorder");
-                return b;
-            }
-
-            // ============================================================
-            // LEFT: Parts Browser
-            // ============================================================
-            var partsPanel = CreateAndWirePartsBrowser(ownerTab);
-
-            var partsCard = MakeCard(partsPanel, new Thickness(0, 0, 8, 0));
-            Grid.SetRow(partsCard, 0);
-            Grid.SetColumn(partsCard, 0);
-            Grid.SetRowSpan(partsCard, 2);
-            grid.Children.Add(partsCard);
-
-            // ============================================================
-            // TOP-RIGHT: Movement + Details
-            // ============================================================
-            var movementView = CreateAndWireMovementDetails(ownerTab);
-
-            var topRightCard = MakeCard(movementView, new Thickness(8, 0, 0, 8));
-            Grid.SetRow(topRightCard, 0);
-            Grid.SetColumn(topRightCard, 1);
-            grid.Children.Add(topRightCard);
-
-            // ============================================================
-            // BOTTOM-RIGHT: Selected Parts
-            // ============================================================
-            var selectedView = CreateAndWireSelectedParts(ownerTab);
-
-            var selectedCard = MakeCard(selectedView, new Thickness(8, 8, 0, 0));
-            Grid.SetRow(selectedCard, 1);
-            Grid.SetColumn(selectedCard, 1);
-            grid.Children.Add(selectedCard);
-
-            return grid;
+            return host;
         }
 
-        private Views.PartsBrowserView CreateAndWirePartsBrowser(TabItem ownerTab)
+        private void WirePartsBrowser(TabItem ownerTab, Views.PartsBrowserView view)
         {
-            var view = new Views.PartsBrowserView();
-
-            // Safety check (you had this)
             if (view.PartsSearchBox == null)
-                throw new Exception("PartsBrowserView didn't initialize. Check InitializeComponent / Build Action / x:Class.");
+                throw new Exception("PartsBrowserView didn't initialize. Check x:Class / Build Action.");
 
             _partsViewByTab[ownerTab] = view;
 
-            // Local aliases (readability)
             var partsSearch = view.PartsSearchBox;
             var partsTabs = view.PartsTabs;
             var allList = view.AllPartsListBox;
@@ -540,19 +488,16 @@ namespace MaterialReqAppV3
                 deleteTemplateBtn.Visibility = (partsTabs.SelectedIndex == 2) ? Visibility.Visible : Visibility.Collapsed;
             }
 
-            // Right-click should select item under mouse
             void SelectOnRightClick(ListBox lb)
             {
                 lb.PreviewMouseRightButtonDown += (_, e) =>
                 {
                     var dep = (DependencyObject)e.OriginalSource;
                     var container = ItemsControl.ContainerFromElement(lb, dep) as ListBoxItem;
-                    if (container != null)
-                        lb.SelectedItem = container.DataContext;
+                    if (container != null) lb.SelectedItem = container.DataContext;
                 };
             }
 
-            // Double click adds to order
             void WireDoubleClickAdd(ListBox lb)
             {
                 lb.MouseDoubleClick += (_, __) =>
@@ -562,20 +507,23 @@ namespace MaterialReqAppV3
                 };
             }
 
-            // Context menus
             WirePartsContextMenus(ownerTab, allList, favList);
 
-            // Wiring
             SelectOnRightClick(allList);
             SelectOnRightClick(favList);
             WireDoubleClickAdd(allList);
             WireDoubleClickAdd(favList);
 
             partsSearch.TextChanged += (_, __) => RefreshPartsList(ownerTab);
+
             partsTabs.SelectionChanged += (_, __) =>
             {
                 UpdateButtonsForTab();
                 RefreshPartsList(ownerTab);
+
+                // optional: keep templates fresh when user clicks Templates tab
+                if (partsTabs.SelectedIndex == 2)
+                    RefreshTemplatesUI(ownerTab);
             };
 
             addToOrderBtn.Click += (_, __) =>
@@ -605,12 +553,10 @@ namespace MaterialReqAppV3
                 RefreshPartsList(ownerTab);
             };
 
-            // Initial UI state + fill
+            // Initial state + fill
             UpdateButtonsForTab();
             RefreshPartsList(ownerTab);
             RefreshTemplatesUI(ownerTab);
-
-            return view;
         }
 
         private void WirePartsContextMenus(TabItem ownerTab, ListBox allPartsList, ListBox favPartsList)
@@ -656,10 +602,8 @@ namespace MaterialReqAppV3
             favPartsList.ContextMenu.Items.Add(removeFav);
         }
 
-        private Views.MovementDetailsView CreateAndWireMovementDetails(TabItem ownerTab)
+        private void WireMovementDetails(TabItem ownerTab, Views.MovementDetailsView view)
         {
-            var view = new Views.MovementDetailsView();
-
             _movementPanelByTab[ownerTab] = view.MovementOptionsPanel;
             _detailsBoxByTab[ownerTab] = view.DetailsBox;
 
@@ -667,14 +611,14 @@ namespace MaterialReqAppV3
 
             view.IssueReturnPill.Checked += (_, __) =>
             {
-                ownerTab.Tag = true; // Return
+                ownerTab.Tag = true;
                 BuildMovementOptions(ownerTab);
                 UpdateDetailsBoxForTab(ownerTab);
             };
 
             view.IssueReturnPill.Unchecked += (_, __) =>
             {
-                ownerTab.Tag = false; // Issue
+                ownerTab.Tag = false;
                 BuildMovementOptions(ownerTab);
                 UpdateDetailsBoxForTab(ownerTab);
             };
@@ -694,13 +638,10 @@ namespace MaterialReqAppV3
 
             BuildMovementOptions(ownerTab);
             UpdateDetailsBoxForTab(ownerTab);
-
-            return view;
         }
 
-        private Views.SelectedPartsView CreateAndWireSelectedParts(TabItem ownerTab)
+        private void WireSelectedParts(TabItem ownerTab, Views.SelectedPartsView view)
         {
-            var view = new Views.SelectedPartsView();
             _selectedViewByTab[ownerTab] = view;
 
             view.SelectedPartsGrid.ItemsSource = GetSelectedParts(ownerTab);
@@ -725,10 +666,7 @@ namespace MaterialReqAppV3
                 ClearTabStatus(ownerTab);
             };
 
-            view.SaveToTemplatesButton.Click += (_, __) =>
-            {
-                SaveSelectedPartsToTemplate(ownerTab);
-            };
+            view.SaveToTemplatesButton.Click += (_, __) => SaveSelectedPartsToTemplate(ownerTab);
 
             view.SelectedPartsGrid.PreviewKeyDown += (_, e) =>
             {
@@ -742,9 +680,9 @@ namespace MaterialReqAppV3
                     e.Handled = true;
                 }
             };
-
-            return view;
         }
+
+
 
         private void SaveSelectedPartsToTemplate(TabItem ownerTab)
         {
@@ -786,7 +724,6 @@ namespace MaterialReqAppV3
             Title = $"Template saved: {name}";
         }
 
-
         private void AddTemplateToOrder(TabItem ownerTab, PartTemplate t)
         {
             var selected = GetSelectedParts(ownerTab);
@@ -807,7 +744,7 @@ namespace MaterialReqAppV3
                 {
                     Material = line.Material,
                     Description = line.Description,
-                    Warehouse = SelectedWarehouse
+                    Warehouse = _currentWarehouse
                 };
 
                 var sel = new SelectedPartLine(part) { Qty = line.Qty };
@@ -820,29 +757,25 @@ namespace MaterialReqAppV3
             if (!_partsViewByTab.TryGetValue(ownerTab, out var view))
                 return;
 
-            var templatesList = view.TemplatesListBox;
-            var templateLinesGrid = view.TemplateLinesGrid;
-
             var sorted = _templates.OrderBy(t => t.Name).ToList();
+            view.TemplatesListBox.ItemsSource = sorted;
 
-            templatesList.ItemsSource = sorted;
+            // Keep selection by name (or pick first)
+            var desired = selectName ?? (view.TemplatesListBox.SelectedItem as PartTemplate)?.Name;
 
-            // keep current selection if possible
-            string? pick = selectName ?? (templatesList.SelectedItem as PartTemplate)?.Name;
+            PartTemplate? match = null;
+            if (!string.IsNullOrWhiteSpace(desired))
+                match = sorted.FirstOrDefault(t => string.Equals(t.Name, desired, StringComparison.OrdinalIgnoreCase));
 
-            if (!string.IsNullOrWhiteSpace(pick))
-            {
-                var match = sorted.FirstOrDefault(t =>
-                    string.Equals(t.Name, pick, StringComparison.OrdinalIgnoreCase));
-
-                templatesList.SelectedItem = match;
-                templateLinesGrid.ItemsSource = match?.Lines;
-            }
+            if (match != null)
+                view.TemplatesListBox.SelectedItem = match;
+            else if (sorted.Count > 0)
+                view.TemplatesListBox.SelectedIndex = 0;
             else
-            {
-                templatesList.SelectedItem = null;
-                templateLinesGrid.ItemsSource = null;
-            }
+                view.TemplatesListBox.SelectedIndex = -1;
+
+            // If your DataGrid uses ElementName binding to SelectedItem.Lines,
+            // DO NOT set TemplateLinesGrid.ItemsSource here.
         }
 
         private void RefreshPartsListForSelectedTab()
@@ -850,9 +783,6 @@ namespace MaterialReqAppV3
             if (SiteTabs.SelectedItem is TabItem tab)
                 RefreshPartsList(tab);
         }
-
-
-
 
         private string GetTabReason(TabItem tab) => tab.ToolTip?.ToString() ?? "";
         private void SetTabReason(TabItem tab, string reason) => tab.ToolTip = reason;
@@ -905,41 +835,48 @@ namespace MaterialReqAppV3
             if (!_partsViewByTab.TryGetValue(ownerTab, out var view) || view == null)
                 return;
 
-            // If any of these are null, your PartsBrowserView XAML names / InitializeComponent are wrong.
             if (view.PartsSearchBox == null || view.AllPartsListBox == null || view.FavPartsListBox == null)
                 return;
 
-            // If parts/favorites aren’t loaded yet, don’t crash.
             var parts = _allParts ?? new List<Part>();
-            var favSet = _favoriteMaterials ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            // Make sure favorite lookup is case-insensitive no matter how it's stored
+            var favSet = new HashSet<string>
+                (
+                    _favoriteMaterials ?? Enumerable.Empty<string>(),
+                    StringComparer.OrdinalIgnoreCase
+                );
+
 
             string q = (view.PartsSearchBox.Text ?? "").Trim();
 
-            IEnumerable<Part> baseSet = parts
-                .Where(p => string.Equals(p.Warehouse, _currentWarehouse, StringComparison.OrdinalIgnoreCase));
+            // Normalize the current warehouse once
+            string currentWh = NormalizeWarehouse(_currentWarehouse);
+
+            IEnumerable<Part> queryable = parts;
+
+            // ✅ Normalize each part’s warehouse before comparing
+            queryable = queryable.Where(p =>
+                string.Equals(NormalizeWarehouse(p.Warehouse), currentWh, StringComparison.OrdinalIgnoreCase));
 
             if (!string.IsNullOrWhiteSpace(q))
             {
-                baseSet = baseSet.Where(p =>
+                queryable = queryable.Where(p =>
                     (p.Description?.Contains(q, StringComparison.OrdinalIgnoreCase) ?? false) ||
                     (p.Material?.Contains(q, StringComparison.OrdinalIgnoreCase) ?? false));
             }
 
-            view.AllPartsListBox.ItemsSource = baseSet.Take(250).ToList();
+            // Materialize once
+            var list = queryable.Take(250).ToList();
 
-            view.FavPartsListBox.ItemsSource = baseSet
+            view.AllPartsListBox.ItemsSource = list;
+
+            view.FavPartsListBox.ItemsSource = list
                 .Where(p => !string.IsNullOrWhiteSpace(p.Material) && favSet.Contains(p.Material))
-                .Take(250)
                 .ToList();
         }
 
 
-
-
-        private void PartsSearchBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
-        {
-            RefreshPartsListForSelectedTab();
-        }
 
         private string NormalizeWarehouse(string selectedWarehouse)
         {

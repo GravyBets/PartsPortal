@@ -36,6 +36,7 @@
 
         <!-- Selected parts grid -->
         <DataGrid x:Name="SelectedPartsGrid"
+                  Style="{StaticResource ThemedDataGridStyle}"
                   x:FieldModifier="public"
                   Grid.Row="0"
                   AutoGenerateColumns="False"

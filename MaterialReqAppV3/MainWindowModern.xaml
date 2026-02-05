@@ -46,17 +46,17 @@
 
                             <!-- Tab headers -->
                             <TabPanel Grid.Row="0"
-                              IsItemsHost="True"
-                              Margin="0,0,0,-1"/>
+                                      IsItemsHost="True"
+                                      Margin="0,0,0,-1"/>
 
                             <!-- Site name bar (under headers) -->
                             <Border Grid.Row="1"
-                            Background="{DynamicResource CardBackground}"
-                            BorderBrush="{DynamicResource CardBorder}"
-                            BorderThickness="1"
-                            CornerRadius="12"
-                            Padding="12"
-                            Margin="0,0,0,10">
+                                    Background="{DynamicResource CardBackground}"
+                                    BorderBrush="{DynamicResource CardBorder}"
+                                    BorderThickness="1"
+                                    CornerRadius="12"
+                                    Padding="12"
+                                    Margin="0,0,0,10">
 
                                 <DockPanel LastChildFill="False">
 
@@ -64,11 +64,11 @@
                                         VerticalAlignment="Center">
 
                                         <TextBox x:Name="PART_SiteNameBox"
-                                         Width="340"
-                                         Height="34"
-                                         Tag=" Site # / Reason for Movement"
-                                         Margin="0,0,8,0"
-                                         Style="{StaticResource ModernWatermarkTextBox}"/>
+                                                 Width="340"
+                                                 Height="34"
+                                                 Tag="Site # / Reason for Movement"
+                                                 Margin="0,0,8,0"
+                                                 Style="{StaticResource ModernWatermarkTextBox}"/>
 
                                         <!-- If you want it to be secondary instead, swap style to SecondaryButtonStyle -->
                                         <Button Content="Apply"
@@ -85,87 +85,6 @@
                             <ContentPresenter Grid.Row="2"
                                       ContentSource="SelectedContent"/>
                         </Grid>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>        
-        
-        <!-- TAB LOOK: tabs "attach" to the bar border under them -->             
-        <Style x:Key="AttachedTabItemStyle" TargetType="TabItem">
-            <Setter Property="Margin" Value="0,0,6,0"/>
-            <Setter Property="Padding" Value="14,8"/>
-            <Setter Property="Background" Value="{DynamicResource TileFill}"/>
-            <Setter Property="BorderBrush" Value="{DynamicResource SurfaceBorder}"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="HorizontalContentAlignment" Value="Center"/>
-            <Setter Property="VerticalContentAlignment" Value="Center"/>
-
-
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="TabItem">
-                        <Border x:Name="Bd"
-                        Background="{TemplateBinding Background}"
-                        BorderBrush="{TemplateBinding BorderBrush}"
-                        BorderThickness="{TemplateBinding BorderThickness}"
-                        CornerRadius="10,10,0,0"
-                        Padding="{TemplateBinding Padding}">
-
-                            <Grid>
-                                <ContentPresenter x:Name="HeaderPresenter"
-                                          ContentSource="Header"
-                                          VerticalAlignment="Center"
-                                          HorizontalAlignment="Center"
-                                          TextElement.FontWeight="SemiBold"
-                                          TextElement.Foreground="{DynamicResource TextPrimary}"/>
-
-                                <Border x:Name="Indicator"
-                                Height="3"
-                                VerticalAlignment="Bottom"
-                                HorizontalAlignment="Stretch"
-                                Background="{DynamicResource PrimaryBg}"
-                                Opacity="0"/>
-                            </Grid>
-                        </Border>
-
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource SurfaceBg}"/>
-                                <Setter TargetName="Bd" Property="BorderThickness" Value="1,1,1,0"/>
-                                <Setter TargetName="Bd" Property="Margin" Value="0,0,6,-1"/>
-
-                                <Setter TargetName="HeaderPresenter" Property="TextElement.FontWeight" Value="Bold"/>
-                                <Setter TargetName="HeaderPresenter" Property="TextElement.Foreground" Value="{DynamicResource TextPrimary}"/>
-                                <Setter TargetName="Indicator" Property="Opacity" Value="1"/>
-                            </Trigger>
-
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource TileFillHover}"/>
-                                <Setter TargetName="HeaderPresenter" Property="TextElement.Foreground" Value="{DynamicResource TextPrimary}"/>
-                            </Trigger>
-
-                            <Trigger Property="IsEnabled" Value="False">
-                                <Setter Property="Opacity" Value="0.6"/>
-                            </Trigger>
-
-                            <!-- Special case: Plus tab should never look selected/attached -->
-                            <MultiTrigger>
-                                <MultiTrigger.Conditions>
-                                    <Condition Property="IsSelected" Value="True"/>
-                                    <Condition Property="Tag" Value="Plus"/>
-                                </MultiTrigger.Conditions>
-
-                                <!-- Undo the “attached” selected look -->
-                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource TileFill}"/>
-                                <Setter TargetName="Bd" Property="BorderThickness" Value="1"/>
-                                <Setter TargetName="Bd" Property="Margin" Value="0,0,6,0"/>
-                                <Setter TargetName="Indicator" Property="Opacity" Value="0"/>
-                                <Setter TargetName="HeaderPresenter" Property="TextElement.FontWeight" Value="SemiBold"/>
-                                <Setter TargetName="HeaderPresenter" Property="TextElement.Foreground" Value="{DynamicResource TextPrimary}"/>
-                            </MultiTrigger>
-
-
-                        </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
@@ -239,18 +158,20 @@
          TOP HEADER BAR
          ======================= -->
         <Border Grid.Row="0"
-            Background="{DynamicResource CardBackground}"
-            BorderBrush="{DynamicResource CardBorder}"
-            BorderThickness="1"
-            CornerRadius="12"
-            Padding="14"
-            Margin="0,0,0,8" Grid.ColumnSpan="2">
+                Background="{DynamicResource CardBackground}"
+                BorderBrush="{DynamicResource CardBorder}"
+                BorderThickness="1"
+                CornerRadius="12"
+                Padding="14"
+                Margin="0,0,0,8" 
+                Grid.ColumnSpan="2">
 
             <Grid Margin="0">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
+                
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
@@ -296,107 +217,31 @@
                                    Foreground="{DynamicResource TextPrimary}"
                                    Text="&#xE713;"/>
                     </Button>
-
                 </StackPanel>
             </Grid>
-
         </Border>
 
         <!-- =======================
-                     TABS
+                     SITE TABS
             ======================= -->
         <TabControl x:Name="SiteTabs"
-            Grid.Row="1"
-            Style="{StaticResource TabControlWithSiteBarStyle}"
-            SelectionChanged="SiteTabs_SelectionChanged"
-            PreviewMouseLeftButtonDown="SiteTabs_PreviewMouseLeftButtonDown"
-            ItemContainerStyle="{StaticResource AttachedTabItemStyle}" Grid.ColumnSpan="2" Margin="0,0,0,44" Grid.RowSpan="2">
+                    Grid.Row="1"
+                    Style="{StaticResource TabControlWithSiteBarStyle}"
+                    SelectionChanged="SiteTabs_SelectionChanged"
+                    PreviewMouseLeftButtonDown="SiteTabs_PreviewMouseLeftButtonDown"
+                    ItemContainerStyle="{StaticResource AttachedTabItemStyle}" 
+                    Grid.ColumnSpan="2" 
+                    Margin="0,0,0,44" 
+                    Grid.RowSpan="2">
 
             <!-- Default site tab -->
             <TabItem x:Name="FirstBlankTab"
-             Header="Blank"
-             Tag="False" Margin="0,0,6,0">
-
-                
-
-                <!-- 2x2 layout -->
-                <Grid Margin="10">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="220"/>
-                        <RowDefinition Height="*"/>
-                    </Grid.RowDefinitions>
-
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-
-                    <Border Grid.Row="0" Grid.Column="0"
-            Style="{StaticResource SurfaceCardStyle}"
-            Margin="0,0,8,8">
-                        <TextBlock Text="Movement Type (Top-Left)"
-                   Foreground="{DynamicResource TextPrimary}"
-                   FontSize="18"
-                   FontWeight="SemiBold"/>
-                    </Border>
-
-                    <Border Grid.Row="0" Grid.Column="1"
-            Style="{StaticResource SurfaceCardStyle}"
-            Margin="8,0,0,8">
-                        <TextBlock Text="Cost Center / WBS / Work Order (Top-Right)"
-                   Foreground="{DynamicResource TextPrimary}"
-                   FontSize="18"
-                   FontWeight="SemiBold"/>
-                    </Border>
-
-                    <!-- Parts Catalog -->
-                    <Border Grid.Row="1" Grid.Column="0"
-            Style="{StaticResource SurfaceCardStyle}"
-            Margin="0,8,8,0">
-
-                        <Grid>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="*"/>
-                            </Grid.RowDefinitions>
-
-                            <!-- Search (force single-line behavior even though the style is "multiline") -->
-                            <TextBox x:Name="PartsSearchBox"
-                     Height="34"
-                     Margin="0,0,0,10"
-                     Tag="Search parts..."
-                     Style="{StaticResource WatermarkTextBoxMultilineStyle}"
-                     AcceptsReturn="False"
-                     TextWrapping="NoWrap"
-                     VerticalScrollBarVisibility="Disabled"
-                     Padding="12,0"
-                     TextChanged="PartsSearchBox_TextChanged"/>
-
-                            <ListBox x:Name="PartsListBox"
-                     Grid.Row="1"
-                     Background="Transparent"
-                     BorderThickness="0"
-                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                     ScrollViewer.VerticalScrollBarVisibility="Auto"
-                     ItemContainerStyle="{StaticResource ThemedListBoxItemStyle}"
-                     ItemTemplate="{StaticResource PartItemTemplate}"/>
-                        </Grid>
-                    </Border>
-
-                    <Border Grid.Row="1" Grid.Column="1"
-            Style="{StaticResource SurfaceCardStyle}"
-            Margin="8,8,0,0">
-                        <TextBlock Text="Selected Parts (Bottom-Right)"
-                   Foreground="{DynamicResource TextPrimary}"
-                   FontSize="18"
-                   FontWeight="SemiBold"/>
-                    </Border>
-
-                </Grid>
-
+                     Header="Blank"
+                     Tag="False"
+                     Margin="0,0,6,0">
+                <Grid/>
             </TabItem>
-
-
+            
             <!-- Plus tab -->
             <TabItem x:Name="PlusTab"
                      Tag="Plus"
@@ -405,19 +250,15 @@
                      Padding="0">
                 <TabItem.Header>
                     <TextBlock FontFamily="Segoe MDL2 Assets"
-                   Text="&#xE710;"
-                   FontSize="13"
-                   FontWeight="Regular"
-                   Foreground="{DynamicResource TextSecondary}"
-                   VerticalAlignment="Center"
-                   HorizontalAlignment="Center"/>
-
+                               Text="&#xE710;"
+                               FontSize="13"
+                               FontWeight="Regular"
+                               Foreground="{DynamicResource TextSecondary}"
+                               VerticalAlignment="Center"
+                               HorizontalAlignment="Center"/>
                 </TabItem.Header>
                 <Grid/>
             </TabItem>
-
-
-
         </TabControl>
 
 
@@ -436,7 +277,4 @@
                     Click="OpenSummary_Click"/>
         </Grid>
     </Grid>
-
-
-
 </Window>

@@ -42,21 +42,27 @@
 
         <!-- Inner tabs -->
         <TabControl x:Name="PartsTabs"
-                    x:FieldModifier="public"
-                    Grid.Row="1"
-                    Margin="0"
-                    Padding="0">
+            x:FieldModifier="public"
+            Grid.Row="1"
+            Style="{StaticResource PartsInnerTabControlStyle}"
+            ItemContainerStyle="{StaticResource PartsInnerTabItemStyle}"
+            Margin="0"
+            Padding="0"
+            Background="Transparent"
+            BorderThickness="0">
+
+
 
             <!-- ALL PARTS -->
             <TabItem Header="All Parts">
                 <ListBox x:Name="AllPartsListBox"
                          x:FieldModifier="public"
-                         BorderThickness="0"
-                         Background="Transparent"
-                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                         ScrollViewer.VerticalScrollBarVisibility="Auto"
+                         Style="{StaticResource ThemedListBoxStyle}"
+                         ItemContainerStyle="{StaticResource ThemedListBoxItemStyle}"
                          ItemTemplate="{StaticResource PartItemTemplate}"
-                         ItemContainerStyle="{StaticResource ThemedListBoxItemStyle}">
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                         ScrollViewer.VerticalScrollBarVisibility="Auto">
+                
                     <ListBox.ContextMenu>
                         <ContextMenu>
                             <MenuItem Header="Add to Favorites" x:Name="AddFavMenuItem"/>
@@ -70,12 +76,12 @@
             <TabItem Header="Favorites">
                 <ListBox x:Name="FavPartsListBox"
                          x:FieldModifier="public"
-                         BorderThickness="0"
-                         Background="Transparent"
-                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                         ScrollViewer.VerticalScrollBarVisibility="Auto"
+                         Style="{StaticResource ThemedListBoxStyle}"
+                         ItemContainerStyle="{StaticResource ThemedListBoxItemStyle}"
                          ItemTemplate="{StaticResource PartItemTemplate}"
-                         ItemContainerStyle="{StaticResource ThemedListBoxItemStyle}">
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                         ScrollViewer.VerticalScrollBarVisibility="Auto">
+
                     <ListBox.ContextMenu>
                         <ContextMenu>
                             <MenuItem Header="Remove from Favorites" x:Name="RemoveFavMenuItem"/>
@@ -94,20 +100,26 @@
 
                     <!-- Names list -->
                     <ListBox x:Name="TemplatesListBox"
-                             Grid.Column="0"
-                             BorderThickness="0"
-                             Background="Transparent"
-                             DisplayMemberPath="Name">
+         Grid.Column="0"
+         BorderThickness="0"
+         Background="Transparent"
+         DisplayMemberPath="Name"
+         Foreground="{DynamicResource TextPrimary}">
                         <ListBox.ItemContainerStyle>
-                            <Style TargetType="ListBoxItem">
-                                <Setter Property="FontSize" Value="14"/>
+                            <Style TargetType="ListBoxItem"
+               BasedOn="{StaticResource ThemedListBoxItemStyle}">
                                 <Setter Property="Padding" Value="6,4"/>
+                                <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
                             </Style>
                         </ListBox.ItemContainerStyle>
                     </ListBox>
 
+
+
+
                     <!-- Preview grid -->
                     <DataGrid x:Name="TemplateLinesGrid"
+                              Style="{StaticResource ThemedDataGridStyle}"
                               Grid.Column="1"
                               Margin="10,0,0,0"
                               AutoGenerateColumns="False"

@@ -21,15 +21,19 @@
     <!-- Modern TextBox -->
     <Style x:Key="ModernTextBox" TargetType="TextBox">
         <Setter Property="Height" Value="32"/>
-        <Setter Property="Padding" Value="10,5"/>
+        <Setter Property="Padding" Value="12,8"/>
+        <Setter Property="FocusVisualStyle" Value= "{x:Null}"/>
         <Setter Property="FontSize" Value="13"/>
         <Setter Property="VerticalContentAlignment" Value="Center"/>
         <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+        <Setter Property="CaretBrush" Value="{DynamicResource TextPrimary}"/>
         <Setter Property="Background" Value="{DynamicResource SurfaceBg}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource SurfaceBorder}"/>
         <Setter Property="BorderThickness" Value="1.5"/>
+        <Setter Property="SelectionBrush" Value="{DynamicResource PrimaryBg}"/>
 
-        <Setter Property="Template">
+
+                <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="TextBox">
                     <Border x:Name="Bd"
@@ -74,7 +78,7 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="TextBox">
-                    <Grid>
+                    <Grid SnapsToDevicePixels="True">
 
                         <Border x:Name="Bd"
                             Background="{TemplateBinding Background}"
@@ -84,12 +88,16 @@
 
                         <!-- Watermark overlay -->
                         <TextBlock x:Name="Watermark"
-                               Text="{TemplateBinding Tag}"
-                               Foreground="{DynamicResource WatermarkText}"
-                               Margin="{TemplateBinding Padding}"
-                               VerticalAlignment="Center"
-                               IsHitTestVisible="False"
-                               Visibility="Collapsed"/>
+                                   Text="{TemplateBinding Tag}"
+                                   Foreground="{DynamicResource WatermarkText}"
+                                   Margin="{TemplateBinding Padding}"
+                                   Padding="2,0,0,0"
+                                   VerticalAlignment="Center"
+                                   IsHitTestVisible="False"
+                                   Visibility="Collapsed"
+                                   TextTrimming="CharacterEllipsis"
+                                   FontSize="{TemplateBinding FontSize}"
+                                   FontFamily="{TemplateBinding FontFamily}"/>
 
                         <ScrollViewer x:Name="PART_ContentHost"
                                   Padding="{TemplateBinding Padding}"/>
@@ -132,7 +140,8 @@
     
     <!-- Secondary button -->
     <Style x:Key="SecondaryButtonStyle" TargetType="Button">
-        <Setter Property="Height" Value="36"/>
+        <Setter Property="Height" Value="34"/>        
+        <Setter Property="MinWidth" Value="96"/>
         <Setter Property="Padding" Value="16,0"/>
         <Setter Property="FontSize" Value="13"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
@@ -171,8 +180,7 @@
     <!-- Primary button (Save, etc.) -->
     <Style x:Key="PrimaryButtonStyle"
        TargetType="Button"
-       BasedOn="{StaticResource SecondaryButtonStyle}">
-
+       BasedOn="{StaticResource SecondaryButtonStyle}">        
         <Setter Property="Foreground" Value="White"/>
         <Setter Property="Background" Value="{DynamicResource PrimaryBg}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBorder}"/>
@@ -217,6 +225,186 @@
         </Setter>
     </Style>
 
+    <!-- ===========
+     DATA GRID THEME (Fixes white rows in dark mode)
+     =========== -->
+
+    <Style x:Key="ThemedDataGridColumnHeaderStyle" TargetType="DataGridColumnHeader">
+        <Setter Property="Background" Value="{DynamicResource DataGridHeaderBg}"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource DataGridHeaderBorder}"/>
+        <Setter Property="BorderThickness" Value="0,0,0,1"/>
+        <Setter Property="Padding" Value="10,6"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+
+    <Style x:Key="ThemedDataGridCellStyle" TargetType="DataGridCell">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Padding" Value="10,6"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+    </Style>
+
+    <Style x:Key="ThemedDataGridRowStyle" TargetType="DataGridRow">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="{DynamicResource DataGridRowHoverBg}"/>
+            </Trigger>
+            <Trigger Property="IsSelected" Value="True">
+                <Setter Property="Background" Value="{DynamicResource DataGridRowSelectedBg}"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="ThemedDataGridStyle" TargetType="DataGrid">
+        <!-- This is the key: kill the default white row fill -->
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="RowBackground" Value="Transparent"/>
+        <Setter Property="AlternatingRowBackground" Value="Transparent"/>
+
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="GridLinesVisibility" Value="None"/>
+        <Setter Property="HeadersVisibility" Value="Column"/>
+
+        <Setter Property="ColumnHeaderStyle" Value="{StaticResource ThemedDataGridColumnHeaderStyle}"/>
+        <Setter Property="CellStyle" Value="{StaticResource ThemedDataGridCellStyle}"/>
+        <Setter Property="RowStyle" Value="{StaticResource ThemedDataGridRowStyle}"/>
+    </Style>
+
+    <!-- TAB LOOK: tabs "attach" to the bar border under them -->
+    <Style x:Key="AttachedTabItemStyle" TargetType="TabItem">
+        <Setter Property="Margin" Value="0,0,6,0"/>
+        <Setter Property="Padding" Value="14,8"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextSecondary}"/>
+        <Setter Property="Background" Value="{DynamicResource TileFill}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource SurfaceBorder}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+
+        <!-- default (unselected) -->
+        <Setter Property="Foreground" Value="{DynamicResource TextSecondary}"/>
+        <Setter Property="Background" Value="{DynamicResource TabBg}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource SurfaceBorder}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="TabItem">
+                    <Border x:Name="Bd"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="10,10,0,0"
+                            Padding="{TemplateBinding Padding}">
+
+                        <Grid>
+                            <ContentPresenter x:Name="HeaderPresenter"
+                                              ContentSource="Header"
+                                              VerticalAlignment="Center"
+                                              HorizontalAlignment="Center"
+                                              TextElement.FontWeight="SemiBold"
+                                              TextElement.Foreground="{TemplateBinding Foreground}"/>
+
+                            <Border x:Name="Indicator"
+                                    Height="3"
+                                    VerticalAlignment="Bottom"
+                                    HorizontalAlignment="Stretch"
+                                    Background="{DynamicResource InputBorderFocus}"
+                                    Opacity="0"/>
+                        </Grid>
+                    </Border>
+
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{DynamicResource TabBgSelected}"/>
+                            <Setter TargetName="Bd" Property="BorderThickness" Value="1,1,1,0"/>
+                            <Setter TargetName="Bd" Property="Margin" Value="0,0,6,-1"/>
+
+                            <Setter TargetName="HeaderPresenter" Property="TextElement.FontWeight" Value="Bold"/>
+                            <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+                            <Setter TargetName="Indicator" Property="Opacity" Value="1"/>
+                        </Trigger>
+
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsSelected" Value="False"/>
+                                <Condition SourceName="Bd" Property="IsMouseOver" Value="True"/>
+                            </MultiTrigger.Conditions>
+
+                            <Setter TargetName="Bd" Property="Background" Value="{DynamicResource TabBgHover}"/>
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource BorderHover}"/>
+                            <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+                        </MultiTrigger>
+
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.6"/>
+                        </Trigger>
+
+                        <!-- Special case: Plus tab should never look selected/attached -->
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsSelected" Value="True"/>
+                                <Condition Property="Tag" Value="Plus"/>
+                            </MultiTrigger.Conditions>
+
+                            <!-- Undo the “attached” selected look -->
+                            <Setter TargetName="Bd" Property="Background" Value="{DynamicResource TabBg}"/>
+                            <Setter TargetName="Bd" Property="BorderThickness" Value="1"/>
+                            <Setter TargetName="Bd" Property="Margin" Value="0,0,6,0"/>
+                            <Setter TargetName="Indicator" Property="Opacity" Value="0"/>
+                            <Setter TargetName="HeaderPresenter" Property="TextElement.FontWeight" Value="SemiBold"/>
+                            <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+                        </MultiTrigger>
+
+
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Modern themed ListBox -->
+    <Style x:Key="ThemedListBoxStyle" TargetType="ListBox">
+        <Setter Property="Background" Value="{DynamicResource ListBg}"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource ListBorder}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Padding" Value="6"/>
+        <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled"/>
+        <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+
+        <!-- This is the part that fixes the "Windows default list" look -->
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ListBox">
+                    <Border Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        CornerRadius="10"
+                        SnapsToDevicePixels="True">
+                        <ScrollViewer Focusable="False"
+                                  Padding="{TemplateBinding Padding}">
+                            <ItemsPresenter/>
+                        </ScrollViewer>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+
+
+
     <!-- Form labels (left column) -->
     <Style x:Key="FormLabelStyle" TargetType="TextBlock">
         <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
@@ -224,6 +412,15 @@
         <Setter Property="Opacity" Value="0.92"/>
         <Setter Property="VerticalAlignment" Value="Center"/>
     </Style>
+
+    <!-- Movement Radio Button Style -->
+    <Style x:Key="MovementRadioButtonStyle" TargetType="RadioButton">
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="Margin" Value="0,4,0,4"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+
 
     <!-- Multiline TextBox watermark (uses Tag as watermark text) -->
     <Style x:Key="WatermarkTextBoxMultilineStyle" TargetType="TextBox">
@@ -345,57 +542,129 @@
         </Grid>
     </DataTemplate>
 
-    <!-- Surface Card container (embeddd content) -->
+    <!-- Surface Card container (embeded content) -->
     <Style x:Key="SurfaceCardStyle" TargetType="Border">
         <Setter Property="Background" Value="{DynamicResource SurfaceBg}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource SurfaceBorder}"/>
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="CornerRadius" Value="12"/>
         <Setter Property="Padding" Value="12"/>
+        <Setter Property="Effect" Value="{DynamicResource CardShadow}"/>
     </Style>
 
-    <!-- ListBoxItem selection/hover that respects your themes -->
+    <!-- ListBoxItem selection/hover that matches ListBg -->
     <Style x:Key="ThemedListBoxItemStyle" TargetType="ListBoxItem">
         <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
-        <Setter Property="Padding" Value="8,6"/>
-        <Setter Property="Margin" Value="0,2"/>
+        <Setter Property="Padding" Value="10,7"/>
+        <Setter Property="Margin" Value="2"/>
         <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ListBoxItem">
                     <Border x:Name="Bd"
                         Background="Transparent"
-                        CornerRadius="10">
+                        BorderBrush="Transparent"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        SnapsToDevicePixels="True">
                         <ContentPresenter/>
                     </Border>
 
                     <ControlTemplate.Triggers>
-
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="Bd"
-                                Property="Background"
-                                Value="{DynamicResource HoverOverlay}"/>
+                            <Setter TargetName="Bd" Property="Background" Value="{DynamicResource ListItemHoverBg}"/>
                         </Trigger>
 
                         <Trigger Property="IsSelected" Value="True">
-                            <Setter TargetName="Bd"
-                                Property="Background"
-                                Value="{DynamicResource TileFillPressed}"/>
+                            <Setter TargetName="Bd" Property="Background" Value="{DynamicResource ListItemSelectedBg}"/>
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource ListItemSelectedBorder}"/>
                         </Trigger>
-
-                        <!-- Selected + hover gets a slightly clearer fill -->
-                        <MultiTrigger>
-                            <MultiTrigger.Conditions>
-                                <Condition Property="IsSelected" Value="True"/>
-                                <Condition Property="IsMouseOver" Value="True"/>
-                            </MultiTrigger.Conditions>
-                            <Setter TargetName="Bd"
-                                Property="Background"
-                                Value="{DynamicResource TileFillHover}"/>
-                        </MultiTrigger>
 
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter Property="Opacity" Value="0.55"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    
+    <!-- All Parts/Favorites/Templates Tabs-->
+    <Style x:Key="InnerTabsStyle" TargetType="TabControl">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="TabControl">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- Header strip -->
+                        <Border Grid.Row="0"
+                            Background="Transparent"
+                            Padding="0,0,0,8">
+                            <TabPanel IsItemsHost="True"/>
+                        </Border>
+
+                        <!-- Content -->
+                        <Border Grid.Row="1"
+                            Background="Transparent">
+                            <ContentPresenter ContentSource="SelectedContent"/>
+                        </Border>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    
+    <!-- Inner tabs items-->
+    <Style x:Key="InnerTabItemStyle" TargetType="TabItem">
+        <Setter Property="Margin" Value="0,0,8,0"/>
+        <Setter Property="Padding" Value="10,5"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextSecondary}"/>
+        <Setter Property="Background" Value="{DynamicResource TileFill}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource SurfaceBorder}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="TabItem">
+                    <Border x:Name="Bd"
+                        Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        CornerRadius="999"
+                        Padding="{TemplateBinding Padding}">
+                        <ContentPresenter x:Name="HeaderPresenter"
+                                      ContentSource="Header"
+                                      VerticalAlignment="Center"
+                                      HorizontalAlignment="Center"
+                                      TextElement.FontWeight="SemiBold"/>
+                    </Border>
+
+                    <ControlTemplate.Triggers>
+
+                        <!-- Selected -->
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{DynamicResource TabPillSelectedBg}"/>
+                            <Setter TargetName="HeaderPresenter" Property="TextElement.Foreground" Value="{DynamicResource TextPrimary}"/>
+                            <Setter TargetName="HeaderPresenter" Property="TextElement.FontWeight" Value="Bold"/>
+                        </Trigger>
+
+                        <!-- Hover -->
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{DynamicResource TileFillHover}"/>
+                            <Setter TargetName="HeaderPresenter" Property="TextElement.Foreground" Value="{DynamicResource TextPrimary}"/>
+                        </Trigger>
+
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.6"/>
                         </Trigger>
 
                     </ControlTemplate.Triggers>
@@ -404,8 +673,91 @@
         </Setter>
     </Style>
 
-    
- <!--Modern ComboBox (global)-->
+    <Style x:Key="PartsInnerTabControlStyle" TargetType="TabControl">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="TabControl">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- Header row -->
+                        <TabPanel Grid.Row="0"
+                              IsItemsHost="True"
+                              Background="Transparent"
+                              Margin="0,0,0,8"/>
+
+                        <!-- Content host: IMPORTANT -> transparent so you stop getting white -->
+                        <Border Grid.Row="1"
+                            Background="Transparent"
+                            BorderThickness="0">
+                            <ContentPresenter ContentSource="SelectedContent"/>
+                        </Border>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="PartsInnerTabItemStyle" TargetType="TabItem">
+        <Setter Property="Margin" Value="0,0,8,0"/>
+        <Setter Property="Padding" Value="10,5"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextSecondary}"/>
+        <Setter Property="Background" Value="{DynamicResource InnerTabBg}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource SurfaceBorder}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="TabItem">
+                    <Border x:Name="Bd"
+                        Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        CornerRadius="999"
+                        Padding="{TemplateBinding Padding}">
+                        <ContentPresenter x:Name="HeaderPresenter"
+                                      ContentSource="Header"
+                                      VerticalAlignment="Center"
+                                      HorizontalAlignment="Center"
+                                      TextElement.FontWeight="SemiBold"/>
+                    </Border>
+
+                    <ControlTemplate.Triggers>
+
+                        <!-- Selected = middle -->
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{DynamicResource InnerTabSelectedBg}"/>
+                            <Setter TargetName="HeaderPresenter" Property="TextElement.Foreground" Value="{DynamicResource TextPrimary}"/>
+                            <Setter TargetName="HeaderPresenter" Property="TextElement.FontWeight" Value="Bold"/>
+                        </Trigger>
+
+                        <!-- Hover = lightest -->
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{DynamicResource InnerTabHoverBg}"/>
+                            <Setter TargetName="HeaderPresenter" Property="TextElement.Foreground" Value="{DynamicResource TextPrimary}"/>
+                        </Trigger>
+
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.6"/>
+                        </Trigger>
+
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+
+
+    <!--Modern ComboBox (global)-->
      <!-- Items -->
     <Style x:Key="ModernComboBoxItem" TargetType="ComboBoxItem">
         <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
@@ -593,12 +945,7 @@
     </Style>
 <!--Modern ComboBox End -->
     
-    <!-- Radio Buttons -->
-    <Style TargetType="RadioButton">
-        <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
-    </Style>
-
-    <!-- Pill toggle style (Issue/Return) -->
+        <!-- Pill toggle style (Issue/Return) -->
     <Style x:Key="PillToggleStyle" TargetType="ToggleButton">
         <Setter Property="Width" Value="92"/>
         <Setter Property="Height" Value="26"/>

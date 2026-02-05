@@ -53,7 +53,7 @@
                      VerticalContentAlignment="Center"
                      Tag="Work Order"/>
 
-            <!-- If you want to keep using WatermarkTextBoxStyle instead, swap the Style key above -->
+            
         </StackPanel>
 
     </Grid>

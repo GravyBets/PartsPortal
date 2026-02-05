@@ -11,8 +11,22 @@
     <SolidColorBrush x:Key="CardBackground" Color="#1F2838"/>
     <SolidColorBrush x:Key="CardBorder" Color="#34415C"/>
 
+    <!-- DataGrid -->
+    <SolidColorBrush x:Key="DataGridHeaderBg" Color="#1F2633"/>
+    <SolidColorBrush x:Key="DataGridHeaderBorder" Color="#2E3A4D"/>
+    <SolidColorBrush x:Key="DataGridRowHoverBg" Color="#14FFFFFF"/>
+    <SolidColorBrush x:Key="DataGridRowSelectedBg" Color="#22007ACC"/>
+
+    <!-- Optional “depth” -->
+    <DropShadowEffect x:Key="CardShadow"
+                  Color="#000000"
+                  BlurRadius="16"
+                  ShadowDepth="2"
+                  Opacity="0.35"/>
+
+
     <!-- Surfaces used inside cards -->
-    <SolidColorBrush x:Key="SurfaceBg" Color="#252F44"/>
+    <SolidColorBrush x:Key="SurfaceBg" Color="#222C3F"/>
     <SolidColorBrush x:Key="SurfaceBorder" Color="#34415C"/>
 
     <!-- Text -->
@@ -28,19 +42,43 @@
     <SolidColorBrush x:Key="PrimaryBgHover" Color="#2747A6"/>
     <SolidColorBrush x:Key="PrimaryBgPressed" Color="#223D93"/>
 
-
     <!-- Primary brand (calmer dark blue) -->
     <SolidColorBrush x:Key="PrimaryBg" Color="#1E3A8A"/>
     <SolidColorBrush x:Key="PrimaryBorder" Color="#1E40AF"/>
 
     <!-- Tile background (subtle fill so buttons aren’t washed out) -->
-    <SolidColorBrush x:Key="TileFill" Color="#2A3650"/>
+    <SolidColorBrush x:Key="TileFill" Color="#252F44"/>
     <SolidColorBrush x:Key="TileFillHover" Color="#324061"/>
-    <SolidColorBrush x:Key="TileFillPressed" Color="#243149"/>
+    <SolidColorBrush x:Key="TileFillPressed" Color="#2A3650"/>
 
     <!-- Compat keys (some styles still reference these names) -->
     <SolidColorBrush x:Key="TileHoverBg" Color="#202A3B"/>
     <SolidColorBrush x:Key="TilePressedBg" Color="#162033"/>
+
+    <!-- Tabs (dark theme) -->
+    <SolidColorBrush x:Key="TabBg" Color="#1F2838"/>    
+    <SolidColorBrush x:Key="TabBgSelected" Color="#2A3650"/>   
+    <SolidColorBrush x:Key="TabBgHover" Color="#324061"/>
+
+    <!-- List surfaces (dark) -->
+    <SolidColorBrush x:Key="ListBg" Color="#1F2838"/>    
+    <SolidColorBrush x:Key="ListBorder" Color="#34415C"/>    
+    <SolidColorBrush x:Key="ListHoverBg" Color="#2A3650"/>    
+    <SolidColorBrush x:Key="ListSelectedBg" Color="#324061"/>
+    <SolidColorBrush x:Key="ListItemSelectedBorder" Color="#3B4A68"/>
+
+    <SolidColorBrush x:Key="TabPillSelectedBg" Color="#2A3650"/>
+    
+    <!-- Inner Tabs -->
+    <SolidColorBrush x:Key="InnerTabBg" Color="#1F2838"/>    
+    <SolidColorBrush x:Key="InnerTabSelectedBg" Color="#2A3650"/>    
+    <SolidColorBrush x:Key="InnerTabHoverBg" Color="#324061"/>
+    
+
+
+
+
+
 
 
     <!-- Overlays / Misc -->

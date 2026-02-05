@@ -24,21 +24,19 @@
                 Margin="0,0,8,0">
 
             <views:PartsBrowserView x:Name="Parts"
-                                   x:FieldModifier="public"/>
+                                    x:FieldModifier="public"/>
         </Border>
 
         <!-- TOP-RIGHT: Movement + Inputs -->
         <Border Grid.Row="0"
-                Grid.Column="1"
-                Style="{StaticResource SurfaceCardStyle}"
-                Margin="8,0,0,8">
+        Grid.Column="1"
+        Style="{StaticResource SurfaceCardStyle}"
+        Margin="8,0,0,8">
 
-            <!-- We'll plug MovementDetailsView here next -->
-            <Grid>
-                <TextBlock Text="Movement + Inputs goes here"
-                           Foreground="{DynamicResource TextSecondary}"/>
-            </Grid>
+            <views:MovementDetailsView x:Name="Movement"
+                                       x:FieldModifier="public"/>
         </Border>
+
 
         <!-- BOTTOM-RIGHT: Selected Parts -->
         <Border Grid.Row="1"
