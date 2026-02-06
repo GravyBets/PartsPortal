@@ -98,20 +98,24 @@
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
 
-                    <!-- Names list -->
                     <ListBox x:Name="TemplatesListBox"
-         Grid.Column="0"
-         BorderThickness="0"
-         Background="Transparent"
-         DisplayMemberPath="Name"
-         Foreground="{DynamicResource TextPrimary}">
-                        <ListBox.ItemContainerStyle>
-                            <Style TargetType="ListBoxItem"
-               BasedOn="{StaticResource ThemedListBoxItemStyle}">
-                                <Setter Property="Padding" Value="6,4"/>
-                                <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
-                            </Style>
-                        </ListBox.ItemContainerStyle>
+                             x:FieldModifier="public"
+                             Grid.Column="0"
+                             BorderThickness="0"
+                             Background="Transparent"
+                             Style="{StaticResource ThemedListBoxStyle}"
+                             ItemContainerStyle="{StaticResource ThemedListBoxItemStyle}">
+
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Name}"
+                                           Foreground="{DynamicResource TextPrimary}"
+                                           FontWeight="SemiBold"
+                                           FontSize="14"
+                                           TextTrimming="CharacterEllipsis"/>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+
                     </ListBox>
 
 

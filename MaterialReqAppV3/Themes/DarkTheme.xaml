@@ -66,6 +66,7 @@
     <SolidColorBrush x:Key="ListHoverBg" Color="#2A3650"/>    
     <SolidColorBrush x:Key="ListSelectedBg" Color="#324061"/>
     <SolidColorBrush x:Key="ListItemSelectedBorder" Color="#3B4A68"/>
+    <SolidColorBrush x:Key="ListItemHoverBg" Color="#324061"/>
 
     <SolidColorBrush x:Key="TabPillSelectedBg" Color="#2A3650"/>
     

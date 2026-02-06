@@ -544,8 +544,8 @@
 
     <!-- Surface Card container (embeded content) -->
     <Style x:Key="SurfaceCardStyle" TargetType="Border">
-        <Setter Property="Background" Value="{DynamicResource SurfaceBg}"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource SurfaceBorder}"/>
+        <Setter Property="Background" Value="{DynamicResource CardBackground}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource CardBorder}"/>
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="CornerRadius" Value="12"/>
         <Setter Property="Padding" Value="12"/>
@@ -558,6 +558,7 @@
         <Setter Property="Padding" Value="10,7"/>
         <Setter Property="Margin" Value="2"/>
         <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ListBoxItem">
@@ -566,8 +567,16 @@
                         BorderBrush="Transparent"
                         BorderThickness="1"
                         CornerRadius="8"
+                        Padding="{TemplateBinding Padding}"
                         SnapsToDevicePixels="True">
-                        <ContentPresenter/>
+
+                        <!-- THIS LINE IS THE KEY -->
+                        <ContentPresenter
+                            HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                            VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                            TextElement.Foreground="{TemplateBinding Foreground}"
+                            RecognizesAccessKey="True"/>
+
                     </Border>
 
                     <ControlTemplate.Triggers>
@@ -577,7 +586,7 @@
 
                         <Trigger Property="IsSelected" Value="True">
                             <Setter TargetName="Bd" Property="Background" Value="{DynamicResource ListItemSelectedBg}"/>
-                            <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource ListItemSelectedBorder}"/>
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource InputBorderFocus}"/>
                         </Trigger>
 
                         <Trigger Property="IsEnabled" Value="False">
@@ -588,7 +597,8 @@
             </Setter.Value>
         </Setter>
     </Style>
-    
+
+
     <!-- All Parts/Favorites/Templates Tabs-->
     <Style x:Key="InnerTabsStyle" TargetType="TabControl">
         <Setter Property="Background" Value="Transparent"/>
@@ -657,11 +667,17 @@
                             <Setter TargetName="HeaderPresenter" Property="TextElement.FontWeight" Value="Bold"/>
                         </Trigger>
 
-                        <!-- Hover -->
-                        <Trigger Property="IsMouseOver" Value="True">
+                        <!-- Hover (only when NOT selected) -->
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsMouseOver" Value="True"/>
+                                <Condition Property="IsSelected" Value="False"/>
+                            </MultiTrigger.Conditions>
                             <Setter TargetName="Bd" Property="Background" Value="{DynamicResource TileFillHover}"/>
                             <Setter TargetName="HeaderPresenter" Property="TextElement.Foreground" Value="{DynamicResource TextPrimary}"/>
-                        </Trigger>
+                        </MultiTrigger>
+
+
 
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter Property="Opacity" Value="0.6"/>
