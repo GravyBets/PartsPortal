@@ -57,11 +57,12 @@
             <TabItem Header="All Parts">
                 <ListBox x:Name="AllPartsListBox"
                          x:FieldModifier="public"
-                         Style="{StaticResource ThemedListBoxStyle}"
+                         Style="{StaticResource ThemedListBoxInTabsStyle}"
                          ItemContainerStyle="{StaticResource ThemedListBoxItemStyle}"
                          ItemTemplate="{StaticResource PartItemTemplate}"
                          ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                         ScrollViewer.VerticalScrollBarVisibility="Auto">
+                         ScrollViewer.VerticalScrollBarVisibility="Auto"
+                         BorderThickness="0">
                 
                     <ListBox.ContextMenu>
                         <ContextMenu>
@@ -76,11 +77,12 @@
             <TabItem Header="Favorites">
                 <ListBox x:Name="FavPartsListBox"
                          x:FieldModifier="public"
-                         Style="{StaticResource ThemedListBoxStyle}"
+                         Style="{StaticResource ThemedListBoxInTabsStyle}"
                          ItemContainerStyle="{StaticResource ThemedListBoxItemStyle}"
                          ItemTemplate="{StaticResource PartItemTemplate}"
                          ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                         ScrollViewer.VerticalScrollBarVisibility="Auto">
+                         ScrollViewer.VerticalScrollBarVisibility="Auto"
+                         BorderThickness="0">
 
                     <ListBox.ContextMenu>
                         <ContextMenu>
@@ -102,7 +104,7 @@
                              x:FieldModifier="public"
                              Grid.Column="0"
                              BorderThickness="0"
-                             Background="Transparent"
+                             
                              Style="{StaticResource ThemedListBoxStyle}"
                              ItemContainerStyle="{StaticResource ThemedListBoxItemStyle}">
 

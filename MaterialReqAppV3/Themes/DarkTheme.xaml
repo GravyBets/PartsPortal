@@ -12,8 +12,8 @@
     <SolidColorBrush x:Key="CardBorder" Color="#34415C"/>
 
     <!-- DataGrid -->
-    <SolidColorBrush x:Key="DataGridHeaderBg" Color="#1F2633"/>
-    <SolidColorBrush x:Key="DataGridHeaderBorder" Color="#2E3A4D"/>
+    <SolidColorBrush x:Key="DataGridHeaderBg" Color="#222C3F"/>
+    <SolidColorBrush x:Key="DataGridHeaderBorder" Color="#34415C"/>
     <SolidColorBrush x:Key="DataGridRowHoverBg" Color="#14FFFFFF"/>
     <SolidColorBrush x:Key="DataGridRowSelectedBg" Color="#22007ACC"/>
 
@@ -61,7 +61,7 @@
     <SolidColorBrush x:Key="TabBgHover" Color="#324061"/>
 
     <!-- List surfaces (dark) -->
-    <SolidColorBrush x:Key="ListBg" Color="#1F2838"/>    
+    <SolidColorBrush x:Key="ListBg" Color="#151C2B"/>    
     <SolidColorBrush x:Key="ListBorder" Color="#34415C"/>    
     <SolidColorBrush x:Key="ListHoverBg" Color="#2A3650"/>    
     <SolidColorBrush x:Key="ListSelectedBg" Color="#324061"/>
@@ -74,13 +74,6 @@
     <SolidColorBrush x:Key="InnerTabBg" Color="#1F2838"/>    
     <SolidColorBrush x:Key="InnerTabSelectedBg" Color="#2A3650"/>    
     <SolidColorBrush x:Key="InnerTabHoverBg" Color="#324061"/>
-    
-
-
-
-
-
-
 
     <!-- Overlays / Misc -->
     <SolidColorBrush x:Key="HoverOverlay" Color="#14FFFFFF"/>

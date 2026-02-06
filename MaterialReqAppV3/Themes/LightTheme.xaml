@@ -5,7 +5,7 @@
     <!-- =========================
          LIGHT THEME
          ========================= -->
-
+    
     <!-- App + cards -->
     <SolidColorBrush x:Key="AppBackground" Color="#F3F5F8"/>
     <SolidColorBrush x:Key="CardBackground" Color="#FFFFFF"/>
@@ -23,7 +23,6 @@
                   BlurRadius="14"
                   ShadowDepth="2"
                   Opacity="0.10"/>
-
 
     <!-- Surfaces used inside cards -->
     <SolidColorBrush x:Key="SurfaceBg" Color="#FAFBFC"/>
@@ -70,11 +69,6 @@
     <SolidColorBrush x:Key="InnerTabBg" Color="#DEE6F2"/>    
     <SolidColorBrush x:Key="InnerTabSelectedBg" Color="#EEF2F7"/>    
     <SolidColorBrush x:Key="InnerTabHoverBg" Color="#FAFBFC"/>
-    
-
-
-
-
 
     <!-- Compat keys (some styles still reference these names) -->
     <SolidColorBrush x:Key="TileHoverBg" Color="#E9EEF6"/>
@@ -88,8 +82,6 @@
     <!-- CenterPoint logo for LIGHT mode (dark text logo) -->
     <media:BitmapImage x:Key="CpeLogo"
                        UriSource="pack://application:,,,/Assets/CenterPointLogo_DarkText.png"/>
-
-
 
 
 </ResourceDictionary>

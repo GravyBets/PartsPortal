@@ -552,6 +552,26 @@ namespace MaterialReqAppV3
                 _favoritesService.Save(_favoriteMaterials);
                 RefreshPartsList(ownerTab);
             };
+            deleteTemplateBtn.Click += (_, __) =>
+            {
+                if (templatesList.SelectedItem is not PartTemplate t) return;
+
+                var result = MessageBox.Show(
+                    $"Delete template '{t.Name}'?\n\nThis cannot be undone.",
+                    "Delete Template",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Warning);
+
+                if (result != MessageBoxResult.Yes)
+                    return;
+
+                _templatesService.Delete(_templates, t.Name);
+                _templatesService.Save(GetWarehouseKey(), _templates);
+
+                RefreshTemplatesUI(ownerTab);
+                Title = $"Template deleted: {t.Name}";
+
+            };
 
             // Initial state + fill
             UpdateButtonsForTab();

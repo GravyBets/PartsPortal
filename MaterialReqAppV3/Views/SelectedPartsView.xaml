@@ -12,9 +12,9 @@
         </Style>
 
         <!-- DataGrid cell padding like your code -->
-        <Style x:Key="SelectedGridCellStyle" TargetType="DataGridCell">
-            <Setter Property="Padding" Value="8,4"/>
-            <Setter Property="VerticalContentAlignment" Value="Top"/>
+        <Style x:Key="SelectedGridCellStyle" 
+               TargetType="DataGridCell"
+               BasedOn="{StaticResource ThemedDataGridCellStyle}">
         </Style>
 
         <!-- Row button base (reuse your theme buttons) -->
@@ -43,8 +43,7 @@
                   CanUserAddRows="False"
                   HeadersVisibility="Column"
                   GridLinesVisibility="None"
-                  BorderThickness="0"
-                  Background="Transparent"
+                  BorderThickness="0"                  
                   FontSize="14"
                   RowHeight="44"
                   ColumnHeaderHeight="30"
