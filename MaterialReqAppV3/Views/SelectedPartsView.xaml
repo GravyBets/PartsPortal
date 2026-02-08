@@ -5,17 +5,12 @@
     <UserControl.Resources>
 
         <!-- Qty column text style -->
-        <Style x:Key="QtyCellTextStyle" TargetType="TextBlock">
+        <Style x:Key="QtyCellTextStyle" 
+               TargetType="TextBlock">
             <Setter Property="TextAlignment" Value="Center"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
             <Setter Property="HorizontalAlignment" Value="Center"/>
-        </Style>
-
-        <!-- DataGrid cell padding like your code -->
-        <Style x:Key="SelectedGridCellStyle" 
-               TargetType="DataGridCell"
-               BasedOn="{StaticResource ThemedDataGridCellStyle}">
-        </Style>
+        </Style>        
 
         <!-- Row button base (reuse your theme buttons) -->
         <Style x:Key="SelectedActionButton"
@@ -40,17 +35,12 @@
                   x:FieldModifier="public"
                   Grid.Row="0"
                   AutoGenerateColumns="False"
-                  CanUserAddRows="False"
-                  HeadersVisibility="Column"
-                  GridLinesVisibility="None"
-                  BorderThickness="0"                  
+                  CanUserAddRows="False"                                   
                   FontSize="14"
                   RowHeight="44"
-                  ColumnHeaderHeight="30"
-                  VerticalContentAlignment="Center"
-                  IsReadOnly="True"
-                  CellStyle="{StaticResource SelectedGridCellStyle}">
-
+                  ColumnHeaderHeight="30"                  
+                  IsReadOnly="True">
+            
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Qty"
                                     Width="50"

@@ -21,7 +21,7 @@
     <!-- Modern TextBox -->
     <Style x:Key="ModernTextBox" TargetType="TextBox">
         <Setter Property="Height" Value="32"/>
-        <Setter Property="Padding" Value="12,8"/>
+        <Setter Property="Padding" Value="12,0"/>
         <Setter Property="FocusVisualStyle" Value= "{x:Null}"/>
         <Setter Property="FontSize" Value="13"/>
         <Setter Property="VerticalContentAlignment" Value="Center"/>
@@ -230,18 +230,18 @@
      =========== -->
 
     <Style x:Key="ThemedDataGridColumnHeaderStyle" TargetType="DataGridColumnHeader">
-        <Setter Property="Background" Value="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=Background}"/>
+        <Setter Property="Background" Value="{DynamicResource AppBackground}"/>
         <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource DataGridHeaderBorder}"/>
         <Setter Property="BorderThickness" Value="1,1,1,1"/>
-        <Setter Property="Padding" Value="10,0"/>
+        <Setter Property="Padding" Value="10,0"/>        
         <Setter Property="FontWeight" Value="SemiBold"/>
     </Style>
 
     <Style x:Key="ThemedDataGridCellStyle" TargetType="DataGridCell">
         <!-- IMPORTANT: let the row control the background -->
         <Setter Property="Background"
-            Value="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=Background}"/>
+            Value="Transparent"/>
 
         <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="Padding" Value="10,0"/>
@@ -266,28 +266,58 @@
         </Setter>
     </Style>
 
-
+    <!-- Control the DataGrid ROWS (border outline without triggering horizontal scroll) -->
     <Style x:Key="ThemedDataGridRowStyle" TargetType="DataGridRow">
-        <Setter Property="Background" Value="Transparent"/>
-        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Background" Value="{DynamicResource CardBackground}"/>
+        <Setter Property="BorderBrush" Value="Transparent"/>
         <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
         <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="UseLayoutRounding" Value="True"/>
         <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="ClipToBounds" Value="True"/>
+
+        <!-- IMPORTANT: remove BorderThickness setter entirely -->
+        <!-- <Setter Property="BorderThickness" Value="1"/>  -->
+
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="DataGridRow">
+                    <Grid SnapsToDevicePixels="True" ClipToBounds="True">
+                        <!-- Fill/background -->
+                        <Border x:Name="RowFill"
+                            Background="{TemplateBinding Background}"
+                            CornerRadius="8">
+                            <DataGridCellsPresenter/>
+                        </Border>
+
+                        <!-- Outline overlay (does not affect row width measurement) -->
+                        <Border BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            IsHitTestVisible="False"/>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
 
         <Style.Triggers>
             <Trigger Property="IsMouseOver" Value="True">
-                <Setter Property="Background" Value="{DynamicResource DataGridRowHoverBg}"/>
+                <Setter Property="Background" Value="{DynamicResource TabBgHover}"/>
             </Trigger>
-            <Trigger Property="IsSelected" Value="True">
-                <Setter Property="Background" Value="{DynamicResource DataGridRowSelectedBg}"/>
-            </Trigger>
-        </Style.Triggers>
-    </Style>
 
+            <Trigger Property="IsSelected" Value="True">
+                <Setter Property="BorderBrush" Value="{DynamicResource InputBorderFocus}"/>
+            </Trigger>
+
+            <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                <Setter Property="BorderBrush" Value="{DynamicResource InputBorderFocus}"/>
+            </Trigger>
+        </Style.Triggers>                
+    </Style>
 
     <Style x:Key="ThemedDataGridStyle" TargetType="DataGrid">
         <!-- This is the key: kill the default white row fill -->
-        <Setter Property="Background" Value="{DynamicResource ListBg}"/>
+        <Setter Property="Background" Value="{DynamicResource CardBackground}"/>
         <Setter Property="RowBackground" Value="Transparent"/>
         <Setter Property="AlternatingRowBackground" Value="Transparent"/>
         <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
@@ -476,6 +506,7 @@
     <Style x:Key="MovementRadioButtonStyle" TargetType="RadioButton">
         <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
         <Setter Property="FontSize" Value="13"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
         <Setter Property="Margin" Value="0,4,0,4"/>
         <Setter Property="VerticalAlignment" Value="Center"/>
     </Style>

@@ -74,6 +74,12 @@
     <SolidColorBrush x:Key="TileHoverBg" Color="#E9EEF6"/>
     <SolidColorBrush x:Key="TilePressedBg" Color="#DEE6F2"/>
 
+    <!-- Summary / validation highlight -->
+    <SolidColorBrush x:Key="MissingRefBg" Color="#FEE2E2"/> <!-- soft red fill -->
+    <SolidColorBrush x:Key="MissingRefBgHover" Color="#FECACA"/> <!-- slightly stronger on hover -->
+    <SolidColorBrush x:Key="MissingRefBorder" Color="#EF4444"/> <!-- red outline -->
+
+
     <!-- Overlays / Misc -->
     <SolidColorBrush x:Key="HoverOverlay" Color="#14000000"/>
     <SolidColorBrush x:Key="PressedOverlay" Color="#22000000"/>

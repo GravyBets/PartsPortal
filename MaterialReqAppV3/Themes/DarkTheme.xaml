@@ -75,6 +75,12 @@
     <SolidColorBrush x:Key="InnerTabSelectedBg" Color="#2A3650"/>    
     <SolidColorBrush x:Key="InnerTabHoverBg" Color="#324061"/>
 
+    <!-- Summary / validation highlight -->
+    <SolidColorBrush x:Key="MissingRefBg" Color="#3A1B1B"/> <!-- deep muted red fill -->
+    <SolidColorBrush x:Key="MissingRefBgHover" Color="#4A2020"/> <!-- slightly stronger on hover -->
+    <SolidColorBrush x:Key="MissingRefBorder" Color="#F87171"/> <!-- softer red outline -->
+
+
     <!-- Overlays / Misc -->
     <SolidColorBrush x:Key="HoverOverlay" Color="#14FFFFFF"/>
     <SolidColorBrush x:Key="PressedOverlay" Color="#22FFFFFF"/>    

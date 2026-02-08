@@ -702,8 +702,6 @@ namespace MaterialReqAppV3
             };
         }
 
-
-
         private void SaveSelectedPartsToTemplate(TabItem ownerTab)
         {
             var lines = GetSelectedParts(ownerTab);
@@ -895,8 +893,6 @@ namespace MaterialReqAppV3
                 .Where(p => !string.IsNullOrWhiteSpace(p.Material) && favSet.Contains(p.Material))
                 .ToList();
         }
-
-
 
         private string NormalizeWarehouse(string selectedWarehouse)
         {
