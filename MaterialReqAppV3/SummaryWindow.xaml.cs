@@ -48,44 +48,45 @@ namespace MaterialReqAppV3
         {
             DialogResult = false;
             Close();
-        }        
-private void PartsScroll_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
-    {
-        if (sender is not ScrollViewer sv) return;
-
-        // If the inner list can still scroll, let it scroll normally.
-        bool scrollingUp = e.Delta > 0;
-        bool atTop = sv.VerticalOffset <= 0;
-        bool atBottom = sv.VerticalOffset >= sv.ScrollableHeight;
-
-        if ((scrollingUp && !atTop) || (!scrollingUp && !atBottom))
-            return;
-
-        // Otherwise, pass the wheel to the DataGrid so the page keeps moving
-        e.Handled = true;
-
-        var grid = FindAncestor<DataGrid>(sv);
-        if (grid == null) return;
-
-        var evt = new MouseWheelEventArgs(e.MouseDevice, e.Timestamp, e.Delta)
-        {
-            RoutedEvent = UIElement.MouseWheelEvent,
-            Source = sv
-        };
-
-        grid.RaiseEvent(evt);
-    }
-
-    private static T? FindAncestor<T>(DependencyObject start) where T : DependencyObject
-    {
-        DependencyObject current = start;
-        while (current != null)
-        {
-            if (current is T match) return match;
-            current = VisualTreeHelper.GetParent(current);
         }
-        return null;
-    }
+        private void SummaryGrid_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            if (sender is not DependencyObject d) return;
 
-}
+            var sv = FindVisualChild<ScrollViewer>(d);
+            if (sv == null) return;
+
+            // Tune these two numbers:
+            // "partBlockPx" ≈ height of one part entry (the 2-line block in your Parts cell)
+            // "blocksPerNotch" = how many part entries per wheel tick
+            const double partBlockPx = 36;     // try 32–44
+            const double blocksPerNotch = 3;   // try 2–5
+
+            double direction = e.Delta > 0 ? -1 : 1;
+            double offset = direction * partBlockPx * blocksPerNotch;
+
+            // Optional modifiers:
+            if (Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift))
+                offset *= 0.5;   // slow
+            if (Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl))
+                offset *= 2.0;   // fast
+
+            sv.ScrollToVerticalOffset(sv.VerticalOffset + offset);
+            e.Handled = true;
+        }
+
+        private static T? FindVisualChild<T>(DependencyObject parent) where T : DependencyObject
+        {
+            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
+            {
+                var child = VisualTreeHelper.GetChild(parent, i);
+                if (child is T typed) return typed;
+
+                var found = FindVisualChild<T>(child);
+                if (found != null) return found;
+            }
+            return null;
+        }
+
+    }
 }

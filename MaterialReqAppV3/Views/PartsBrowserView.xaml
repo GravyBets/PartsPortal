@@ -16,7 +16,7 @@
                TargetType="Button"
                BasedOn="{StaticResource SecondaryButtonStyle}">
             <Setter Property="Height" Value="34"/>
-            <Setter Property="Padding" Value="14,0"/>
+            <Setter Property="Padding" Value="16,0"/>
         </Style>
     </UserControl.Resources>
 
@@ -171,12 +171,12 @@
 
             <!-- Delete Template (Templates tab only = index 2) -->
             <Button x:Name="DeleteTemplateButton"
-                    x:FieldModifier="public"
+                    x:FieldModifier="public"                    
                     Margin="8,0,0,0"
                     Content="Delete Template">
                 <Button.Style>
                     <Style TargetType="Button"
-                           BasedOn="{StaticResource PartsActionButton}">
+                           BasedOn="{StaticResource SecondaryButtonStyle}">
                         <Setter Property="Visibility" 
                                 Value="Collapsed"/>
                         <Style.Triggers>
@@ -197,7 +197,7 @@
                     Content="Add to Favorites">
                 <Button.Style>
                     <Style TargetType="Button"
-                           BasedOn="{StaticResource PartsActionButton}">
+                           BasedOn="{StaticResource SecondaryButtonStyle}">
                         <Setter Property="Visibility" 
                                 Value="Collapsed"/>
                         <Style.Triggers>
@@ -218,7 +218,7 @@
                     Content="Remove from Favorites">
                 <Button.Style>
                     <Style TargetType="Button"
-                           BasedOn="{StaticResource PartsActionButton}">
+                           BasedOn="{StaticResource SecondaryButtonStyle}">
                         <Setter Property="Visibility" 
                                 Value="Collapsed"/>
                         <Style.Triggers>

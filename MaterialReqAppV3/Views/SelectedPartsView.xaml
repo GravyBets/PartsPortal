@@ -65,18 +65,18 @@
                     x:FieldModifier="public"
                     Style="{StaticResource SelectedActionButton}"
                     Content="Remove Part"
-                    Margin="0,0,10,0"/>
+                    Margin="0,0,8,0"/>
 
             <Button x:Name="ClearListButton"
                     x:FieldModifier="public"
                     Style="{StaticResource SelectedActionButton}"
-                    Content="Clear List"/>
+                    Content="Clear List"
+                    Margin="0,0,8,0"/>
 
             <Button x:Name="SaveToTemplatesButton"
                     x:FieldModifier="public"
                     Style="{StaticResource SelectedActionButton}"
-                    Content="Save to Templates"
-                    Margin="8,0,0,0"/>
+                    Content="Save to Templates"/>
         </StackPanel>
 
         <!-- Status -->

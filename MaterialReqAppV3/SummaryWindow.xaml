@@ -1,7 +1,6 @@
 ﻿<Window x:Class="MaterialReqAppV3.SummaryWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:behaviors="clr-namespace:MaterialReqAppV3.Behaviors"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"        
         Title="Summary"
         Height="650"
         Width="1100"
@@ -13,15 +12,15 @@
 
         <!-- Summary-only cell style (based on theme) -->
         <Style x:Key="SummaryCellStyle"
-           TargetType="DataGridCell"
-           BasedOn="{StaticResource ThemedDataGridCellStyle}">
+               TargetType="DataGridCell"
+               BasedOn="{StaticResource ThemedDataGridCellStyle}">
             <Setter Property="Padding" Value="10,6"/>
             <Setter Property="VerticalContentAlignment" Value="Top"/>
         </Style>
 
         <!-- Summary-only row style (red highlight + hover on red rows) -->
         <Style x:Key="SummaryRowStyle"
-           TargetType="DataGridRow"
+               TargetType="DataGridRow"
            BasedOn="{StaticResource ThemedDataGridRowStyle}">
             <Style.Triggers>
                 <DataTrigger Binding="{Binding MissingRef}" Value="True">
@@ -72,60 +71,58 @@
 
         <!-- Grid -->
         <Border Grid.Row="1"
-        Background="{DynamicResource CardBackground}"
-        BorderBrush="{DynamicResource CardBorder}"
-        BorderThickness="1"
-        CornerRadius="16"
-        Padding="16">
+                Background="{DynamicResource CardBackground}"
+                BorderBrush="{DynamicResource CardBorder}"
+                BorderThickness="1"
+                CornerRadius="16"
+                Padding="16">
 
             <DataGrid x:Name="SummaryGrid"
-              Style="{StaticResource ThemedDataGridStyle}"
-              RowStyle="{StaticResource SummaryRowStyle}"
-              CellStyle="{StaticResource SummaryCellStyle}"              
-              AutoGenerateColumns="False"
-              CanUserAddRows="False"
-              IsReadOnly="True"
-              MinRowHeight="46"
-              ColumnHeaderHeight="34"
-              FontSize="14"
-              SelectionMode="Single"
-              SelectionUnit="FullRow">
+                      Style="{StaticResource ThemedDataGridStyle}"
+                      RowStyle="{StaticResource SummaryRowStyle}"
+                      CellStyle="{StaticResource SummaryCellStyle}"
+                      
+                        ScrollViewer.CanContentScroll="False"
+                        PreviewMouseWheel="SummaryGrid_PreviewMouseWheel"
+                      
+                      AutoGenerateColumns="False"
+                      CanUserAddRows="False"
+                      IsReadOnly="True"
+                      MinRowHeight="46"
+                      ColumnHeaderHeight="34"
+                      FontSize="14"
+                      SelectionMode="Single"
+                      SelectionUnit="FullRow">
 
                 <DataGrid.Resources>
                     <!-- Parts cell template -->
                     <DataTemplate x:Key="PartsCellTemplate">
-                        <ScrollViewer VerticalScrollBarVisibility="Auto"
-                  HorizontalScrollBarVisibility="Disabled"
-                  MaxHeight="220"
-                  Padding="0"
-                  Focusable="False"
-                  PreviewMouseWheel="PartsScroll_PreviewMouseWheel">
-                            <ItemsControl ItemsSource="{Binding Parts}">
-                                <ItemsControl.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <StackPanel/>
-                                    </ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>
+                        <ItemsControl ItemsSource="{Binding Parts}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
 
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <StackPanel Margin="0,0,0,8">
-                                            <TextBlock TextWrapping="Wrap"
-                                           Foreground="{DynamicResource TextPrimary}">
-                                    <Run Text="{Binding Qty}"/>
-                                    <Run Text=" x "/>
-                                    <Run Text="{Binding Description}"/>
-                                            </TextBlock>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Margin="0,0,0,8">
+                                        <TextBlock TextWrapping="Wrap"
+                                                   Foreground="{DynamicResource TextPrimary}">
+                                            <Run Text="{Binding Qty}"/>
+                                            <Run Text=" x "/>
+                                            <Run Text="{Binding Description}"/>
+                                        </TextBlock>
 
-                                            <TextBlock Text="{Binding Material}"
-                                           FontSize="11"
-                                           Foreground="{DynamicResource TextSecondary}"/>
-                                        </StackPanel>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </ScrollViewer>
+                                        <TextBlock Text="{Binding Material}"
+                                                   FontSize="11"
+                                                   Foreground="{DynamicResource TextSecondary}"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
                     </DataTemplate>
+
 
                     <!-- Centered text style -->
                     <Style x:Key="CenteredCellText" TargetType="TextBlock">
@@ -134,15 +131,15 @@
 
                     <!-- Summary-only cell style (based on theme) -->
                     <Style x:Key="SummaryCellStyle"
-                   TargetType="DataGridCell"
-                   BasedOn="{StaticResource ThemedDataGridCellStyle}">
+                           TargetType="DataGridCell"
+                           BasedOn="{StaticResource ThemedDataGridCellStyle}">
                         <Setter Property="Padding" Value="10,6"/>
                         <Setter Property="VerticalContentAlignment" Value="Top"/>
                     </Style>
 
                     <Style x:Key="SummaryRowStyle"
-       TargetType="DataGridRow"
-       BasedOn="{StaticResource ThemedDataGridRowStyle}">
+                           TargetType="DataGridRow"
+                           BasedOn="{StaticResource ThemedDataGridRowStyle}">
 
                         <Style.Triggers>
                             <!-- Red highlight when MissingRef -->
@@ -165,20 +162,24 @@
                 </DataGrid.Resources>
 
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="Site # / Reason" Width="140"
-                                Binding="{Binding Tab}"
-                                ElementStyle="{StaticResource CenteredCellText}"/>
+                    <DataGridTextColumn Header="Site # / Reason" 
+                                        Width="140"
+                                        Binding="{Binding Tab}"
+                                        ElementStyle="{StaticResource CenteredCellText}"/>
 
-                    <DataGridTextColumn Header="Issue / Return" Width="140"
-                                Binding="{Binding Type}"
-                                ElementStyle="{StaticResource CenteredCellText}"/>
+                    <DataGridTextColumn Header="Issue / Return" 
+                                        Width="140"
+                                        Binding="{Binding Type}"
+                                        ElementStyle="{StaticResource CenteredCellText}"/>
 
-                    <DataGridTextColumn Header="Order #" Width="170"
-                                Binding="{Binding RefValue}"
-                                ElementStyle="{StaticResource CenteredCellText}"/>
+                    <DataGridTextColumn Header="Order #" 
+                                        Width="170"
+                                        Binding="{Binding RefValue}"
+                                        ElementStyle="{StaticResource CenteredCellText}"/>
 
-                    <DataGridTemplateColumn Header="Parts / Qty" Width="*"
-                                    CellTemplate="{StaticResource PartsCellTemplate}"/>
+                    <DataGridTemplateColumn Header="Parts / Qty" 
+                                            Width="*"
+                                            CellTemplate="{StaticResource PartsCellTemplate}"/>
                 </DataGrid.Columns>
             </DataGrid>
         </Border>
@@ -186,9 +187,9 @@
 
         <!-- Buttons -->
         <StackPanel Grid.Row="2"
-            Orientation="Horizontal"
-            HorizontalAlignment="Right"
-            Margin="0,10,0,0">
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right"
+                    Margin="0,10,0,0">
 
             <Button Content="Cancel"
                     Style="{DynamicResource SecondaryButtonStyle}"                    
