@@ -35,10 +35,11 @@
         <TextBox x:Name="PartsSearchBox"
                  x:FieldModifier="public"
                  Grid.Row="0"
+                 MaxLength="128"
                  Height="34"
                  Margin="0,0,0,10"
                  Tag="Search parts..."
-                 Style="{StaticResource ModernWatermarkTextBox}"/>
+                 Style="{StaticResource ModernWatermarkTextBox}" TextChanged="PartsSearchBox_TextChanged"/>
 
         <!-- Inner tabs -->
         <TabControl x:Name="PartsTabs"

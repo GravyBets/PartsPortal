@@ -8,5 +8,10 @@ namespace MaterialReqAppV3.Views
         {
             InitializeComponent();
         }
+
+        private void PartsSearchBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+
+        }
     }
 }

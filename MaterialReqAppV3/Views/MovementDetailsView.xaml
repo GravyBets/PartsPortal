@@ -49,6 +49,7 @@
             <TextBox x:Name="DetailsBox"
                      x:FieldModifier="public"
                      Style="{StaticResource ModernWatermarkTextBox}"
+                     MaxLength="32"
                      Height="34"
                      VerticalContentAlignment="Center"
                      Tag="Work Order"/>

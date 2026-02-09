@@ -80,8 +80,11 @@
 
                 <!-- Name -->
                 <TextBlock Grid.Row="0" Grid.Column="0" Text="Name:" Style="{StaticResource FormLabelStyle}"/>
-                <TextBox Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2"
+                <TextBox Grid.Row="0"
+                         Grid.Column="1" 
+                         Grid.ColumnSpan="2"
                          Style="{StaticResource ModernTextBox}"
+                         MaxLength="32"
                          Margin="0,0,0,12"
                          Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}"/>
 
@@ -96,13 +99,14 @@
                 <TextBlock Grid.Row="2" Grid.Column="0" Text="Truck #:" Style="{StaticResource FormLabelStyle}"/>
                 <TextBox Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2"
                          Style="{StaticResource ModernTextBox}"
+                         MaxLength="16"
                          Margin="0,0,0,12"
                          Text="{Binding TruckNumber, UpdateSourceTrigger=PropertyChanged}"/>
 
                 <!-- PDF Output Folder -->
                 <TextBlock Grid.Row="3" Grid.Column="0" Text="PDF Output Folder:" Style="{StaticResource FormLabelStyle}"/>
                 <TextBox Grid.Row="3" Grid.Column="1"
-                         Style="{StaticResource ModernTextBox}"
+                         Style="{StaticResource ModernTextBox}"                         
                          Margin="0,0,10,12"
                          Text="{Binding PdfOutputFolder, UpdateSourceTrigger=PropertyChanged}"/>
                 <Button Grid.Row="3" Grid.Column="2"

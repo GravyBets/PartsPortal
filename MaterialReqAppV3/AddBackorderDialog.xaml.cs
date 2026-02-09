@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Input;
 
 namespace MaterialReqAppV3
@@ -17,11 +15,12 @@ namespace MaterialReqAppV3
             public string SiteReason { get; set; } = "";
         }
 
-        public ObservableCollection<EntryLine> Lines { get; } = new();
+        private EntryLine _result = new();
 
-        // BackordersWindow expects this
-        public IReadOnlyList<EntryLine> ResultLines => Lines.ToList();
+        // BackordersWindow expects this shape
+        public IReadOnlyList<EntryLine> ResultLines => new[] { _result };
 
+        // ✅ Base constructor (ADD mode)
         public AddBackorderDialog(string description, string material)
         {
             InitializeComponent();
@@ -29,66 +28,73 @@ namespace MaterialReqAppV3
             PartDesc.Text = description ?? "";
             PartMat.Text = material ?? "";
 
-            LinesList.ItemsSource = Lines;
-
+            // Qty 1..10
+            QtyCombo.ItemsSource = Enumerable.Range(1, 10).ToList();
+            QtyCombo.SelectedIndex = 0;
+            
             Loaded += (_, __) =>
             {
-                WorkOrderBox.Focus();
-                WorkOrderBox.SelectAll();
+                SiteReasonBox.Focus();
+                SiteReasonBox.SelectAll();
             };
         }
 
-        private void AddLine_Click(object sender, RoutedEventArgs e)
+        // ✅ Overload constructor (EDIT mode) - prefill fields
+        public AddBackorderDialog(string description, string material, EntryLine prefill)
+            : this(description, material)
         {
-            if (!TryBuildLine(out var line))
-                return;
+            if (prefill == null) return;
 
-            Lines.Add(line);
+            SiteReasonBox.Text = prefill.SiteReason ?? "";
+            WorkOrderBox.Text = prefill.WorkOrder ?? "";
 
-            // Reset fields for next entry
-            QtyBox.Text = "1";
-            SiteReasonBox.Text = "";
+            int q = prefill.Qty;
+            if (q < 1) q = 1;
+            if (q > 10) q = 10;
 
-            WorkOrderBox.Focus();
-            WorkOrderBox.SelectAll();
+            // ItemsSource is ints 1..10
+            QtyCombo.SelectedItem = q;
+            if (QtyCombo.SelectedItem == null)
+                QtyCombo.SelectedIndex = q - 1;
         }
 
-        private bool TryBuildLine(out EntryLine line)
+        private void Add_Click(object sender, RoutedEventArgs e)
         {
-            line = new EntryLine();
-
-            // Qty
-            if (!int.TryParse(QtyBox.Text?.Trim(), out int qty) || qty < 1)
-            {
-                MessageBox.Show("Qty must be 1 or more.", "Invalid Qty", MessageBoxButton.OK, MessageBoxImage.Warning);
-                QtyBox.Focus();
-                QtyBox.SelectAll();
-                return false;
-            }
-
-            // Work Order required
-            var wo = (WorkOrderBox.Text ?? "").Trim();
-            if (string.IsNullOrWhiteSpace(wo))
-            {
-                MessageBox.Show("Work Order is required.", "Missing Work Order", MessageBoxButton.OK, MessageBoxImage.Warning);
-                WorkOrderBox.Focus();
-                return false;
-            }
-
-            line.Qty = qty;
-            line.WorkOrder = wo;
-            line.SiteReason = (SiteReasonBox.Text ?? "").Trim();
-            return true;
+            _result = BuildLine();
+            DialogResult = true;
+            Close();
         }
 
-        private void RemoveLine_Click(object sender, RoutedEventArgs e)
+        private EntryLine BuildLine()
         {
-            // Remove the line tied to the clicked button
-            if (sender is FrameworkElement fe && fe.DataContext is EntryLine line)
+            int qty = 1;
+            if (QtyCombo.SelectedItem is int q) qty = q;
+
+            return new EntryLine
             {
-                Lines.Remove(line);
-            }
+                Qty = qty,
+                SiteReason = (SiteReasonBox.Text ?? "").Trim(),
+                WorkOrder = (WorkOrderBox.Text ?? "").Trim() // optional
+            };
         }
+
+        private int GetSelectedQty()
+        {
+            // 1) typed text wins
+            if (int.TryParse((QtyCombo.Text ?? "").Trim(), out int typed) && typed > 0)
+                return typed;
+
+            // 2) dropdown selection
+            if (QtyCombo.SelectedItem is int q && q >= 1)
+                return q;
+
+            if (QtyCombo.SelectedIndex >= 0)
+                return QtyCombo.SelectedIndex + 1;
+
+            return 1;
+        }
+
+
 
         private void Cancel_Click(object sender, RoutedEventArgs e)
         {
@@ -96,47 +102,40 @@ namespace MaterialReqAppV3
             Close();
         }
 
-        private void Add_Click(object sender, RoutedEventArgs e)
-        {
-            // If they didn’t click "Add Line" but filled fields, we can auto-add one.
-            bool hasTypedAnything =
-                !string.IsNullOrWhiteSpace(WorkOrderBox.Text) ||
-                !string.IsNullOrWhiteSpace(SiteReasonBox.Text) ||
-                (QtyBox.Text?.Trim() != "1" && !string.IsNullOrWhiteSpace(QtyBox.Text));
-
-            if (Lines.Count == 0 && hasTypedAnything)
-            {
-                if (!TryBuildLine(out var line))
-                    return;
-
-                Lines.Add(line);
-            }
-
-            if (Lines.Count == 0)
-            {
-                MessageBox.Show("Add at least one line before continuing.", "No Lines", MessageBoxButton.OK, MessageBoxImage.Information);
-                WorkOrderBox.Focus();
-                return;
-            }
-
-            DialogResult = true;
-            Close();
-        }
-
-        // Enter key adds a line (tech-friendly)
+        // Enter submits (tech-friendly)
         private void InputBox_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Enter)
             {
-                AddLine_Click(this, new RoutedEventArgs());
+                Add_Click(this, new RoutedEventArgs());
                 e.Handled = true;
             }
         }
 
-        // Only digits in Qty box
-        private void QtyBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
+        private void QtyCombo_PreviewTextInput(object sender, TextCompositionEventArgs e)
         {
+            // digits only
             e.Handled = e.Text.Any(ch => !char.IsDigit(ch));
         }
+
+        private void QtyCombo_LostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
+        {
+            NormalizeQtyText();
+        }
+
+        private void NormalizeQtyText()
+        {
+            var t = (QtyCombo.Text ?? "").Trim();
+
+            if (!int.TryParse(t, out int qty) || qty < 1)
+            {
+                QtyCombo.Text = "1";
+                return;
+            }
+
+            // Keep what they typed (supports > 10)
+            QtyCombo.Text = qty.ToString();
+        }
+
     }
 }

@@ -4,19 +4,20 @@ using Syncfusion.Pdf;
 using Syncfusion.Pdf.Interactive;
 using Syncfusion.Pdf.Parsing;
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Windows.Data;
 using System.Windows.Controls;
-using System.Runtime.Versioning;
+using System.Windows.Data;
 
 namespace MaterialReqAppV3
 {
@@ -28,14 +29,17 @@ namespace MaterialReqAppV3
         private readonly BackorderStore _store = new();
         private readonly ObservableCollection<BackorderLine> _allBackorders = new();
         private readonly ICollectionView _backordersView;
-        private readonly object? _settingsObj;
+        private readonly UserSettings? _settings;
+        private bool _updatingHeader;
+        private bool _updatingSelectAll;
 
-        
-        public BackordersWindow(IEnumerable<Part> allParts, object? settingsObj)
+
+        //CONSTRUCTOR
+        public BackordersWindow(IEnumerable<Part> allParts, UserSettings? settings)
         {
             InitializeComponent();
 
-            _settingsObj = settingsObj;
+            _settings = settings;
 
             // Parts list
             _allParts = new ObservableCollection<Part>(allParts ?? Enumerable.Empty<Part>());
@@ -46,12 +50,32 @@ namespace MaterialReqAppV3
 
             // Backorders list (load from disk)
             foreach (var item in _store.Load().OrderByDescending(x => x.DateAdded))
+            {
+                HookBackorderLine(item);
                 _allBackorders.Add(item);
+            }
 
             _backordersView = CollectionViewSource.GetDefaultView(_allBackorders);
             _backordersView.Filter = BackordersFilter;
 
             BackorderGrid.ItemsSource = _backordersView;
+            Loaded += (_, __) =>
+                Dispatcher.BeginInvoke(UpdateSelectAllHeader, System.Windows.Threading.DispatcherPriority.Loaded);
+
+            UpdateActionButtonsText();
+
+            BackorderGrid.SelectionChanged += (_, __) =>
+            {
+                EditSelectedButton.Visibility =
+                    BackorderGrid.SelectedItem is BackorderLine
+                        ? Visibility.Visible
+                        : Visibility.Collapsed;
+
+                // ✅ Keep action buttons in sync with row selection fallback
+                UpdateActionButtonsText();
+            };
+
+
 
             // Save whenever collection changes (add/remove)
             _allBackorders.CollectionChanged += (_, __) => SaveBackorders();
@@ -87,151 +111,47 @@ namespace MaterialReqAppV3
             _partsView.Refresh();
         }
 
-        private void AllPartsListBox_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
-        {
-            if (AllPartsListBox.SelectedItem is not Part part) return;
-
-            string desc = part.Description ?? "";
-            string mat = part.Material ?? "";
-
-            var dlg = new AddBackorderDialog(desc, mat) { Owner = this };
-            if (dlg.ShowDialog() == true)
-            {
-                foreach (var line in dlg.ResultLines)
-                {
-                    _allBackorders.Insert(0, new BackorderLine
-                    {
-                        DateAdded = DateTime.Now,
-                        Qty = line.Qty,
-                        WorkOrder = (line.WorkOrder ?? "").Trim(),
-                        SiteReason = (line.SiteReason ?? "").Trim(),
-                        Description = desc,
-                        Material = mat
-                    });
-                }
-
-                _backordersView.Refresh(); // in case ShowOrdered is off, etc.
-            }
-        }
-
         private void RemoveSelected_Click(object sender, RoutedEventArgs e)
         {
-            var selected = BackorderGrid.SelectedItems.Cast<BackorderLine>().ToList();
-            foreach (var item in selected)
+            var toRemove = _backordersView.Cast<object>()
+                .OfType<BackorderLine>()
+                .Where(x => x.IsChecked)
+                .ToList();
+
+            foreach (var item in toRemove)
                 _allBackorders.Remove(item);
 
             _backordersView.Refresh();
+            // ✅ CollectionChanged already saves on remove
+
+            UpdateSelectAllHeader();
+            UpdateActionButtonsText();
+
         }
 
-        private async void OrderSelected_Click(object sender, RoutedEventArgs e)
+
+        private (string OutFile, int Pages, List<PrintTabSummary> Rows) GenerateBackordersMergedPdf(List<BackorderLine> selected, string outDir, string issueTemplatePath)
         {
-            var selected = BackorderGrid.SelectedItems.Cast<BackorderLine>().ToList();
-            if (selected.Count == 0)
-            {
-                MessageBox.Show("Select one or more backorder rows first.", "Backorders",
-                    MessageBoxButton.OK, MessageBoxImage.Information);
-                return;
-            }
+            // ✅ use the parameter; don't redeclare it
+            if (string.IsNullOrWhiteSpace(issueTemplatePath))
+                throw new ArgumentException("issueTemplatePath is blank.", nameof(issueTemplatePath));
 
-            // Validate WO for all selected
-            var missingWo = selected.Where(x => string.IsNullOrWhiteSpace(x.WorkOrder)).ToList();
-            if (missingWo.Count > 0)
-            {
-                MessageBox.Show("One or more selected lines are missing a Work Order.\n\n" +
-                                "Fix the Work Order and try again.",
-                                "Missing Work Order",
-                                MessageBoxButton.OK,
-                                MessageBoxImage.Warning);
-                return;
-            }
+            if (!File.Exists(issueTemplatePath))
+                throw new FileNotFoundException("Issue PDF template not found.", issueTemplatePath);
 
-            // Output folder (same behavior as MainWindow)
-            string baseDir = AppDomain.CurrentDomain.BaseDirectory;
-            string outDir =
-                !string.IsNullOrWhiteSpace(GetSettingString("PdfOutputFolder"))
-                    ? GetSettingString("PdfOutputFolder").Trim()
-                    : Path.Combine(baseDir, "Output");
-
-            Directory.CreateDirectory(outDir);
-
-            // Template (Issue)
-            string templatePath = GetTemplatePath(isReturn: false); // ISSUE
-            if (!File.Exists(templatePath))
-            {
-                MessageBox.Show(
-                    "Could not find the ISSUE PDF template:\n\n" + templatePath +
-                    "\n\nFix:\n• Ensure the file exists under /Templates in your project\n• Set Copy to Output Directory = Copy if newer",
-                    "Template Missing",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error);
-                return;
-            }
-
-
-            // Build summary rows + generate merged PDF
-            string outFile;
-            int pages;
-            List<PrintTabSummary> rows;
-
-            try
-            {
-                (outFile, pages, rows) = GenerateBackordersMergedPdf(selected, outDir);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("PDF generation failed:\n\n" + ex.Message, "Backorders",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            // Email Draft (safer default)
-            bool ok;
-            try
-            {
-                ok = await SendPdfEmailOutlookStaAsync(outFile, rows, pages, openDraft: true);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Email failed:\n\n" + ex.Message, "Backorders",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            if (!ok)
-                return;
-
-            // Success -> remove from cart (simple “rolling list” behavior)
-            foreach (var line in selected)
-                _allBackorders.Remove(line);
-
-            MessageBox.Show("Outlook draft created. Removed selected lines from Backorder Cart.",
-                "Backorders", MessageBoxButton.OK, MessageBoxImage.Information);
-        }
-
-        private (string OutFile, int Pages, List<PrintTabSummary> Rows) GenerateBackordersMergedPdf(
-            List<BackorderLine> selected,string outDir)
-
-        {
             // Group by Work Order
             var groups = selected
-                .GroupBy(x => x.WorkOrder.Trim(), StringComparer.OrdinalIgnoreCase)
+                .GroupBy(x => (x.WorkOrder ?? "").Trim(), StringComparer.OrdinalIgnoreCase)
                 .OrderBy(g => g.Key)
                 .ToList();
 
             var rows = new List<PrintTabSummary>();
-
             using var outDoc = new PdfDocument();
-
-            string issueTemplatePath = GetTemplatePath(isReturn: false);
-            if (!File.Exists(issueTemplatePath))
-                throw new FileNotFoundException("Issue template not found.", issueTemplatePath);
-
 
             foreach (var g in groups)
             {
                 string wo = g.Key;
 
-                // Combine duplicate materials for cleaner PDFs (optional but recommended)
                 var combined = g
                     .GroupBy(x => (x.Material ?? "").Trim(), StringComparer.OrdinalIgnoreCase)
                     .Select(matGroup =>
@@ -247,10 +167,11 @@ namespace MaterialReqAppV3
                     .Where(p => p.Qty > 0)
                     .ToList();
 
-                // Build DocHeader from Site/Reason entries
-                string docHeader = BuildDocHeader(g.ToList(), wo);
+                var groupLines = g.ToList();
+                bool missingReason = groupLines.All(x => string.IsNullOrWhiteSpace(x.SiteReason));
+                string docHeader = BuildDocHeader(groupLines, wo);
 
-                // Summary row for email body (one per WO)
+
                 rows.Add(new PrintTabSummary
                 {
                     Tab = docHeader,
@@ -258,29 +179,26 @@ namespace MaterialReqAppV3
                     RefLabel = "WorkOrder",
                     RefValue = wo,
                     Parts = combined,
-                    MissingReason = string.IsNullOrWhiteSpace(docHeader),
-                    MissingRef = false
+                    MissingReason = missingReason,
+                    MissingRef = string.IsNullOrWhiteSpace(wo)
                 });
 
-                // Split into pages of 12 lines
+
                 var chunks = Chunk(combined, 12);
                 for (int pageIndex = 0; pageIndex < chunks.Count; pageIndex++)
                 {
                     var pageLines = chunks[pageIndex];
                     using var loaded = new PdfLoadedDocument(issueTemplatePath);
 
-                    // Header
                     SetPdfTextField(loaded, "Name", GetPdfName());
                     SetPdfTextField(loaded, "Date", DateTime.Now.ToString("MM/dd/yyyy"));
                     SetPdfTextField(loaded, "DocHeader", pageIndex == 0 ? docHeader : $"{docHeader} (cont.)");
 
-                    // Assignment (WO only)
                     SetPdfTextField(loaded, "CostCenter", "");
                     SetPdfTextField(loaded, "Wbs", "");
                     SetPdfTextField(loaded, "WorkOrder", wo);
                     SetPdfTextField(loaded, "WorkOrderUsed", "");
 
-                    // Lines 1..12
                     for (int i = 1; i <= 12; i++)
                     {
                         var line = (i - 1 < pageLines.Count) ? pageLines[i - 1] : null;
@@ -290,17 +208,14 @@ namespace MaterialReqAppV3
                         SetPdfTextField(loaded, $"QUANTITY{i}", line != null ? line.Qty.ToString() : "");
                     }
 
-                    // Issue = 261
-                    SetMovementTypeRadioBestEffort(loaded, "261");
+                    SetMovementTypeRadio(loaded, "261");
 
-                    // Flatten
                     if (loaded.Form != null)
                     {
                         loaded.Form.SetDefaultAppearance(false);
                         loaded.Form.FlattenFields();
                     }
 
-                    // Merge
                     outDoc.ImportPageRange(loaded, 0, loaded.Pages.Count - 1);
                 }
             }
@@ -366,7 +281,7 @@ namespace MaterialReqAppV3
                 }
             });
 
-            thread.IsBackground = true;
+            thread.IsBackground = false;
             thread.SetApartmentState(ApartmentState.STA);
             thread.Start();
 
@@ -380,8 +295,9 @@ namespace MaterialReqAppV3
 
             rows ??= new List<PrintTabSummary>();
 
-            string to = (GetSettingString("EmailTo") ?? "").Trim();
-            string cc = (GetSettingString("EmailCc") ?? "").Trim();
+            string to = (_settings?.EmailTo ?? "").Trim();
+            string cc = (_settings?.EmailCc ?? "").Trim();
+
 
             const string requiredCc = "smartgridradio@centerpointenergy.com";
 
@@ -392,13 +308,16 @@ namespace MaterialReqAppV3
 
             if (string.IsNullOrWhiteSpace(to) && string.IsNullOrWhiteSpace(cc))
             {
-                MessageBox.Show("Email To/CC is blank. Add recipients in Settings → Email.",
-                    "Email", MessageBoxButton.OK, MessageBoxImage.Warning);
+                // ✅ Don't show MessageBox on STA worker thread
                 return false;
             }
 
             string dateToken = DateTime.Now.ToString("MM/dd/yyyy");
-            string subject = $"Backorders Material Issue - {GetEmailDisplayName()} - {dateToken} - {pages} page(s)";
+            string who = GetEmailDisplayName();
+            string pageWord = pages == 1 ? "page" : "pages";
+            string subject = $"Backorders Material Issue - {who} - {dateToken} - {pages} {pageWord}";
+
+
             string body = BuildEmailBody(rows, pages);
 
             object? outlookApp = null;
@@ -428,9 +347,14 @@ namespace MaterialReqAppV3
                 if (attachments == null)
                     throw new InvalidOperationException("Outlook Attachments collection was null.");
 
-                attachments.GetType().InvokeMember("Add",
-                    System.Reflection.BindingFlags.InvokeMethod, null, attachments,
-                    new object[] { pdfPath });
+                attachments.GetType().InvokeMember(
+                    "Add",
+                    System.Reflection.BindingFlags.InvokeMethod,
+                    null,
+                    attachments,
+                    new object?[] { pdfPath, Type.Missing, Type.Missing, Type.Missing }
+                );
+
 
                 if (openDraft)
                 {
@@ -447,14 +371,11 @@ namespace MaterialReqAppV3
             }
             catch (COMException ex)
             {
-                MessageBox.Show(
-                    "Outlook email failed.\n\n" +
-                    $"HRESULT: 0x{ex.HResult:X8}\n" +
-                    ex.Message,
-                    "Email", MessageBoxButton.OK, MessageBoxImage.Error);
-
-                return false;
+                // ✅ Don't show MessageBox on STA worker thread
+                throw new InvalidOperationException(
+                    $"Outlook email failed (HRESULT: 0x{ex.HResult:X8}). {ex.Message}", ex);
             }
+
             finally
             {
                 SafeReleaseComObject(attachments);
@@ -469,7 +390,8 @@ namespace MaterialReqAppV3
 
             var lines = new List<string>
     {
-        $"Attached is the Backorders Material Issue PDF ({pages} page(s)).",
+        $"Attached is the Backorders Material Issue PDF ({pages} {(pages == 1 ? "page" : "pages")}).",
+
         "",
         "Summary:"
     };
@@ -486,7 +408,8 @@ namespace MaterialReqAppV3
                 if (r.Parts != null)
                     partCount = r.Parts.Sum(p => Math.Max(0, p.Qty));
 
-                lines.Add($"- {site} | WorkOrder: {wo} | {partCount} parts");
+                lines.Add($"- {site} | WorkOrder: {wo} | {partCount} {(partCount == 1 ? "part" : "parts")}");
+
             }
 
             lines.Add("");
@@ -536,60 +459,67 @@ namespace MaterialReqAppV3
             }
         }
 
-        // Best-effort radio select (won’t crash if names differ)
-        private void SetMovementTypeRadioBestEffort(PdfLoadedDocument doc, string mtCode)
+        private static void SetMovementTypeRadio(PdfLoadedDocument loaded, string movementCode)
         {
-            if (doc.Form == null) return;
+            if (loaded?.Form?.Fields == null) return;
+            if (string.IsNullOrWhiteSpace(movementCode)) return;
 
-            for (int i = 0; i < doc.Form.Fields.Count; i++)
+            // Your templates might have either name
+            string[] possibleNames = { "MovementType", "Movement Type" };
+
+            foreach (PdfField f in loaded.Form.Fields)
             {
-                if (doc.Form.Fields[i] is PdfLoadedRadioButtonListField rbl)
+                if (!possibleNames.Any(n => string.Equals(f.Name, n, StringComparison.OrdinalIgnoreCase)))
+                    continue;
+
+                // MovementType is a RADIO button list
+                if (f is PdfLoadedRadioButtonListField rb)
                 {
-                    // try select an item whose value/text contains the code
-                    foreach (PdfLoadedRadioButtonItem item in rbl.Items)
+                    // Most reliable: select by matching OptionValue (e.g., "261", "202", "962")
+                    foreach (PdfLoadedRadioButtonItem item in rb.Items)
                     {
-                        var v = (item.Value ?? "").Trim();
-                        if (v.Contains(mtCode, StringComparison.OrdinalIgnoreCase))
+                        if (string.Equals(item.OptionValue, movementCode, StringComparison.OrdinalIgnoreCase))
                         {
-                            rbl.SelectedValue = item.Value ?? "";
+                            item.Selected = true;
                             return;
                         }
                     }
+
+                    // Fallback
+                    rb.SelectedValue = movementCode;
+                    return;
                 }
             }
-
-            // fallback: if your template has a movement text field, fill it
-            SetPdfTextField(doc, "MovementType", mtCode);
-        }        
+        }
 
         private string GetPdfName()
         {
-            // Reuse whatever you store in settings for the Name field
-            return (GetSettingString("PdfName")
-                ?? GetSettingString("Name")
-                ?? GetSettingString("EmployeeName")
-                ?? GetSettingString("UserName")
-                ?? GetEmailDisplayName()
-                ?? Environment.UserName).Trim();
+            string name = (_settings?.Name ?? "").Trim();
+            string emp = (_settings?.EmployeeId ?? "").Trim();
+
+            if (!string.IsNullOrWhiteSpace(name) && !string.IsNullOrWhiteSpace(emp))
+                return $"{name} ({emp})";
+
+            if (!string.IsNullOrWhiteSpace(name))
+                return name;
+
+            // fallback
+            return Environment.UserName;
         }
 
         private string GetEmailDisplayName()
         {
-            return (GetSettingString("EmailDisplayName")
-                ?? GetSettingString("Name")
-                ?? GetSettingString("EmployeeName")
-                ?? Environment.UserName).Trim();
-        }
+            // UserSettings has Name + EmployeeId (no EmailDisplayName / EmployeeName)
+            string name = (_settings?.Name ?? "").Trim();
+            string emp = (_settings?.EmployeeId ?? "").Trim();
 
-        private string GetSettingString(string propName)
-        {
-            if (_settingsObj == null) return "";
+            if (!string.IsNullOrWhiteSpace(name) && !string.IsNullOrWhiteSpace(emp))
+                return $"{name} ({emp})";
 
-            var t = _settingsObj.GetType();
-            var p = t.GetProperty(propName);
-            if (p == null) return "";
+            if (!string.IsNullOrWhiteSpace(name))
+                return name;
 
-            return p.GetValue(_settingsObj) as string ?? "";
+            return Environment.UserName;
         }
 
         private string GetTemplatePath(bool isReturn)
@@ -600,6 +530,438 @@ namespace MaterialReqAppV3
 
             string baseDir = AppDomain.CurrentDomain.BaseDirectory; // bin\Debug\net8.0-windows\
             return System.IO.Path.Combine(baseDir, "Templates", fileName);
+        }
+
+        private void Home_Click(object sender, RoutedEventArgs e)
+        {
+            Close();
+        }
+
+        private void Settings_Click(object sender, RoutedEventArgs e)
+        {
+            if (_settings == null)
+            {
+                MessageBox.Show("Settings not loaded.", "Settings",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            var win = new SettingsWindow(_settings)
+            {
+                Owner = this,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            };
+            win.ShowDialog();
+        }
+
+        private void AllPartsListBox_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            AddBackorderFromSelectedPart();
+        }
+        private void AddToBackorder_Click(object sender, RoutedEventArgs e)
+        {
+            AddBackorderFromSelectedPart();
+        }
+        private void AddBackorderFromSelectedPart()
+        {
+            if (AllPartsListBox.SelectedItem is not Part part)
+            {
+                MessageBox.Show("Select a part on the left first (or double-click it).",
+                    "Add to Backorder",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+                return;
+            }
+
+            string desc = (part.Description ?? "").Trim();
+            string mat = (part.Material ?? "").Trim();
+
+            var dlg = new AddBackorderDialog(desc, mat)
+            {
+                Owner = this,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            };
+
+            if (dlg.ShowDialog() != true) return;
+            if (dlg.ResultLines == null || dlg.ResultLines.Count == 0) return;
+
+            foreach (var line in dlg.ResultLines)
+            {
+                var newLine = new BackorderLine
+                {
+                    DateAdded = DateTime.Now,
+                    Qty = line.Qty,
+                    WorkOrder = (line.WorkOrder ?? "").Trim(),
+                    SiteReason = (line.SiteReason ?? "").Trim(),
+                    Description = desc,
+                    Material = mat
+                };
+
+                HookBackorderLine(newLine);
+                _allBackorders.Insert(0, newLine);
+                UpdateSelectAllHeader();
+
+            }
+
+            _backordersView.Refresh();
+            // ✅ CollectionChanged already saves on insert
+
+        }
+
+        private void EditSelected_Click(object sender, RoutedEventArgs e)
+        {
+            if (BackorderGrid.SelectedItem is not BackorderLine selected)
+                return;
+
+            string desc = (selected.Description ?? "").Trim();
+            string mat = (selected.Material ?? "").Trim();
+
+            // Prefill from selected row
+            var prefill = new AddBackorderDialog.EntryLine
+            {
+                Qty = Math.Clamp(selected.Qty, 1, 10),
+                WorkOrder = selected.WorkOrder ?? "",
+                SiteReason = selected.SiteReason ?? ""
+            };
+
+            var dlg = new AddBackorderDialog(desc, mat, prefill)
+            {
+                Owner = this,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            };
+
+            if (dlg.ShowDialog() != true)
+                return;
+
+            var line = dlg.ResultLines.FirstOrDefault();
+            if (line == null) return;
+
+            // Update selected row (keep DateAdded)
+            selected.Qty = Math.Clamp(line.Qty, 1, 10);
+            selected.WorkOrder = (line.WorkOrder ?? "").Trim();
+            selected.SiteReason = (line.SiteReason ?? "").Trim();
+
+            _backordersView.Refresh();
+            SaveBackorders();
+
+            BackorderGrid.ScrollIntoView(selected);
+        }
+
+        private void Generate_Click(object sender, RoutedEventArgs e)
+        {
+            var selected = GetCheckedBackordersOrSelected();
+            if (selected.Count == 0)
+            {
+                MessageBox.Show("Select at least one line (use the checkboxes).",
+                    "Backorders", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            string outDir = GetOutputFolder();
+
+            // Issue template path (261)
+            string issueTemplatePath = GetTemplatePath(isReturn: false);
+            if (!File.Exists(issueTemplatePath))
+            {
+                MessageBox.Show("Issue PDF template not found:\n\n" + issueTemplatePath,
+                    "Generate", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            try
+            {
+                var (outFile, pages, rows) = GenerateBackordersMergedPdf(selected, outDir, issueTemplatePath);
+
+                try
+                {
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = outFile,
+                        UseShellExecute = true
+                    });
+                }
+                catch { /* ignore */ }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Backorder PDF generation failed:\n\n" + ex.Message,
+                    "Generate", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+
+        private async void EmailDraft_Click(object sender, RoutedEventArgs e)
+        {
+            await EmailSelectedAsync(openDraft: true);
+        }
+
+        private async void Email_Click(object sender, RoutedEventArgs e)
+        {
+            await EmailSelectedAsync(openDraft: false);
+        }
+
+        private async Task EmailSelectedAsync(bool openDraft)
+        {
+            var selected = GetCheckedBackordersOrSelected();
+            if (selected.Count == 0)
+            {
+                MessageBox.Show("Select at least one line (use the checkboxes).",
+                    "Backorders", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            // ✅ WO checker (required for email actions)
+            if (!ConfirmProceedWhenMissingWorkOrders(selected))
+                return;
+
+            string outDir = GetOutputFolder();
+
+            string issueTemplatePath = GetTemplatePath(isReturn: false);
+            if (!File.Exists(issueTemplatePath))
+            {
+                MessageBox.Show("Issue PDF template not found:\n\n" + issueTemplatePath,
+                    "Email", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            string outFile;
+            int pages;
+            List<PrintTabSummary> rows;
+
+            try
+            {
+                (outFile, pages, rows) = GenerateBackordersMergedPdf(selected, outDir, issueTemplatePath);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Backorder PDF generation failed:\n\n" + ex.Message,
+                    "Email", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            try
+            {
+                bool did = await SendPdfEmailOutlookStaAsync(outFile, rows, pages, openDraft);
+
+                if (!did)
+                {
+                    MessageBox.Show("Email To/CC is blank. Add recipients in Settings → Email.",
+                        "Email", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                if (!openDraft)
+                {
+                    MessageBox.Show("Email sent successfully.",
+                        "Email", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Email failed:\n\n" + ex.Message,
+                    "Email", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+
+        private bool HasMissingWorkOrders(IEnumerable<BackorderLine> lines, out List<BackorderLine> missing)
+        {
+            missing = lines
+                .Where(x => string.IsNullOrWhiteSpace(x.WorkOrder))
+                .ToList();
+
+            return missing.Count > 0;
+        }
+
+        private bool ConfirmProceedWhenMissingWorkOrders(IEnumerable<BackorderLine> lines)
+        {
+            if (!HasMissingWorkOrders(lines, out var missing))
+                return true;
+
+            MessageBox.Show(
+                $"You selected {missing.Count} line(s) with a blank Work Order.\n\n" +
+                "Email Draft / Email requires a Work Order.\n\n" +
+                "Fix the missing Work Orders (Edit Selected) and try again.",
+                "Missing Work Order",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+
+            return false;
+        }
+
+        private string GetOutputFolder()
+        {
+            string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+            string outDir =
+                !string.IsNullOrWhiteSpace(_settings?.PdfOutputFolder)
+                    ? _settings.PdfOutputFolder.Trim()
+                    : Path.Combine(baseDir, "Output");
+
+            Directory.CreateDirectory(outDir);
+            return outDir;
+        }        
+
+        private void SelectAllCheck_Changed(object sender, RoutedEventArgs e)
+        {
+            if (_updatingSelectAll) return;
+            if (SelectAllCheck.IsChecked == null) return; // ignore indeterminate user clicks
+
+            bool check = SelectAllCheck.IsChecked.Value;
+
+            foreach (var line in _backordersView.Cast<BackorderLine>())
+                line.IsChecked = check;
+
+            UpdateSelectAllHeader();
+        }
+
+        private void HookBackorderLine(BackorderLine line)
+        {
+            if (line == null) return;
+
+            line.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName == nameof(BackorderLine.IsChecked))
+                {
+                    UpdateSelectAllHeader();
+                    UpdateActionButtonsText();
+                }
+            };
+        }
+
+        private void UpdateSelectAllHeader()
+        {
+            if (_syncingHeaderCheck) return;
+            if (BackorderGrid == null) return;
+
+            var headerCheck = BackorderGrid.Columns
+                .Select(c => c.Header)
+                .OfType<CheckBox>()
+                .FirstOrDefault();
+
+            if (headerCheck == null) return;
+
+            var visible = _backordersView.Cast<object>().OfType<BackorderLine>().ToList();
+
+            _syncingHeaderCheck = true;
+            try
+            {
+                if (visible.Count == 0)
+                {
+                    headerCheck.IsThreeState = false;
+                    headerCheck.IsChecked = false;
+                    return;
+                }
+
+                bool all = visible.All(x => x.IsChecked);
+                bool any = visible.Any(x => x.IsChecked);
+
+                headerCheck.IsThreeState = true;
+                headerCheck.IsChecked = all ? true : any ? (bool?)null : false;
+            }
+            finally
+            {
+                _syncingHeaderCheck = false;
+            }
+        }
+
+
+        private List<BackorderLine> GetCheckedBackordersOrSelected()
+        {
+            // 1) Prefer checked items (what your buttons now “mean”)
+            IEnumerable viewEnumerable = _backordersView as IEnumerable
+                                         ?? BackorderGrid?.ItemsSource as IEnumerable
+                                         ?? Enumerable.Empty<object>();
+
+            var checkedItems = viewEnumerable
+                .Cast<object>()
+                .OfType<BackorderLine>()
+                .Where(x => x.IsChecked)
+                .ToList();
+
+            if (checkedItems.Count > 0)
+                return checkedItems;
+
+            // 2) Convenience fallback: use selected rows (supports multi-select)
+            if (BackorderGrid?.SelectedItems != null && BackorderGrid.SelectedItems.Count > 0)
+            {
+                return BackorderGrid.SelectedItems
+                    .Cast<object>()
+                    .OfType<BackorderLine>()
+                    .ToList();
+            }
+
+            // 3) Last fallback: single selected row
+            if (BackorderGrid?.SelectedItem is BackorderLine one)
+                return new List<BackorderLine> { one };
+
+            return new List<BackorderLine>();
+        }
+
+        private void UpdateActionButtonsText()
+        {
+            // ✅ Count checked items from the VIEW (respects your filter)
+            int checkedCount = _backordersView
+                .Cast<object>()
+                .OfType<BackorderLine>()
+                .Count(x => x.IsChecked);
+
+            int selectedCount = BackorderGrid?.SelectedItems?.Count ?? 0;
+
+            // ✅ Enable actions if either checked OR selected (matches your fallback logic)
+            bool enabled = checkedCount > 0 || selectedCount > 0;
+
+            // Label shows checked count if any, otherwise selected count
+            int labelCount = checkedCount > 0 ? checkedCount : selectedCount;
+
+            if (RemoveSelectedButton != null)
+            {
+                RemoveSelectedButton.Content = labelCount > 0 ? $"Remove Selected ({labelCount})" : "Remove Selected";
+                RemoveSelectedButton.IsEnabled = enabled;
+            }
+
+            if (GenerateButton != null)
+            {
+                GenerateButton.Content = labelCount > 0 ? $"Generate ({labelCount})" : "Generate";
+                GenerateButton.IsEnabled = enabled;
+            }
+
+            if (EmailDraftButton != null)
+            {
+                EmailDraftButton.Content = labelCount > 0 ? $"Email Draft ({labelCount})" : "Email Draft";
+                EmailDraftButton.IsEnabled = enabled;
+            }
+
+            if (EmailButton != null)
+            {
+                EmailButton.Content = labelCount > 0 ? $"Email ({labelCount})" : "Email";
+                EmailButton.IsEnabled = enabled;
+            }
+        }
+
+
+        private bool _syncingHeaderCheck;
+
+        private void HeaderSelectAll_Changed(object sender, RoutedEventArgs e)
+        {
+            if (_syncingHeaderCheck) return;
+            if (sender is not CheckBox cb) return;
+
+            bool target = cb.IsChecked == true;
+
+            _syncingHeaderCheck = true;
+            try
+            {
+                foreach (var line in _backordersView.Cast<object>().OfType<BackorderLine>())
+                    line.IsChecked = target;
+            }
+            finally
+            {
+                _syncingHeaderCheck = false;
+            }
+
+            UpdateSelectAllHeader();
+            UpdateActionButtonsText();
         }
 
 
