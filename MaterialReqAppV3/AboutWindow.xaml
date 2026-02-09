@@ -71,8 +71,8 @@
                     <TextBlock TextWrapping="Wrap"
                                Foreground="{DynamicResource TextPrimary}"
                                FontWeight="SemiBold"
-                               Text="Authorized use only. Do not distribute outside CenterPoint Energy Radio Shop."
-                               Margin="0,0,0,26"/>
+                               Text="Authorized use only. Do not duplicate or distribute outside CenterPoint Energy Radio Shop."
+                               Margin="0,10,0,10"/>
 
                     <!-- Licensing -->
                     <TextBlock TextWrapping="Wrap"

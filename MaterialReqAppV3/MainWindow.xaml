@@ -4,18 +4,11 @@
         Title="Material Requisition App"
         WindowStartupLocation="CenterScreen"
         WindowState="Maximized"
-        Background="{DynamicResource AppBackground}"
-        TextElement.Foreground="{DynamicResource TextPrimary}"
-        TextElement.FontSize="13"
-        FontFamily="Segoe UI"
-        UseLayoutRounding="True"
+        Background="{DynamicResource AppBackground}"        
         SnapsToDevicePixels="True"
         Icon="Assets/MaterialReqAppIcon.ico">
 
     <Window.Resources>
-
-                <!-- TextBox with watermark (uses Tag as the watermark text) -->
-        
 
         <!-- Hover-only close "hit area" (used by your CreateTabHeader code) -->
         <Style x:Key="TabCloseHitStyle" TargetType="Border">
@@ -38,96 +31,6 @@
             </Style.Triggers>
         </Style>
 
-        <!-- Pill toggle style (Issue/Return) -->
-        <Style x:Key="PillToggleStyle" TargetType="ToggleButton">
-            <Setter Property="Width" Value="92"/>
-            <Setter Property="Height" Value="26"/>
-            <Setter Property="Background" Value="{DynamicResource SurfaceBg}"/>
-            <Setter Property="BorderBrush" Value="{DynamicResource SurfaceBorder}"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
-            <Setter Property="FontSize" Value="12"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Cursor" Value="Hand"/>
-
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="ToggleButton">
-                        <Grid>
-                            <!-- Pill background -->
-                            <Border x:Name="Pill"
-                                    Background="{TemplateBinding Background}"
-                                    BorderBrush="{TemplateBinding BorderBrush}"
-                                    BorderThickness="{TemplateBinding BorderThickness}"
-                                    CornerRadius="13">
-                                <Grid Margin="10,0,10,0">
-                                    <TextBlock x:Name="Label"
-                                               Text="Issue"
-                                               Foreground="{TemplateBinding Foreground}"
-                                               VerticalAlignment="Center"
-                                               HorizontalAlignment="Center"/>
-                                </Grid>
-                            </Border>
-
-                            <!-- Knob -->
-                            <Border x:Name="Knob"
-                                    Width="22"
-                                    Height="22"
-                                    CornerRadius="11"
-                                    Background="{DynamicResource CardBackground}"
-                                    BorderBrush="{DynamicResource CardBorder}"
-                                    BorderThickness="1"
-                                    HorizontalAlignment="Right"
-                                    Margin="2">
-                                <Border.Effect>
-                                    <DropShadowEffect BlurRadius="8" 
-                                                      ShadowDepth="1" 
-                                                      Opacity="0.18"/>
-                                </Border.Effect>
-                            </Border>
-                        </Grid>
-
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsChecked" 
-                                     Value="True">
-                                <Setter TargetName="Label" 
-                                        Property="Text" 
-                                        Value="Return"/>
-                                <Setter TargetName="Label" 
-                                        Property="Foreground" 
-                                        Value="#B91C1C"/><!-- red -->
-                                <Setter TargetName="Pill" 
-                                        Property="BorderBrush" 
-                                        Value="#FCA5A5"/><!-- soft red border -->
-                                <Setter TargetName="Knob" 
-                                        Property="HorizontalAlignment" 
-                                        Value="Left"/>
-                            </Trigger>
-                            <Trigger Property="IsChecked" 
-                                     Value="False">
-                                <Setter TargetName="Label" 
-                                        Property="Foreground" 
-                                        Value="{DynamicResource TextPrimary}"/>
-                                <Setter TargetName="Pill" 
-                                        Property="BorderBrush" 
-                                        Value="{DynamicResource SurfaceBorder}"/>
-                            </Trigger>
-
-
-
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Pill" Property="BorderBrush" Value="#BFC6D1"/>
-                            </Trigger>
-
-                            <Trigger Property="IsEnabled" Value="False">
-                                <Setter Property="Opacity" Value="0.6"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
         <!-- Template that puts: Tabs header row, then SiteName row, then content -->
         <Style x:Key="TabControlWithSiteBarStyle"
                TargetType="{x:Type TabControl}">
@@ -148,162 +51,45 @@
 
                             <!-- Site name bar (under headers) -->
                             <Border Grid.Row="1"
-                                    Background="{DynamicResource SurfaceBg}"
-                                    BorderBrush="{DynamicResource SurfaceBorder}"
+                                    Background="{DynamicResource CardBackground}"
+                                    BorderBrush="{DynamicResource CardBorder}"
                                     BorderThickness="1"
-                                    CornerRadius="10"
-                                    Padding="10"
+                                    CornerRadius="12"
+                                    Padding="12"
                                     Margin="0,0,0,10">
+
                                 <DockPanel LastChildFill="False">
 
-                                    <!-- Left side -->
-                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                        
+                                    <StackPanel Orientation="Horizontal"
+                                        VerticalAlignment="Center">
 
                                         <TextBox x:Name="PART_SiteNameBox"
-                                                 Width="260"
-                                                 Height="26"
-                                                 Style="{StaticResource WatermarkTextBoxStyle}"
+                                                 Width="340"
+                                                 Height="34"
                                                  Tag="Site # / Reason for Movement"
-                                                 Margin="0,0,6,0"
-                                                 Background="{DynamicResource SurfaceBg}"
-                                                 BorderBrush="{DynamicResource SurfaceBorder}"
-                                                 BorderThickness="1"/>
+                                                 Margin="0,0,8,0"
+                                                 Style="{StaticResource ModernWatermarkTextBox}"/>
 
-
+                                        <!-- If you want it to be secondary instead, swap style to SecondaryButtonStyle -->
                                         <Button Content="Apply"
-                                                Height="26"
-                                                Padding="12,0"
+                                                Height="34"
+                                                MinWidth="96"
+                                                Padding="16,0"
+                                                Style="{StaticResource SecondaryButtonStyle}"
                                                 Click="ApplySiteName_Click"/>
                                     </StackPanel>
-
                                 </DockPanel>
                             </Border>
 
                             <!-- Selected tab content -->
                             <ContentPresenter Grid.Row="2"
-                                              ContentSource="SelectedContent"/>
+                                      ContentSource="SelectedContent"/>
                         </Grid>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
         </Style>
 
-        <!--Template for Data Boxes-->
-        <DataTemplate x:Key="PartItemTemplate">
-            <StackPanel Margin="0,4">
-                <TextBlock Text="{Binding Description}"
-                   FontSize="14"
-                   Foreground="{DynamicResource TextPrimary}"
-                   TextWrapping="Wrap"/>
-                <TextBlock Text="{Binding Material}"
-                   FontSize="12"
-                   Foreground="{DynamicResource TextSecondary}"
-                   Margin="0,1,0,0"/>
-            </StackPanel>
-        </DataTemplate>
-
-        <!--Template for Selected Parts Grid-->
-        <DataTemplate x:Key="SelectedPartDisplayTemplate">
-            <StackPanel Margin="0,4">
-                <TextBlock Text="{Binding Description}"
-                   FontSize="14"
-                   Foreground="{DynamicResource TextPrimary}"
-                   TextWrapping="Wrap"/>
-
-                <TextBlock Text="{Binding Material}"
-                   FontSize="12"
-                   Foreground="{DynamicResource TextSecondary}"
-                   Margin="0,1,0,0"/>
-            </StackPanel>
-        </DataTemplate>
-
-        <!-- =========================================================
-             TAB LOOK: tabs "attach" to the bar border under them
-             ========================================================= -->
-        <Style x:Key="AttachedTabItemStyle" TargetType="TabItem">
-            <Setter Property="Margin" Value="0,0,2,0"/>
-            <Setter Property="Padding" Value="12,6"/>
-            <Setter Property="Background" Value="{DynamicResource TileFill}"/>
-            <Setter Property="BorderBrush" Value="{DynamicResource SurfaceBorder}"/>
-            <Setter Property="BorderThickness" Value="1"/>
-
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="TabItem">
-                        <Border x:Name="Bd"
-                                Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="8,8,0,0"
-                                Padding="{TemplateBinding Padding}">
-                            
-                            <Grid>
-                                <!-- Header only -->
-                                <ContentPresenter x:Name="HeaderPresenter"
-                                                  ContentSource="Header"
-                                                  VerticalAlignment="Center"
-                                                  HorizontalAlignment="Center"
-                                                  TextElement.FontWeight="SemiBold"
-                                                  TextElement.Foreground="{DynamicResource TextSecondary}"/>
-
-                                <!-- Selected indicator -->
-                                <Border x:Name="Indicator"
-                                        Height="3"
-                                        VerticalAlignment="Bottom"
-                                        HorizontalAlignment="Stretch"
-                                        Background="{DynamicResource PrimaryBg}"
-                                        Opacity="0"/>
-                            </Grid>
-                        </Border>
-
-                        <ControlTemplate.Triggers>
-                            <!-- Selected tab -->
-                            <Trigger Property="IsSelected" 
-                                     Value="True">
-                                <Setter TargetName="Bd" 
-                                        Property="Background" 
-                                        Value="{DynamicResource SurfaceBg}"/>
-                                <Setter TargetName="Bd" 
-                                        Property="BorderThickness" 
-                                        Value="1,1,1,0"/>
-                                <Setter TargetName="Bd" 
-                                        Property="Margin" 
-                                        Value="0,0,2,-1"/>
-
-                                <Setter TargetName="HeaderPresenter" 
-                                        Property="TextElement.FontWeight" 
-                                        Value="Bold"/>
-                                <Setter TargetName="HeaderPresenter" 
-                                        Property="TextElement.Foreground" 
-                                        Value="{DynamicResource TextPrimary}"/>
-                                <Setter TargetName="Indicator" 
-                                        Property="Opacity" 
-                                        Value="1"/>
-                            </Trigger>
-
-                            <!-- Hover -->
-                            <Trigger Property="IsMouseOver" 
-                                     Value="True">
-                                <Setter TargetName="Bd" 
-                                        Property="Background" 
-                                        Value="{DynamicResource TileFillHover}"/>
-                                <Setter TargetName="HeaderPresenter" 
-                                        Property="TextElement.Foreground" 
-                                        Value="{DynamicResource TextPrimary}"/>
-                            </Trigger>
-
-                            <Trigger Property="IsEnabled" 
-                                     Value="False">
-                                <Setter Property="Opacity" 
-                                        Value="0.6"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-        
         <!--Icon Button Styling-->
         <Style x:Key="IconButtonStyle" TargetType="Button">
             <Setter Property="Width" Value="34"/>
@@ -323,7 +109,7 @@
                                 HorizontalAlignment="Center"
                                 VerticalAlignment="Center"/>
                         </Border>
-                        
+
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" 
                                      Value="True">
@@ -331,20 +117,20 @@
                                         Property="Background" 
                                         Value="{DynamicResource HoverOverlay}"/>
                             </Trigger>
-                            
+
                             <Trigger Property="IsPressed" 
                                      Value="True">
                                 <Setter TargetName="Bd" 
                                         Property="Background" 
                                         Value="{DynamicResource PressedOverlay}"/>
                             </Trigger>
-                            
+
                             <Trigger Property="IsEnabled" 
                                      Value="False">
                                 <Setter Property="Opacity" 
                                         Value="0.5"/>
                             </Trigger>
-                            
+
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
@@ -354,7 +140,11 @@
     </Window.Resources>
 
     <Grid Margin="10">
-              
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="328*"/>
+            <ColumnDefinition Width="5*"/>
+        </Grid.ColumnDefinitions>
+
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <!-- Top header -->
@@ -368,18 +158,20 @@
          TOP HEADER BAR
          ======================= -->
         <Border Grid.Row="0"
-            Background="{DynamicResource SurfaceBg}"
-            BorderBrush="{DynamicResource SurfaceBorder}"
-            BorderThickness="1"
-            CornerRadius="12"
-            Padding="14"
-            Margin="0,0,0,8">
+                Background="{DynamicResource CardBackground}"
+                BorderBrush="{DynamicResource CardBorder}"
+                BorderThickness="1"
+                CornerRadius="12"
+                Padding="14"
+                Margin="0,0,0,8" 
+                Grid.ColumnSpan="2">
 
             <Grid Margin="0">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
+                
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
@@ -391,7 +183,7 @@
                            Grid.Row="0"
                            Text="Material Requisition - Warehouse - Building D"
                            FontSize="18"
-                           FontWeight="SemiBold"
+                           FontWeight="Bold"
                            Foreground="{DynamicResource TextPrimary}" />
                 <TextBlock x:Name="HeaderSubText"
                            Grid.Column="0"
@@ -425,152 +217,64 @@
                                    Foreground="{DynamicResource TextPrimary}"
                                    Text="&#xE713;"/>
                     </Button>
-
                 </StackPanel>
             </Grid>
-
         </Border>
 
         <!-- =======================
-         TABS
-         ======================= -->
+                     SITE TABS
+            ======================= -->
         <TabControl x:Name="SiteTabs"
-                Grid.Row="1"
-                Style="{StaticResource TabControlWithSiteBarStyle}"
-                SelectionChanged="SiteTabs_SelectionChanged"
-                PreviewMouseLeftButtonDown="SiteTabs_PreviewMouseLeftButtonDown"
-                ItemContainerStyle="{StaticResource AttachedTabItemStyle}">
+                    AlternationCount="9999"
+                    Grid.Row="1"
+                    Style="{StaticResource TabControlWithSiteBarStyle}"
+                    SelectionChanged="SiteTabs_SelectionChanged"
+                    PreviewMouseLeftButtonDown="SiteTabs_PreviewMouseLeftButtonDown"
+                    ItemContainerStyle="{StaticResource AttachedTabItemStyle}" 
+                    Grid.ColumnSpan="2" 
+                    Margin="0,0,0,44" 
+                    Grid.RowSpan="2">
 
             <!-- Default site tab -->
             <TabItem x:Name="FirstBlankTab"
-                 Header="Blank"
-                 Tag="False">
-
-                <!-- 2x2 layout -->
-                <Grid Margin="10">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="220"/>
-                        <RowDefinition Height="*"/>
-                    </Grid.RowDefinitions>
-
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-
-                    <Border Grid.Row="0" Grid.Column="0"
-                        Background="{DynamicResource SurfaceBg}"
-                        BorderBrush="{DynamicResource SurfaceBorder}"
-                        BorderThickness="1"
-                        CornerRadius="12"
-                        Padding="12"
-                        Margin="0,0,8,8">
-                        <TextBlock Text="Movement Type (Top-Left)"
-                               Foreground="{DynamicResource TextPrimary}"
-                               FontSize="18"
-                               FontWeight="SemiBold"/>
-                    </Border>
-
-                    <Border Grid.Row="0" Grid.Column="1"
-                        Background="{DynamicResource SurfaceBg}"
-                        BorderBrush="{DynamicResource SurfaceBorder}"
-                        BorderThickness="1"
-                        CornerRadius="12"
-                        Padding="12"
-                        Margin="8,0,0,8">
-                        <TextBlock Text="Cost Center / WBS / Work Order (Top-Right)"
-                               Foreground="{DynamicResource TextPrimary}"
-                               FontSize="18"
-                               FontWeight="SemiBold"/>
-                    </Border>
-
-                    <!--Parts Catalog-->
-                    <Border Grid.Row="1"
-                            Grid.Column="0"
-                            Background="{DynamicResource SurfaceBg}"
-                            BorderBrush="{DynamicResource SurfaceBorder}"
-                            BorderThickness="1"
-                            CornerRadius="12"
-                            Padding="12"
-                            Margin="0,8,8,0">
-                        <Grid>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="*"/>
-                            </Grid.RowDefinitions>
-
-                            <TextBox x:Name="PartsSearchBox"
-                                     Height="28"
-                                     Margin="0,0,0,10"
-                                     Tag="Search parts..."
-                                     Style="{StaticResource WatermarkTextBoxStyle}"
-                                     TextChanged="PartsSearchBox_TextChanged"/>
-
-                            <ListBox x:Name="PartsListBox"
-                                     Grid.Row="1"
-                                     BorderThickness="0"
-                                     ScrollViewer.HorizontalScrollBarVisibility="Disabled">
-
-                                <ListBox.ItemTemplate>
-                                    <DataTemplate>
-                                        <StackPanel Margin="0,4">
-                                            <!-- Description (primary) -->
-                                            <TextBlock Text="{Binding Description}"
-                                                       FontSize="12"
-                                                       Foreground="{DynamicResource TextPrimary}"
-                                                       TextWrapping="Wrap"/>
-
-                                            <!-- Material (secondary) -->
-                                            <TextBlock Text="{Binding Material}"
-                                                       FontSize="10"
-                                                       Foreground="{DynamicResource TextSecondary}"
-                                                       Margin="0,1,0,0"/>
-                                        </StackPanel>
-                                    </DataTemplate>
-                                </ListBox.ItemTemplate>
-
-                            </ListBox>
-
-                        </Grid>
-                    </Border>
-
-
-                    <Border Grid.Row="1" Grid.Column="1"
-                        Background="{DynamicResource SurfaceBg}"
-                        BorderBrush="{DynamicResource SurfaceBorder}"
-                        BorderThickness="1"
-                        CornerRadius="12"
-                        Padding="12"
-                        Margin="8,8,0,0">
-                        <TextBlock Text="Selected Parts (Bottom-Right)"
-                               Foreground="{DynamicResource TextPrimary}"
-                               FontSize="18"
-                               FontWeight="SemiBold"/>
-                    </Border>
-                </Grid>
-            </TabItem>
-
-            <!-- Plus tab -->
-            <TabItem x:Name="PlusTab"
-                 Header="+"
-                 Width="35">
+                     Header="Blank"
+                     Tag="False">
                 <Grid/>
             </TabItem>
-
+            
+            <!-- Plus tab -->
+            <TabItem x:Name="PlusTab"
+                     Tag="Plus"
+                     Style="{StaticResource PlusTabItemStyle}"                     
+                     ToolTip="New tab"
+                     Padding="0">
+                <TabItem.Header>
+                    <TextBlock FontFamily="Segoe MDL2 Assets"
+                               Text="&#xE710;"
+                               FontSize="13"
+                               FontWeight="Regular"
+                               Foreground="{DynamicResource TextSecondary}"
+                               VerticalAlignment="Center"
+                               HorizontalAlignment="Center"/>
+                </TabItem.Header>
+                <Grid/>
+            </TabItem>
         </TabControl>
+
 
         <!-- =======================
          BOTTOM BAR
          ======================= -->
-        <Grid Grid.Row="2" Margin="0,10,0,0">
+        <Grid Grid.Row="2" 
+              Margin="0,8,10,8" 
+              Grid.ColumnSpan="2">
             <Button Content="Summary"
-                HorizontalAlignment="Right"
-                Height="34"
-                Padding="18,0"
-                Click="OpenSummary_Click"/>
+                    Style="{StaticResource PrimaryButtonStyle}"
+                    HorizontalAlignment="Right"
+                    Height="34"
+                    Width="90"
+                    Padding="18,0"
+                    Click="OpenSummary_Click"/>
         </Grid>
     </Grid>
-
-
-
 </Window>

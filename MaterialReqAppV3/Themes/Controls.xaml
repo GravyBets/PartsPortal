@@ -370,13 +370,7 @@
                                           HorizontalAlignment="Center"
                                           TextElement.FontWeight="SemiBold"
                                           TextElement.Foreground="{TemplateBinding Foreground}"/>
-
-                            <Border x:Name="Indicator"
-                                Height="3"
-                                VerticalAlignment="Bottom"
-                                HorizontalAlignment="Stretch"
-                                Background="{DynamicResource InputBorderFocus}"
-                                Opacity="0"/>
+                            
                         </Grid>
                     </Border>
 
@@ -390,10 +384,10 @@
                         <Trigger Property="IsSelected" Value="True">
                             <Setter Property="Panel.ZIndex" Value="1"/>
                             <Setter TargetName="Bd" Property="Background" Value="{DynamicResource TabBgSelected}"/>
-                            <Setter TargetName="Bd" Property="BorderThickness" Value="1,1,1,0"/>
+                            <Setter TargetName="Bd" Property="BorderThickness" Value="1.5,1.5,1.5,0"/>
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource PrimaryBg}"/>
                             <Setter TargetName="HeaderPresenter" Property="TextElement.FontWeight" Value="Bold"/>
-                            <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
-                            <Setter TargetName="Indicator" Property="Opacity" Value="1"/>
+                            <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>                            
                         </Trigger>
 
                         <MultiTrigger>
@@ -883,7 +877,7 @@
                             <Setter Property="Panel.ZIndex" Value="1"/>
                             <Setter TargetName="Bd" Property="Background" Value="{DynamicResource SurfaceBg}"/>
                             <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource BorderHover}"/>
-                            <Setter TargetName="Bd" Property="BorderThickness" Value="1,1,1,0"/>
+                            <Setter TargetName="Bd" Property="BorderThickness" Value="1.5,1.5,1.5,0"/>
 
                             <!-- ONLY vertical overlap, keep horizontal spacing stable -->
                             <Setter TargetName="Bd" Property="Margin" Value="0,0,0,-1"/>
@@ -1095,93 +1089,103 @@
         </Setter>
     </Style>
 <!--Modern ComboBox End -->
-    
-        <!-- Pill toggle style (Issue/Return) -->
-    <Style x:Key="PillToggleStyle" TargetType="ToggleButton">
-        <Setter Property="Width" Value="92"/>
-        <Setter Property="Height" Value="26"/>
-        <Setter Property="Background" Value="{DynamicResource SurfaceBg}"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource SurfaceBorder}"/>
-        <Setter Property="BorderThickness" Value="1"/>
-        <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
-        <Setter Property="FontSize" Value="12"/>
-        <Setter Property="FontWeight" Value="SemiBold"/>
-        <Setter Property="Cursor" Value="Hand"/>
 
+    <!-- Issue/Return slider toggle (matches ThemeSliderToggleStyle structure) -->
+    <Style x:Key="PillToggleStyle" TargetType="ToggleButton">
+        <Setter Property="Width" Value="108"/>
+        <Setter Property="Height" Value="32"/>
+        <Setter Property="Focusable" Value="False"/>
+        <Setter Property="BorderThickness" Value="2"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource CardBorder}"/>
+        <Setter Property="Background" Value="{DynamicResource TileFill}"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ToggleButton">
-                    <Grid>
-                        <!-- Pill background -->
-                        <Border x:Name="Pill"
-                             Background="{TemplateBinding Background}"
-                             BorderBrush="{TemplateBinding BorderBrush}"
-                             BorderThickness="{TemplateBinding BorderThickness}"
-                             CornerRadius="13">
-                            <Grid Margin="10,0,10,0">
-                                <TextBlock x:Name="Label"
-                                        Text="Issue"
-                                        Foreground="{TemplateBinding Foreground}"
-                                        VerticalAlignment="Center"
-                                        HorizontalAlignment="Center"/>
-                            </Grid>
-                        </Border>
+                    <Border x:Name="Track"
+                        CornerRadius="16"
+                        Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        SnapsToDevicePixels="True">
 
-                        <!-- Knob -->
-                        <Border x:Name="Knob"
-                             Width="22"
-                             Height="22"
-                             CornerRadius="11"
-                             Background="{DynamicResource CardBackground}"
-                             BorderBrush="{DynamicResource CardBorder}"
-                             BorderThickness="1"
-                             HorizontalAlignment="Right"
-                             Margin="2">
-                            <Border.Effect>
-                                <DropShadowEffect BlurRadius="8" 
-                                               ShadowDepth="1" 
-                                               Opacity="0.18"/>
-                            </Border.Effect>
-                        </Border>
-                    </Grid>
+                        <!-- inner padding prevents clipping -->
+                        <Grid Margin="3" ClipToBounds="True">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <!-- Labels -->
+                            <TextBlock x:Name="ReturnLabel"
+                                   Grid.Column="0"
+                                   Text="Return"
+                                   FontSize="13"
+                                   FontWeight="SemiBold"
+                                   VerticalAlignment="Center"
+                                   HorizontalAlignment="Center"
+                                   Foreground="{DynamicResource TextPrimary}"
+                                   Opacity="1.5"/>
+
+                            <TextBlock x:Name="IssueLabel"
+                                   Grid.Column="1"
+                                   Text="Issue"
+                                   FontSize="13"
+                                   FontWeight="SemiBold"
+                                   VerticalAlignment="Center"
+                                   HorizontalAlignment="Center"
+                                   Foreground="{DynamicResource TextPrimary}"
+                                   Opacity="0.85"/>
+
+                            <!-- Thumb spans both columns so it can snap left/right -->
+                            <Border x:Name="Thumb"
+                                Grid.ColumnSpan="2"
+                                Panel.ZIndex="5"
+                                Width="48"
+                                CornerRadius="12"
+                                Background="{DynamicResource CardBackground}"
+                                BorderBrush="{DynamicResource CardBorder}"
+                                BorderThickness="1"
+                                HorizontalAlignment="Left"
+                                Margin="0,0,0,0"
+                                SnapsToDevicePixels="True"/>
+                        </Grid>
+                    </Border>
 
                     <ControlTemplate.Triggers>
-                        <Trigger Property="IsChecked" 
-                              Value="True">
-                            <Setter TargetName="Label" 
-                                 Property="Text" 
-                                 Value="Return"/>
-                            <Setter TargetName="Label" 
-                                 Property="Foreground" 
-                                 Value="#B91C1C"/>
-                            <!-- red -->
-                            <Setter TargetName="Pill" 
-                                 Property="BorderBrush" 
-                                 Value="#FCA5A5"/>
-                            <!-- soft red border -->
-                            <Setter TargetName="Knob" 
-                                 Property="HorizontalAlignment" 
-                                 Value="Left"/>
-                        </Trigger>
-                        <Trigger Property="IsChecked" 
-                              Value="False">
-                            <Setter TargetName="Label" 
-                                 Property="Foreground" 
-                                 Value="{DynamicResource TextPrimary}"/>
-                            <Setter TargetName="Pill" 
-                                 Property="BorderBrush" 
-                                 Value="{DynamicResource SurfaceBorder}"/>
+
+                        <!-- Checked = Return -->
+                        <Trigger Property="IsChecked" Value="True">
+                            <!-- keep same “selected track” feel as your theme slider -->
+                            <Setter TargetName="Track" Property="Background" Value="{DynamicResource PrimaryBg}"/>
+                            <Setter TargetName="Track" Property="BorderBrush" Value="{DynamicResource PrimaryBorder}"/>
+
+                            <Setter TargetName="Thumb" Property="HorizontalAlignment" Value="Right"/>
+                            <Setter TargetName="ReturnLabel" Property="Opacity" Value="0.95"/>
+                            <Setter TargetName="IssueLabel" Property="Opacity" Value="0.85"/>
+                            <Setter TargetName="Thumb" Property="BorderBrush" Value="{DynamicResource PrimaryBorder}"/>
                         </Trigger>
 
+                        <!-- Unchecked = Issue -->
+                        <Trigger Property="IsChecked" Value="False">
+                            <Setter TargetName="Track" Property="Background" Value="{DynamicResource TileFill}"/>
+                            <Setter TargetName="Track" Property="BorderBrush" Value="{DynamicResource CardBorder}"/>
 
+                            <Setter TargetName="Thumb" Property="HorizontalAlignment" Value="Left"/>
+                            <Setter TargetName="IssueLabel" Property="Opacity" Value="0.85"/>
+                            <Setter TargetName="ReturnLabel" Property="Opacity" Value="0.95"/>
+                            <Setter TargetName="Thumb" Property="BorderBrush" Value="{DynamicResource CardBorder}"/>
+                        </Trigger>
 
+                        <!-- Hover (don’t blow away checked border) -->
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="Pill" Property="BorderBrush" Value="#BFC6D1"/>
+                            <Setter TargetName="Track" Property="BorderBrush" Value="{DynamicResource BorderHover}"/>
                         </Trigger>
 
+                        <!-- Disabled -->
                         <Trigger Property="IsEnabled" Value="False">
-                            <Setter Property="Opacity" Value="0.6"/>
+                            <Setter Property="Opacity" Value="0.55"/>
                         </Trigger>
+
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>

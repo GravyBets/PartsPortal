@@ -43,7 +43,7 @@
     <SolidColorBrush x:Key="PrimaryBgPressed" Color="#223D93"/>
 
     <!-- Primary brand (calmer dark blue) -->
-    <SolidColorBrush x:Key="PrimaryBg" Color="#1E3A8A"/>
+    <SolidColorBrush x:Key="PrimaryBg" Color="#3B82F6"/>
     <SolidColorBrush x:Key="PrimaryBorder" Color="#1E40AF"/>
 
     <!-- Tile background (subtle fill so buttons aren’t washed out) -->
@@ -79,6 +79,13 @@
     <SolidColorBrush x:Key="MissingRefBg" Color="#3A1B1B"/> <!-- deep muted red fill -->
     <SolidColorBrush x:Key="MissingRefBgHover" Color="#4A2020"/> <!-- slightly stronger on hover -->
     <SolidColorBrush x:Key="MissingRefBorder" Color="#F87171"/> <!-- softer red outline -->
+
+    <!-- Issue/Retrun Toggle Pill -->
+    <SolidColorBrush x:Key="DangerText" Color="#FCA5A5"/>
+    <SolidColorBrush x:Key="DangerBorder" Color="#F87171"/>
+    <SolidColorBrush x:Key="DangerBg" Color="#3A1B1B"/>
+    <SolidColorBrush x:Key="DangerBgHover" Color="#4A2020"/>
+
 
 
     <!-- Overlays / Misc -->

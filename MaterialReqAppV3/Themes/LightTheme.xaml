@@ -79,6 +79,13 @@
     <SolidColorBrush x:Key="MissingRefBgHover" Color="#FECACA"/> <!-- slightly stronger on hover -->
     <SolidColorBrush x:Key="MissingRefBorder" Color="#EF4444"/> <!-- red outline -->
 
+    <!-- Issue/Return Toggle Pill -->
+    <SolidColorBrush x:Key="DangerText" Color="#FCA5A5"/>
+    <SolidColorBrush x:Key="DangerBorder" Color="#F87171"/>
+    <SolidColorBrush x:Key="DangerBg" Color="#3A1B1B"/>
+    <SolidColorBrush x:Key="DangerBgHover" Color="#4A2020"/>
+
+
 
     <!-- Overlays / Misc -->
     <SolidColorBrush x:Key="HoverOverlay" Color="#14000000"/>
