@@ -410,7 +410,7 @@ namespace MaterialReqAppV3
             }
         }
 
-        private const int MaxSiteTabs = 4;
+        private const int MaxSiteTabs = 6;
 
         private void AddNewSiteTab()
         {
@@ -418,7 +418,7 @@ namespace MaterialReqAppV3
 
             if (currentSiteTabCount >= MaxSiteTabs)
             {
-                MessageBox.Show("Max of 4 site tabs.");
+                MessageBox.Show("Max of 6 site tabs.");
                 SiteTabs.SelectedIndex = SiteTabs.Items.Count - 2;
                 return;
             }
