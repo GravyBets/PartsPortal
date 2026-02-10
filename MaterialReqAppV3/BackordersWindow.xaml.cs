@@ -550,7 +550,14 @@ namespace MaterialReqAppV3
                 Owner = this,
                 WindowStartupLocation = WindowStartupLocation.CenterOwner
             };
-            win.ShowDialog();
+
+            if (win.ShowDialog() == true)
+            {
+                ApplySettings(_settings, win.Settings); // ✅ update in-memory settings
+
+                MessageBox.Show("Settings saved!", "Settings",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+            }
         }
 
         private void AllPartsListBox_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
@@ -962,6 +969,23 @@ namespace MaterialReqAppV3
             UpdateActionButtonsText();
         }
 
+        private static void ApplySettings(UserSettings target, UserSettings source)
+        {
+            // strings
+            target.Name = source.Name ?? "";
+            target.EmployeeId = source.EmployeeId ?? "";
+            target.TruckNumber = source.TruckNumber ?? "";
+            target.PdfOutputFolder = source.PdfOutputFolder ?? "";
+            target.CsvPath = source.CsvPath ?? "";
+            target.EmailTo = source.EmailTo ?? "";
+            target.EmailCc = source.EmailCc ?? "";
+            target.EmailSubjectTemplate = source.EmailSubjectTemplate ?? "";
+            target.BugReportToEmail = source.BugReportToEmail ?? "";
+
+            // bools
+            target.EmailOpenDraftInsteadOfSend = source.EmailOpenDraftInsteadOfSend;
+            target.IsDarkMode = source.IsDarkMode;
+        }
 
     }
 }

@@ -264,18 +264,36 @@
 
 
         <!-- =======================
-         BOTTOM BAR
-         ======================= -->
-        <Grid Grid.Row="2" 
+                BOTTOM BAR
+             ======================= -->
+        <Grid Grid.Row="2"
               Margin="0,8,10,8" 
               Grid.ColumnSpan="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <!-- LEFT: status text -->
+            <TextBlock x:Name="StatusBarText"
+                       Grid.Column="0"
+                       Foreground="{DynamicResource TextSecondary}"
+                       FontWeight="SemiBold"
+                       VerticalAlignment="Center"
+                       HorizontalAlignment="Right"                       
+                       Text=""
+                       Visibility="Collapsed"/>
+
             <Button Content="Summary"
                     Style="{StaticResource PrimaryButtonStyle}"
+                    Grid.Column="1"
                     HorizontalAlignment="Right"
+                    Margin="10,0,0,0"
                     Height="34"
                     Width="90"
                     Padding="18,0"
                     Click="OpenSummary_Click"/>
         </Grid>
+
+
     </Grid>
 </Window>

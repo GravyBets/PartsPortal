@@ -3,6 +3,8 @@ using System;
 using System.IO;
 using System.Windows;
 using MaterialReqAppV3.Models;
+using System.Linq;
+using Microsoft.VisualBasic;
 
 namespace MaterialReqAppV3
 {
@@ -43,6 +45,9 @@ namespace MaterialReqAppV3
                     ? "Material Requisition - {Warehouse} - {Date}"
                     : s.EmailSubjectTemplate,
                 EmailOpenDraftInsteadOfSend = s.EmailOpenDraftInsteadOfSend,
+                EmailDirectory = s.EmailDirectory != null ? new List<string>(s.EmailDirectory) : new List<string>()
+
+
                 IsDarkMode = s.IsDarkMode,
                 BugReportToEmail = s.BugReportToEmail ?? ""
 
@@ -73,7 +78,7 @@ namespace MaterialReqAppV3
         {
             var dlg = new OpenFileDialog
             {
-                Filter = "CSV files (*.csv)|*.csv|All files (*.*)|*.*",
+                Filter = "CSV files (*.csv)|*.csv",
                 Title = "Select parts CSV file"
             };
 
@@ -96,11 +101,87 @@ namespace MaterialReqAppV3
             }
         }
 
-
         private void Cancel_Click(object sender, RoutedEventArgs e)
         {
             DialogResult = false;
             Close();
         }
+
+        private void CopyTo_Click(object sender, RoutedEventArgs e)
+        {
+            if (EmailDirectoryListBox.SelectedItem is not string email) return;
+            email = (email ?? "").Trim();
+            if (email.Length == 0) return;
+
+            Settings.EmailTo = email;
+        }
+
+        private void CopyCc_Click(object sender, RoutedEventArgs e)
+        {
+            if (EmailDirectoryListBox.SelectedItem is not string email) return;
+            email = (email ?? "").Trim();
+            if (email.Length == 0) return;
+
+            Settings.EmailCc = email;
+        }
+
+        private void AddEmail_Click(object sender, RoutedEventArgs e)
+        {
+            // simple prompt (no new window needed)
+            string input = Microsoft.VisualBasic.Interaction.InputBox(
+                "Enter an email address to add:",
+                "Add Email",
+                "");
+
+            string email = (input ?? "").Trim();
+
+            if (email.Length == 0) return;
+
+            // very basic validation
+            if (!email.Contains("@") || email.Contains(" "))
+            {
+                MessageBox.Show("That doesn’t look like a valid email.",
+                    "Add Email", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            Settings.EmailDirectory ??= new List<string>();
+
+            if (Settings.EmailDirectory.Any(x => string.Equals(x.Trim(), email, StringComparison.OrdinalIgnoreCase)))
+            {
+                MessageBox.Show("That email is already in the directory.",
+                    "Add Email", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            Settings.EmailDirectory.Add(email);
+
+            // refresh listbox if needed
+            EmailDirectoryListBox.Items.Refresh();
+
+            // optionally auto-select new item
+            EmailDirectoryListBox.SelectedItem = email;
+            EmailDirectoryListBox.ScrollIntoView(email);
+        }
+
+        private void RemoveEmail_Click(object sender, RoutedEventArgs e)
+        {
+            if (EmailDirectoryListBox.SelectedItem is not string email) return;
+
+            var result = MessageBox.Show(
+                $"Remove this email from your directory?\n\n{email}",
+                "Remove Email",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+
+            if (result != MessageBoxResult.Yes)
+                return;
+
+            Settings.EmailDirectory ??= new List<string>();
+            Settings.EmailDirectory.Remove(email);
+
+            EmailDirectoryListBox.Items.Refresh();
+        }
+
     }
 }

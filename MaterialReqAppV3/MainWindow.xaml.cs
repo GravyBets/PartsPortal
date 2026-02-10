@@ -40,6 +40,7 @@ namespace MaterialReqAppV3
         private UserSettings _settings = new();
         private readonly PartsCatalogService _partsService = new();
         private List<Part> _allParts = new();
+        private bool _csvWarningShown = false;
         private string _currentWarehouse = "Building D"; // temporary default
         private readonly Dictionary<TabItem, ObservableCollection<SelectedPartLine>> _selectedPartsByTab = new();
         private readonly Dictionary<TabItem, StackPanel> _movementPanelByTab = new();
@@ -59,6 +60,8 @@ namespace MaterialReqAppV3
         private readonly Dictionary<TabItem, TextBlock> _selectedStatusByTab = new();
         private readonly Dictionary<TabItem, Views.PartsBrowserView> _partsViewByTab = new();
         private readonly Dictionary<TabItem, Views.SelectedPartsView> _selectedViewByTab = new();
+        private CancellationTokenSource? _statusCts;
+
 
 
         private bool GetIsReturnForTab(TabItem tab)
@@ -569,7 +572,8 @@ namespace MaterialReqAppV3
                 _templatesService.Save(GetWarehouseKey(), _templates);
 
                 RefreshTemplatesUI(ownerTab);
-                Title = $"Template deleted: {t.Name}";
+                SetStatus($"Template deleted: {t.Name}");
+
 
             };
 
@@ -739,7 +743,7 @@ namespace MaterialReqAppV3
             _templatesService.Save(GetWarehouseKey(), _templates);
 
             RefreshTemplatesUI(ownerTab, name);
-            Title = $"Template saved: {name}";
+            SetStatus($"Template saved: {name}");
         }
 
         private void AddTemplateToOrder(TabItem ownerTab, PartTemplate t)
@@ -813,38 +817,66 @@ namespace MaterialReqAppV3
 
             string baseDir = AppDomain.CurrentDomain.BaseDirectory; // bin\Debug\net8.0-windows\
             return System.IO.Path.Combine(baseDir, "Templates", fileName);
-        }              
+        }
 
         private void OpenSettings_Click(object sender, RoutedEventArgs e)
         {
-            var win = new SettingsWindow(_settings) { Owner = this };
-            bool? ok = win.ShowDialog();
-
-            if (ok == true)
+            var win = new SettingsWindow(_settings)
             {
-                _settings = win.Settings;
-                _settingsService.Save(_settings);
+                Owner = this,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            };
 
-                System.Windows.MessageBox.Show("Settings saved!", "Settings",
+            if (win.ShowDialog() == true)
+            {
+                // ✅ SettingsWindow already saved to disk.
+                // ✅ Keep the SAME _settings instance so other windows see updates.
+                ApplySettings(_settings, win.Settings);
+
+                MessageBox.Show("Settings saved!", "Settings",
                     MessageBoxButton.OK, MessageBoxImage.Information);
-                _settings = _settingsService.Load();
+
                 TryLoadParts();
                 RefreshPartsListForSelectedTab();
-
-
             }
-        }              
-        
+        }
+
         private void TryLoadParts()
         {
             try
             {
-                _allParts = _partsService.LoadFromCsv(_settings.CsvPath);
+                string csvPath = GetPartsCsvPath();
+
+                // Missing/invalid path
+                if (string.IsNullOrWhiteSpace(csvPath) || !File.Exists(csvPath))
+                {
+                    _allParts = new List<Part>();
+
+                    if (!_csvWarningShown)
+                    {
+                        _csvWarningShown = true;
+
+                        MessageBox.Show(
+                            "Parts list not found.\n\n" +
+                            "Fix:\n" +
+                            "1) In Teams → Files, click 'Add shortcut to OneDrive' (or Sync)\n" +
+                            "2) Then in Settings, select PartsList.csv (NOT a .csv.url shortcut)\n\n" +
+                            $"Current path:\n{(string.IsNullOrWhiteSpace(csvPath) ? "(blank)" : csvPath)}",
+                            "Parts CSV",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Warning);
+                    }
+
+                    return;
+                }
+
+                // Load parts
+                _allParts = _partsService.LoadFromCsv(csvPath);
             }
             catch
             {
                 _allParts = new List<Part>();
-                // We'll show a friendly message later (or in the UI)
+                // Optional: show error once here too if you want
             }
         }
 
@@ -1625,7 +1657,8 @@ namespace MaterialReqAppV3
             var candidateTabs = GetCandidateTabs();
             if (candidateTabs.Count == 0)
             {
-                Title = "Nothing to generate (all tabs blank).";
+                SetStatus("Nothing to generate (all tabs blank).");
+
                 return;
             }
 
@@ -1765,7 +1798,8 @@ namespace MaterialReqAppV3
 
                     break;
             }
-            Title = "Created: " + outFile;
+            SetStatus("Created: " + outFile);
+
         }
 
         private Task<bool> SendPdfEmailOutlookStaAsync(string pdfPath, List<PrintTabSummary>? rows, int pages, bool openDraft)
@@ -1817,7 +1851,71 @@ namespace MaterialReqAppV3
             var principal = new WindowsPrincipal(identity);
             return principal.IsInRole(WindowsBuiltInRole.Administrator);
         }
-        
+
+        private static void ApplySettings(UserSettings target, UserSettings source)
+        {
+            target.Name = source.Name ?? "";
+            target.EmployeeId = source.EmployeeId ?? "";
+            target.TruckNumber = source.TruckNumber ?? "";
+            target.PdfOutputFolder = source.PdfOutputFolder ?? "";
+            target.CsvPath = source.CsvPath ?? "";
+
+            target.EmailTo = source.EmailTo ?? "";
+            target.EmailCc = source.EmailCc ?? "";
+            target.EmailSubjectTemplate = source.EmailSubjectTemplate ?? "";
+            target.BugReportToEmail = source.BugReportToEmail ?? "";
+
+            target.EmailOpenDraftInsteadOfSend = source.EmailOpenDraftInsteadOfSend;
+            target.IsDarkMode = source.IsDarkMode;
+        }
+
+        private string GetPartsCsvPath()
+        {
+            return (_settings?.CsvPath ?? "").Trim();
+        }
+
+        private void SetStatus(string message)
+        {
+            if (StatusBarText == null) return;
+
+            // Cancel any previous timer
+            _statusCts?.Cancel();
+            _statusCts = null;
+
+            StatusBarText.Text = message ?? "";
+            StatusBarText.Visibility = string.IsNullOrWhiteSpace(StatusBarText.Text)
+                ? Visibility.Collapsed
+                : Visibility.Visible;
+
+            // If blank, nothing to auto-clear
+            if (StatusBarText.Visibility != Visibility.Visible)
+                return;
+
+            // Start a new 5-second timer
+            _statusCts = new CancellationTokenSource();
+            var token = _statusCts.Token;
+
+            _ = ClearStatusAfterDelayAsync(token);
+        }
+
+        private async Task ClearStatusAfterDelayAsync(CancellationToken token)
+        {
+            try
+            {
+                await Task.Delay(5000, token); // 5 seconds
+
+                if (token.IsCancellationRequested) return;
+
+                // We’re still on the UI thread because SetStatus() started this from the UI thread
+                StatusBarText.Text = "";
+                StatusBarText.Visibility = Visibility.Collapsed;
+            }
+            catch (TaskCanceledException)
+            {
+                // ignore
+            }
+        }
 
     }
+
 }

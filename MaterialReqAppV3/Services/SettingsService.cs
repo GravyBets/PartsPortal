@@ -2,12 +2,50 @@
 using System;
 using System.IO;
 using System.Text.Json;
+using System.Linq;
 
 namespace MaterialReqAppV3
 {
     public class SettingsService
     {
         private const string AppFolderName = "MaterialReqAppV3";
+
+        private static string? TryResolveTeamsPartsCsvPath()
+        {
+            // OneDrive for Business first (Teams shortcut/sync lands here)
+            string? oneDrive = Environment.GetEnvironmentVariable("OneDriveCommercial")
+                           ?? Environment.GetEnvironmentVariable("OneDrive");
+
+            if (string.IsNullOrWhiteSpace(oneDrive))
+                return null;
+
+            // Common folder shapes depending on "Sync" vs "Add shortcut"
+            string[] candidates =
+            {
+        Path.Combine(oneDrive, "Warehouse Parts", "PartsList.csv"),
+        Path.Combine(oneDrive, "Smart Grid Communications", "Warehouse Parts", "PartsList.csv"),
+        Path.Combine(oneDrive, "Radio Communications", "Smart Grid Communications", "Warehouse Parts", "PartsList.csv"),
+        Path.Combine(oneDrive, "Radio Communications", "Warehouse Parts", "PartsList.csv"),
+    };
+
+            foreach (var c in candidates)
+                if (File.Exists(c))
+                    return c;
+
+            // Last resort: search by filename (can be slower on huge OneDrive folders)
+            try
+            {
+                var found = Directory.EnumerateFiles(oneDrive, "PartsList.csv", SearchOption.AllDirectories)
+                    .FirstOrDefault(p => p.Contains("Warehouse Parts", StringComparison.OrdinalIgnoreCase));
+
+                if (!string.IsNullOrWhiteSpace(found) && File.Exists(found))
+                    return found;
+            }
+            catch { }
+
+            return null;
+        }
+
 
         public string GetSettingsPath()
         {
@@ -71,10 +109,21 @@ namespace MaterialReqAppV3
             if (string.IsNullOrWhiteSpace(s.EmailSubjectTemplate))
                 s.EmailSubjectTemplate = "Material Requisition - {Warehouse} - {Date}";
 
-            // If you want: keep draft default true unless explicitly set
-            // (bool already defaults to false in C#, but you set it true in the model;
-            // this just protects against old files that might have it missing/false if you ever change defaults)
+            // ✅ Seed per-user email directory if empty (first run)
+            s.EmailDirectory ??= new List<string>();
+
+            if (s.EmailDirectory.Count == 0)
+            {
+                // Put your shop defaults here (one per line)
+                s.EmailDirectory.AddRange(new[]
+                {
+            "smartgridradio@centerpointenergy.com",
+            "guy1@centerpointenergy.com",
+            "guy2@centerpointenergy.com"
+        });
+            }
         }
+
 
     }
 }

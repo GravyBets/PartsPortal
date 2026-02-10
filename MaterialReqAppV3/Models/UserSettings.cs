@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using System.Collections.Generic;
 
 namespace MaterialReqAppV3.Models
 {
@@ -80,7 +81,16 @@ namespace MaterialReqAppV3.Models
             get => _emailOpenDraftInsteadOfSend;
             set => SetField(ref _emailOpenDraftInsteadOfSend, value);
         }
+
+        private List<string> _emailDirectory = new();
+        public List<string> EmailDirectory
+        {
+            get => _emailDirectory;
+            set => SetField(ref _emailDirectory, value ?? new List<string>());
+        }
+
         public bool IsDarkMode { get; set; } = false;
+
         public string BugReportToEmail { get; set; } = ""; // optional, can leave blank for now
 
     }
