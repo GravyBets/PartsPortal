@@ -7,7 +7,9 @@ using MaterialReqAppV3.Models;
 namespace MaterialReqAppV3
 {
     public partial class SettingsWindow : Window
+
     {
+        private readonly SettingsService _settingsService = new();
         // This is the edited copy the caller will read when DialogResult == true
         public UserSettings Settings { get; private set; }
 
@@ -40,7 +42,10 @@ namespace MaterialReqAppV3
                 EmailSubjectTemplate = string.IsNullOrWhiteSpace(s.EmailSubjectTemplate)
                     ? "Material Requisition - {Warehouse} - {Date}"
                     : s.EmailSubjectTemplate,
-                EmailOpenDraftInsteadOfSend = s.EmailOpenDraftInsteadOfSend
+                EmailOpenDraftInsteadOfSend = s.EmailOpenDraftInsteadOfSend,
+                IsDarkMode = s.IsDarkMode,
+                BugReportToEmail = s.BugReportToEmail ?? ""
+
             };
         }
 
@@ -78,9 +83,19 @@ namespace MaterialReqAppV3
 
         private void Save_Click(object sender, RoutedEventArgs e)
         {
-            DialogResult = true; // caller will read Settings and save it
-            Close();
+            try
+            {
+                _settingsService.Save(Settings); // ✅ persist here no matter who opened the window
+                DialogResult = true;
+                Close();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Settings save failed:\n\n" + ex.Message,
+                    "Settings", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
+
 
         private void Cancel_Click(object sender, RoutedEventArgs e)
         {

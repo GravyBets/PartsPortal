@@ -113,21 +113,20 @@ namespace MaterialReqAppV3
 
         private void RemoveSelected_Click(object sender, RoutedEventArgs e)
         {
-            var toRemove = _backordersView.Cast<object>()
-                .OfType<BackorderLine>()
-                .Where(x => x.IsChecked)
-                .ToList();
+            // ✅ Remove means: checked items, otherwise selected rows
+            var toRemove = GetCheckedBackordersOrSelected();
+            if (toRemove.Count == 0) return;
 
             foreach (var item in toRemove)
                 _allBackorders.Remove(item);
 
             _backordersView.Refresh();
-            // ✅ CollectionChanged already saves on remove
+            SaveBackorders();
 
             UpdateSelectAllHeader();
             UpdateActionButtonsText();
-
         }
+
 
 
         private (string OutFile, int Pages, List<PrintTabSummary> Rows) GenerateBackordersMergedPdf(List<BackorderLine> selected, string outDir, string issueTemplatePath)
@@ -763,7 +762,6 @@ namespace MaterialReqAppV3
                     "Email", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
-
 
         private bool HasMissingWorkOrders(IEnumerable<BackorderLine> lines, out List<BackorderLine> missing)
         {
