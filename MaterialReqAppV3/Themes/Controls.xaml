@@ -1124,7 +1124,7 @@
                                    FontWeight="SemiBold"
                                    VerticalAlignment="Center"
                                    HorizontalAlignment="Center"
-                                   Foreground="{DynamicResource TextPrimary}"
+                                   Foreground="{DynamicResource ReturnText}"
                                    Opacity="1.5"/>
 
                             <TextBlock x:Name="IssueLabel"

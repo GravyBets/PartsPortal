@@ -3,8 +3,8 @@ using System;
 using System.IO;
 using System.Windows;
 using MaterialReqAppV3.Models;
-using System.Linq;
-using Microsoft.VisualBasic;
+using System.Collections.ObjectModel;
+
 
 namespace MaterialReqAppV3
 {
@@ -45,12 +45,11 @@ namespace MaterialReqAppV3
                     ? "Material Requisition - {Warehouse} - {Date}"
                     : s.EmailSubjectTemplate,
                 EmailOpenDraftInsteadOfSend = s.EmailOpenDraftInsteadOfSend,
-                EmailDirectory = s.EmailDirectory != null ? new List<string>(s.EmailDirectory) : new List<string>()
 
-
-                IsDarkMode = s.IsDarkMode,
-                BugReportToEmail = s.BugReportToEmail ?? ""
-
+                // ✅ copy directory list
+                EmailDirectory = new ObservableCollection<EmailDirectoryEntry>(
+                    (s.EmailDirectory ?? new ObservableCollection<EmailDirectoryEntry>())
+                )
             };
         }
 
@@ -109,67 +108,82 @@ namespace MaterialReqAppV3
 
         private void CopyTo_Click(object sender, RoutedEventArgs e)
         {
-            if (EmailDirectoryListBox.SelectedItem is not string email) return;
-            email = (email ?? "").Trim();
-            if (email.Length == 0) return;
+            if (EmailDirectoryListBox.SelectedItem is not EmailDirectoryEntry entry)
+                return;
 
-            Settings.EmailTo = email;
+            string email = (entry.Email ?? "").Trim();
+            if (string.IsNullOrWhiteSpace(email))
+                return;
+
+            Settings.EmailTo = AppendEmail(Settings.EmailTo, email);
         }
-
+        
         private void CopyCc_Click(object sender, RoutedEventArgs e)
         {
-            if (EmailDirectoryListBox.SelectedItem is not string email) return;
-            email = (email ?? "").Trim();
-            if (email.Length == 0) return;
+            if (EmailDirectoryListBox.SelectedItem is not EmailDirectoryEntry entry)
+                return;
 
-            Settings.EmailCc = email;
+            string email = (entry.Email ?? "").Trim();
+            if (string.IsNullOrWhiteSpace(email))
+                return;
+
+            Settings.EmailCc = AppendEmail(Settings.EmailCc, email);
         }
 
         private void AddEmail_Click(object sender, RoutedEventArgs e)
         {
-            // simple prompt (no new window needed)
-            string input = Microsoft.VisualBasic.Interaction.InputBox(
-                "Enter an email address to add:",
-                "Add Email",
-                "");
-
-            string email = (input ?? "").Trim();
-
-            if (email.Length == 0) return;
-
-            // very basic validation
-            if (!email.Contains("@") || email.Contains(" "))
+            var win = new AddEmailWindow
             {
-                MessageBox.Show("That doesn’t look like a valid email.",
-                    "Add Email", MessageBoxButton.OK, MessageBoxImage.Warning);
+                Owner = this,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            };
+
+            if (win.ShowDialog() != true)
                 return;
-            }
 
-            Settings.EmailDirectory ??= new List<string>();
+            string first = (win.FirstName ?? "").Trim();
+            string last = (win.LastName ?? "").Trim();
+            string email = (win.Email ?? "").Trim();
 
-            if (Settings.EmailDirectory.Any(x => string.Equals(x.Trim(), email, StringComparison.OrdinalIgnoreCase)))
+            if (string.IsNullOrWhiteSpace(email))
+                return;
+
+            Settings.EmailDirectory ??= new ObservableCollection<EmailDirectoryEntry>();
+
+            // prevent duplicates by EMAIL (case-insensitive)
+            if (Settings.EmailDirectory.Any(x =>
+                    string.Equals((x?.Email ?? "").Trim(), email, StringComparison.OrdinalIgnoreCase)))
             {
                 MessageBox.Show("That email is already in the directory.",
                     "Add Email", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
-            Settings.EmailDirectory.Add(email);
+            var entry = new EmailDirectoryEntry
+            {
+                FirstName = first,
+                LastName = last,
+                Email = email
+            };
 
-            // refresh listbox if needed
+            Settings.EmailDirectory.Add(entry);
+
             EmailDirectoryListBox.Items.Refresh();
-
-            // optionally auto-select new item
-            EmailDirectoryListBox.SelectedItem = email;
-            EmailDirectoryListBox.ScrollIntoView(email);
+            EmailDirectoryListBox.SelectedItem = entry;
+            EmailDirectoryListBox.ScrollIntoView(entry);
         }
 
         private void RemoveEmail_Click(object sender, RoutedEventArgs e)
         {
-            if (EmailDirectoryListBox.SelectedItem is not string email) return;
+            if (EmailDirectoryListBox.SelectedItem is not EmailDirectoryEntry entry)
+                return;
+
+            string label = (entry.DisplayName ?? "").Trim();
+            if (string.IsNullOrWhiteSpace(label))
+                label = (entry.Email ?? "").Trim();
 
             var result = MessageBox.Show(
-                $"Remove this email from your directory?\n\n{email}",
+                $"Remove this entry from your directory?\n\n{label}",
                 "Remove Email",
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Warning);
@@ -177,10 +191,33 @@ namespace MaterialReqAppV3
             if (result != MessageBoxResult.Yes)
                 return;
 
-            Settings.EmailDirectory ??= new List<string>();
-            Settings.EmailDirectory.Remove(email);
+            Settings.EmailDirectory ??= new ObservableCollection<EmailDirectoryEntry>();
+            Settings.EmailDirectory.Remove(entry);
 
             EmailDirectoryListBox.Items.Refresh();
+        }
+
+
+        private static string AppendEmail(string existing, string emailToAdd)
+        {
+            existing = (existing ?? "").Trim();
+            emailToAdd = (emailToAdd ?? "").Trim();
+
+            if (string.IsNullOrWhiteSpace(emailToAdd))
+                return existing;
+
+            // Split on ; or , and normalize
+            var parts = existing
+                .Split(new[] { ';', ',' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(x => x.Trim())
+                .Where(x => x.Length > 0)
+                .ToList();
+
+            // Prevent duplicates (case-insensitive)
+            if (!parts.Any(x => string.Equals(x, emailToAdd, StringComparison.OrdinalIgnoreCase)))
+                parts.Add(emailToAdd);
+
+            return string.Join("; ", parts);
         }
 
     }

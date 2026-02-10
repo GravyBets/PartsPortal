@@ -1,6 +1,8 @@
-﻿using System.ComponentModel;
+﻿using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Runtime.CompilerServices;
-using System.Collections.Generic;
+
 
 namespace MaterialReqAppV3.Models
 {
@@ -82,16 +84,27 @@ namespace MaterialReqAppV3.Models
             set => SetField(ref _emailOpenDraftInsteadOfSend, value);
         }
 
-        private List<string> _emailDirectory = new();
-        public List<string> EmailDirectory
+        // ✅ Email Directory (saved per-user)
+        private ObservableCollection<EmailDirectoryEntry> _emailDirectory
+            = new ObservableCollection<EmailDirectoryEntry>();
+
+        public ObservableCollection<EmailDirectoryEntry> EmailDirectory
         {
             get => _emailDirectory;
-            set => SetField(ref _emailDirectory, value ?? new List<string>());
+            set => SetField(ref _emailDirectory, value ?? new ObservableCollection<EmailDirectoryEntry>());
         }
 
-        public bool IsDarkMode { get; set; } = false;
+        private bool _emailDirectorySeeded = false;
+        public bool EmailDirectorySeeded
+        {
+            get => _emailDirectorySeeded;
+            set => SetField(ref _emailDirectorySeeded, value);
+        }
 
-        public string BugReportToEmail { get; set; } = ""; // optional, can leave blank for now
+
+
+        public bool IsDarkMode { get; set; } = false;
+        public string BugReportToEmail { get; set; } = ""; // optional, can leave blank for now        
 
     }
 }

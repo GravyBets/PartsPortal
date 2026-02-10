@@ -109,21 +109,65 @@ namespace MaterialReqAppV3
             if (string.IsNullOrWhiteSpace(s.EmailSubjectTemplate))
                 s.EmailSubjectTemplate = "Material Requisition - {Warehouse} - {Date}";
 
-            // ✅ Seed per-user email directory if empty (first run)
-            s.EmailDirectory ??= new List<string>();
+            // Ensure EmailDirectory exists (older JSON won’t have it)
+            s.EmailDirectory ??= new System.Collections.ObjectModel.ObservableCollection<EmailDirectoryEntry>();
 
-            if (s.EmailDirectory.Count == 0)
+
+            // ✅ Seed ONLY ONCE (first time ever)
+            if (!s.EmailDirectorySeeded)
             {
-                // Put your shop defaults here (one per line)
-                s.EmailDirectory.AddRange(new[]
+                // Only seed if the directory is empty (fresh user)
+                if (s.EmailDirectory.Count == 0)
                 {
-            "smartgridradio@centerpointenergy.com",
-            "guy1@centerpointenergy.com",
-            "guy2@centerpointenergy.com"
-        });
+                    var seeds = new[]
+                    {
+                        new EmailDirectoryEntry { FirstName="Alexander",  LastName="Pletan",     Email="alexander.pletan@centerpointenergy.com" },
+                        new EmailDirectoryEntry { FirstName="Andrew",     LastName="Bieber",     Email="andrew.bieber@centerpointenergy.com" },
+                        new EmailDirectoryEntry { FirstName="Anthony",    LastName="Marable",    Email="anthony.marable@centerpointenergy.com" },
+                        new EmailDirectoryEntry { FirstName="Brandon",    LastName="Palmer",     Email="brandon.t.palmer@centerpointenergy.com" },
+                        new EmailDirectoryEntry { FirstName="Brian",      LastName="White",      Email="brian.j.white@centerpointenergy.com" },
+                        new EmailDirectoryEntry { FirstName="Christopher",LastName="Harden",     Email="christopher.harden@centerpointenergy.com" },
+                        new EmailDirectoryEntry { FirstName="Colton",     LastName="Williams",   Email="colton.williams@centerpointenergy.com" },
+                        new EmailDirectoryEntry { FirstName="Daniel",     LastName="Nunez",      Email="daniel.nunez@centerpointenergy.com" },
+                        new EmailDirectoryEntry { FirstName="David",      LastName="Kuipers",    Email="david.kuipers@centerpointenergy.com" },
+                        new EmailDirectoryEntry { FirstName="David",      LastName="Murillo",    Email="david.murillo@centerpointenergy.com" },
+                        new EmailDirectoryEntry { FirstName="Dylan",      LastName="Steele",     Email="dylan.steele@centerpointenergy.com" },
+                        new EmailDirectoryEntry { FirstName="James",      LastName="StamperJr",  Email="james.stamperjr@centerpointenergy.com" },
+                        new EmailDirectoryEntry { FirstName="Jesselle",   LastName="Juarez",     Email="jesselle.juarez@centerpointenergy.com" },
+                        new EmailDirectoryEntry { FirstName="Joseph",     LastName="Burrow",     Email="joseph.burrow@centerpointenergy.com" },
+                        new EmailDirectoryEntry { FirstName="Juan",       LastName="Nunez",      Email="juan.nunez@centerpointenergy.com" },
+                        new EmailDirectoryEntry { FirstName="Kevin",      LastName="Perez",      Email="kevin.perez@centerpointenergy.com" },
+                        new EmailDirectoryEntry { FirstName="Levi",       LastName="Heasley",    Email="levi.heasley@centerpointenergy.com" },
+                        new EmailDirectoryEntry { FirstName="Mary",       LastName="Gipson",     Email="mary.gipson@centerpointenergy.com" },
+                        new EmailDirectoryEntry { FirstName="Michael",    LastName="Lindemann",  Email="michael.lindemann@centerpointenergy.com" },
+                        new EmailDirectoryEntry { FirstName="Michael",    LastName="Topping",    Email="michael.topping@centerpointenergy.com" },
+                        new EmailDirectoryEntry { FirstName="Philip",     LastName="Ingram",     Email="philip.ingram@centerpointenergy.com" },
+                        new EmailDirectoryEntry { FirstName="Rodney",     LastName="Logsdon",    Email="rodney.logsdon@centerpointenergy.com" },
+                        new EmailDirectoryEntry { FirstName="Scott",      LastName="Thomas",     Email="scott.thomas@centerpointenergy.com" },
+                        new EmailDirectoryEntry { FirstName="Shay",       LastName="Peterson",   Email="shay.peterson@centerpointenergy.com" },
+                        new EmailDirectoryEntry { FirstName="Thomas",     LastName="Huynh",      Email="thomas.huynh@centerpointenergy.com" },
+                        new EmailDirectoryEntry { FirstName="Timothy",    LastName="Gonzales",   Email="timothy.gonzales@centerpointenergy.com" },
+                        new EmailDirectoryEntry { FirstName="Travis",     LastName="Presley",    Email="travis.presley@centerpointenergy.com" },
+                        new EmailDirectoryEntry { FirstName="Wilson",     LastName="Cothran",    Email="wilson.cothran@centerpointenergy.com" }
+                    };
+
+                    foreach (var entry in seeds)
+                        s.EmailDirectory.Add(entry);
+                }
+
+                // Mark as seeded so we NEVER re-add defaults again
+                s.EmailDirectorySeeded = true;
+            }
+
+            // ✅ Optional: auto-resolve Teams CSV path if current is missing/invalid
+            if (string.IsNullOrWhiteSpace(s.CsvPath) ||
+                s.CsvPath.EndsWith(".csv.url", StringComparison.OrdinalIgnoreCase) ||
+                !File.Exists(s.CsvPath))
+            {
+                var resolved = TryResolveTeamsPartsCsvPath();
+                if (!string.IsNullOrWhiteSpace(resolved))
+                    s.CsvPath = resolved;
             }
         }
-
-
     }
 }

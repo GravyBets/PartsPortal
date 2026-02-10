@@ -1835,7 +1835,7 @@ namespace MaterialReqAppV3
                 .Select(r => (r.Type ?? "").Trim())
                 .Where(t => t.Length > 0)
                 .Select(t => t.Equals("Return", StringComparison.OrdinalIgnoreCase) ? "Return"
-                            : t.Equals("Issue", StringComparison.OrdinalIgnoreCase) ? "Issue"
+                            : t.Equals("Issue", StringComparison.OrdinalIgnoreCase) ? "Request"
                             : t)
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
@@ -1867,6 +1867,11 @@ namespace MaterialReqAppV3
 
             target.EmailOpenDraftInsteadOfSend = source.EmailOpenDraftInsteadOfSend;
             target.IsDarkMode = source.IsDarkMode;
+
+            // ✅ persist email directory
+            target.EmailDirectory = new ObservableCollection<EmailDirectoryEntry>(
+                source.EmailDirectory ?? new ObservableCollection<EmailDirectoryEntry>()
+            );
         }
 
         private string GetPartsCsvPath()

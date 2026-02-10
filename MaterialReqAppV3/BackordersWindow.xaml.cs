@@ -30,8 +30,8 @@ namespace MaterialReqAppV3
         private readonly ObservableCollection<BackorderLine> _allBackorders = new();
         private readonly ICollectionView _backordersView;
         private readonly UserSettings? _settings;
-        private bool _updatingHeader;
-        private bool _updatingSelectAll;
+        private bool _syncingHeaderCheck;
+
 
 
         //CONSTRUCTOR
@@ -126,8 +126,6 @@ namespace MaterialReqAppV3
             UpdateSelectAllHeader();
             UpdateActionButtonsText();
         }
-
-
 
         private (string OutFile, int Pages, List<PrintTabSummary> Rows) GenerateBackordersMergedPdf(List<BackorderLine> selected, string outDir, string issueTemplatePath)
         {
@@ -695,7 +693,6 @@ namespace MaterialReqAppV3
             }
         }
 
-
         private async void EmailDraft_Click(object sender, RoutedEventArgs e)
         {
             await EmailSelectedAsync(openDraft: true);
@@ -809,7 +806,7 @@ namespace MaterialReqAppV3
 
         private void SelectAllCheck_Changed(object sender, RoutedEventArgs e)
         {
-            if (_updatingSelectAll) return;
+            if (_syncingHeaderCheck) return;
             if (SelectAllCheck.IsChecked == null) return; // ignore indeterminate user clicks
 
             bool check = SelectAllCheck.IsChecked.Value;
@@ -869,7 +866,6 @@ namespace MaterialReqAppV3
                 _syncingHeaderCheck = false;
             }
         }
-
 
         private List<BackorderLine> GetCheckedBackordersOrSelected()
         {
@@ -943,9 +939,6 @@ namespace MaterialReqAppV3
                 EmailButton.IsEnabled = enabled;
             }
         }
-
-
-        private bool _syncingHeaderCheck;
 
         private void HeaderSelectAll_Changed(object sender, RoutedEventArgs e)
         {

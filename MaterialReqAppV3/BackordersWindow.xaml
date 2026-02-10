@@ -91,9 +91,10 @@
                     <!-- HOME -->
                     <Button Style="{StaticResource IconButtonStyle}"                            
                             ToolTip="Home"
+                            Margin="0,0,10,0"
                             Click="Home_Click">
                         <TextBlock FontFamily="Segoe MDL2 Assets"
-                                   FontSize="16"
+                                   FontSize="22"
                                    Foreground="{DynamicResource TextPrimary}"
                                    Text="&#xE80F;"/>
                     </Button>
@@ -101,9 +102,10 @@
                     <!-- SETTINGS -->
                     <Button Style="{StaticResource IconButtonStyle}"                            
                             ToolTip="Settings"
+                            Margin="0,0,16,0"
                             Click="Settings_Click">
                         <TextBlock FontFamily="Segoe MDL2 Assets"
-                                   FontSize="16"
+                                   FontSize="22"
                                    Foreground="{DynamicResource TextPrimary}"
                                    Text="&#xE713;"/>
                     </Button>

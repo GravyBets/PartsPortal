@@ -44,9 +44,7 @@
     <Resource Include="Assets\CenterPointLogo_LightText.png">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Resource>
-    <Resource Include="Assets\MaterialReqAppIcon.ico">
-      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-    </Resource>
+    <Resource Include="Assets\MaterialReqAppIcon.ico" />
   </ItemGroup>
 
 </Project>

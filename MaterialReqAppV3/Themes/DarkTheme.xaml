@@ -86,7 +86,8 @@
     <SolidColorBrush x:Key="DangerBg" Color="#3A1B1B"/>
     <SolidColorBrush x:Key="DangerBgHover" Color="#4A2020"/>
 
-
+    <!-- Issue/Return "Return Text"-->
+    <SolidColorBrush x:Key="ReturnText" Color="#ECEFF4"/>
 
     <!-- Overlays / Misc -->
     <SolidColorBrush x:Key="HoverOverlay" Color="#14FFFFFF"/>
