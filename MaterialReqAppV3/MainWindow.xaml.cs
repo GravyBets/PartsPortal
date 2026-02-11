@@ -68,22 +68,15 @@ namespace MaterialReqAppV3
         {
             base.OnClosing(e);
 
-            // If we're intentionally shutting down, allow it
             if (_allowClose)
                 return;
 
-            // User clicked the X -> go back to Warehouse window instead
             e.Cancel = true;
 
-            var w = new WarehouseSelectWindow();
-            w.Show();
-
-            // Make sure the app stays alive with this as the "main" window now
-            Application.Current.MainWindow = w;
-
-            // Hide this window instead of closing it
+            ShowWarehouseWindow();
             Hide();
         }
+
 
         private bool GetIsReturnForTab(TabItem tab)
         {
@@ -1178,10 +1171,33 @@ namespace MaterialReqAppV3
                     return;
             }
 
-            var w = new WarehouseSelectWindow();
-            w.Show();
+            ShowWarehouseWindow();
             Close();
         }
+
+        private void ShowWarehouseWindow()
+        {
+            // Reuse existing instance if it's already open
+            var existing = Application.Current.Windows
+                .OfType<WarehouseSelectWindow>()
+                .FirstOrDefault();
+
+            if (existing != null)
+            {
+                existing.Show();
+                existing.Activate();
+                existing.WindowState = WindowState.Normal;
+                Application.Current.MainWindow = existing;
+                return;
+            }
+
+            // Otherwise create it
+            var w = new WarehouseSelectWindow();
+            w.Show();
+            w.Activate();
+            Application.Current.MainWindow = w;
+        }
+
 
         private bool HasWorkInProgress()
         {

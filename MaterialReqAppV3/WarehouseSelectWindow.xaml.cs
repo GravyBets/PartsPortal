@@ -1,11 +1,12 @@
 ﻿using MaterialReqAppV3.Models;
 using MaterialReqAppV3.Services;
-using System;
-using System.Windows;
 using Microsoft.VisualBasic.FileIO;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
-using System.Collections.Generic;
+using System.Windows;
 
 namespace MaterialReqAppV3
 {
@@ -13,6 +14,7 @@ namespace MaterialReqAppV3
     {
         private readonly SettingsService _settingsService = new();
         private UserSettings _settings = new();
+        private bool _isShuttingDown;
 
         private bool _suppressThemeToggle;
 
@@ -31,6 +33,19 @@ namespace MaterialReqAppV3
             if (ThemeToggle != null)
                 ThemeToggle.IsChecked = _settings.IsDarkMode;
             _suppressThemeToggle = false;
+
+            Closing += WarehouseSelectWindow_Closing;
+        }
+
+        private void WarehouseSelectWindow_Closing(object? sender, CancelEventArgs e)
+        {
+            // Prevent re-entrancy (Shutdown can trigger closing again)
+            if (_isShuttingDown) return;
+
+            _isShuttingDown = true;
+
+            // Close the entire app when the user hits X on the Warehouse window
+            Application.Current.Shutdown();
         }
 
         private void Warehouse_Click(object sender, RoutedEventArgs e)
