@@ -7,24 +7,25 @@ using Syncfusion.Pdf.Parsing;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+using System.Security.Principal;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Security.Principal;
-using System.Runtime.Versioning;
 
 
 
@@ -61,8 +62,28 @@ namespace MaterialReqAppV3
         private readonly Dictionary<TabItem, Views.PartsBrowserView> _partsViewByTab = new();
         private readonly Dictionary<TabItem, Views.SelectedPartsView> _selectedViewByTab = new();
         private CancellationTokenSource? _statusCts;
+        private bool _allowClose = false;
 
+        protected override void OnClosing(CancelEventArgs e)
+        {
+            base.OnClosing(e);
 
+            // If we're intentionally shutting down, allow it
+            if (_allowClose)
+                return;
+
+            // User clicked the X -> go back to Warehouse window instead
+            e.Cancel = true;
+
+            var w = new WarehouseSelectWindow();
+            w.Show();
+
+            // Make sure the app stays alive with this as the "main" window now
+            Application.Current.MainWindow = w;
+
+            // Hide this window instead of closing it
+            Hide();
+        }
 
         private bool GetIsReturnForTab(TabItem tab)
         {
@@ -132,7 +153,6 @@ namespace MaterialReqAppV3
                 panel.Children.Add(rb);
             }
         }
-
 
         private ObservableCollection<SelectedPartLine> GetSelectedParts(TabItem tab)
         {
@@ -278,6 +298,22 @@ namespace MaterialReqAppV3
                 RefreshTemplatesUI(tab);
             }           
         }
+
+        private void PART_SiteNameBox_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key != Key.Enter) return;
+            e.Handled = true;
+            ApplySiteName_Click(sender, new RoutedEventArgs());
+            Keyboard.ClearFocus();
+        }
+
+        private void PART_SiteNameBox_LostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
+        {
+            ApplySiteName_Click(sender, new RoutedEventArgs());
+        }
+
+
+
 
         private TabItem CreateSiteTab(string header)
         {
@@ -981,6 +1017,7 @@ namespace MaterialReqAppV3
         }
 
         private enum DetailField { CostCenter, Wbs, WorkOrder }
+
         private DetailField GetRequiredField(TabItem tab)
         {
             string mt = GetMovementType(tab);
@@ -1033,7 +1070,6 @@ namespace MaterialReqAppV3
                 _suppressDetailsTextChanged = false;
             }
         }
-
 
         private static string ExtractMovementCode(string movementText)
         {
@@ -1600,7 +1636,7 @@ namespace MaterialReqAppV3
 
             var lines = new List<string>
             {
-                $"Attached is the Material Requisition PDF {pages} page(s).",
+                $"Attached is the Material Request PDF {pages} page(s).",
                 "",
                 "Summary:"
             };
@@ -1628,7 +1664,7 @@ namespace MaterialReqAppV3
                 if (r.Parts != null)
                     partCount = r.Parts.Sum(p => Math.Max(0, p.Qty));
 
-                lines.Add($"- {site} | {type} | {label}: {val} | {partCount} parts");
+                lines.Add($"- {site} | Material {type} | {label}: {val} | {partCount} parts");
             }
 
             lines.Add("");

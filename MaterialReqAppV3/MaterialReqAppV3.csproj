@@ -5,10 +5,10 @@
     <TargetFramework>net8.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-	  <Version>3.2.2</Version>
+	  <Version>3.2.4</Version>
 	  <AssemblyVersion>3.2.2.0</AssemblyVersion>
 	  <FileVersion>3.2.2.0</FileVersion>
-	  <InformationalVersion>3.2.2 (Not Released)</InformationalVersion>
+	  <InformationalVersion>3.2.4 (Not Released)</InformationalVersion>
     <UseWPF>true</UseWPF>
     <ApplicationManifest>app.manifest</ApplicationManifest>
 	  <ApplicationIcon>Assets\MaterialReqAppIcon.ico</ApplicationIcon>

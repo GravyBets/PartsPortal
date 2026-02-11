@@ -33,6 +33,16 @@ namespace MaterialReqAppV3
 
         private void Email_Click(object sender, RoutedEventArgs e)
         {
+            var result = MessageBox.Show(
+                this,
+                "Send Email now?",
+                "Confirm Email",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+
+            if (result != MessageBoxResult.Yes)
+                return; // stay on the Summary window
+
             Action = SummaryAction.Email;
             DialogResult = true;
             Close();

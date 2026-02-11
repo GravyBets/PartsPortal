@@ -1,9 +1,12 @@
-﻿using Microsoft.Win32;
+﻿using MaterialReqAppV3.Models;
+using MaterialReqAppV3.Services;
+using Microsoft.Win32;
 using System;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
-using MaterialReqAppV3.Models;
-using System.Collections.ObjectModel;
+using System.Windows.Data;
+
 
 
 namespace MaterialReqAppV3
@@ -89,7 +92,10 @@ namespace MaterialReqAppV3
         {
             try
             {
-                _settingsService.Save(Settings); // ✅ persist here no matter who opened the window
+                Settings.IsDarkMode = ThemeService.IsDark; // ✅ preserve theme on save
+
+                _settingsService.Save(Settings); // ✅ persist here no matter who opened the window 
+
                 DialogResult = true;
                 Close();
             }
@@ -197,7 +203,6 @@ namespace MaterialReqAppV3
             EmailDirectoryListBox.Items.Refresh();
         }
 
-
         private static string AppendEmail(string existing, string emailToAdd)
         {
             existing = (existing ?? "").Trim();
@@ -218,6 +223,38 @@ namespace MaterialReqAppV3
                 parts.Add(emailToAdd);
 
             return string.Join("; ", parts);
+        }
+
+        private void EmailDirectoryView_Filter(object sender, FilterEventArgs e)
+        {
+            if (e.Item is not EmailDirectoryEntry entry)
+            {
+                e.Accepted = false;
+                return;
+            }
+
+            var q = (EmailSearchBox?.Text ?? "").Trim();
+            if (q.Length == 0)
+            {
+                e.Accepted = true;
+                return;
+            }
+
+            e.Accepted =
+                ContainsIgnoreCase(entry.FirstName, q) ||
+                ContainsIgnoreCase(entry.LastName, q) ||
+                ContainsIgnoreCase(entry.Email, q) ||
+                ContainsIgnoreCase(entry.DisplayName, q);
+        }
+
+        private static bool ContainsIgnoreCase(string? source, string query) =>
+            !string.IsNullOrWhiteSpace(source) &&
+            source.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0;
+
+        private void EmailSearchBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
+        {
+            if (Resources["EmailDirectoryView"] is CollectionViewSource cvs)
+                cvs.View.Refresh();
         }
 
     }

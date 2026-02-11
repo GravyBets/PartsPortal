@@ -101,9 +101,13 @@ namespace MaterialReqAppV3.Models
             set => SetField(ref _emailDirectorySeeded, value);
         }
 
+        private bool _isDarkMode;
+        public bool IsDarkMode
+        {
+            get => _isDarkMode;
+            set => SetField(ref _isDarkMode, value);
+        }
 
-
-        public bool IsDarkMode { get; set; } = false;
         public string BugReportToEmail { get; set; } = ""; // optional, can leave blank for now        
 
     }

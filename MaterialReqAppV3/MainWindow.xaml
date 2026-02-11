@@ -69,7 +69,9 @@
                                                  MaxLength="32"
                                                  Tag="Site # / Reason for Movement"
                                                  Margin="0,0,8,0"
-                                                 Style="{StaticResource ModernWatermarkTextBox}"/>
+                                                 Style="{StaticResource ModernWatermarkTextBox}"
+                                                  KeyDown="PART_SiteNameBox_KeyDown"
+                                                 LostKeyboardFocus="PART_SiteNameBox_LostKeyboardFocus"/>
 
                                         <!-- If you want it to be secondary instead, swap style to SecondaryButtonStyle -->
                                         <Button Content="Apply"

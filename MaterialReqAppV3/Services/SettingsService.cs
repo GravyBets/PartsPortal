@@ -121,7 +121,7 @@ namespace MaterialReqAppV3
                 {
                     var seeds = new[]
                     {
-                        new EmailDirectoryEntry { FirstName="Alexander",  LastName="Pletan",     Email="alexander.pletan@centerpointenergy.com" },
+                        new EmailDirectoryEntry { FirstName="Alex",  LastName="Pletan",     Email="alexander.pletan@centerpointenergy.com" },
                         new EmailDirectoryEntry { FirstName="Andrew",     LastName="Bieber",     Email="andrew.bieber@centerpointenergy.com" },
                         new EmailDirectoryEntry { FirstName="Anthony",    LastName="Marable",    Email="anthony.marable@centerpointenergy.com" },
                         new EmailDirectoryEntry { FirstName="Brandon",    LastName="Palmer",     Email="brandon.t.palmer@centerpointenergy.com" },
@@ -132,13 +132,12 @@ namespace MaterialReqAppV3
                         new EmailDirectoryEntry { FirstName="David",      LastName="Kuipers",    Email="david.kuipers@centerpointenergy.com" },
                         new EmailDirectoryEntry { FirstName="David",      LastName="Murillo",    Email="david.murillo@centerpointenergy.com" },
                         new EmailDirectoryEntry { FirstName="Dylan",      LastName="Steele",     Email="dylan.steele@centerpointenergy.com" },
-                        new EmailDirectoryEntry { FirstName="James",      LastName="StamperJr",  Email="james.stamperjr@centerpointenergy.com" },
+                        new EmailDirectoryEntry { FirstName="Jim",        LastName="Stamper",    Email="james.stamperjr@centerpointenergy.com" },
                         new EmailDirectoryEntry { FirstName="Jesselle",   LastName="Juarez",     Email="jesselle.juarez@centerpointenergy.com" },
                         new EmailDirectoryEntry { FirstName="Joseph",     LastName="Burrow",     Email="joseph.burrow@centerpointenergy.com" },
                         new EmailDirectoryEntry { FirstName="Juan",       LastName="Nunez",      Email="juan.nunez@centerpointenergy.com" },
                         new EmailDirectoryEntry { FirstName="Kevin",      LastName="Perez",      Email="kevin.perez@centerpointenergy.com" },
-                        new EmailDirectoryEntry { FirstName="Levi",       LastName="Heasley",    Email="levi.heasley@centerpointenergy.com" },
-                        new EmailDirectoryEntry { FirstName="Mary",       LastName="Gipson",     Email="mary.gipson@centerpointenergy.com" },
+                        new EmailDirectoryEntry { FirstName="Levi",       LastName="Heasley",    Email="levi.heasley@centerpointenergy.com" },                        
                         new EmailDirectoryEntry { FirstName="Michael",    LastName="Lindemann",  Email="michael.lindemann@centerpointenergy.com" },
                         new EmailDirectoryEntry { FirstName="Michael",    LastName="Topping",    Email="michael.topping@centerpointenergy.com" },
                         new EmailDirectoryEntry { FirstName="Philip",     LastName="Ingram",     Email="philip.ingram@centerpointenergy.com" },

@@ -253,11 +253,10 @@ namespace MaterialReqAppV3
         private string BuildBackordersPdfFileName(int pages)
         {
             string who = GetEmailDisplayName();
-            string dateToken = DateTime.Now.ToString("yyyy-MM-dd");
-            string timeToken = DateTime.Now.ToString("HHmm");
+            string dateToken = DateTime.Now.ToString("MM-dd-yyyy");            
             string safeWho = string.Concat(who.Select(ch => char.IsLetterOrDigit(ch) ? ch : '_'));
 
-            return $"Backorders_Issue_{safeWho}_{dateToken}_{timeToken}_{pages}p.pdf";
+            return $"Backorders_Request_{safeWho}_{dateToken}_{pages}pages.pdf";
         }
 
         private Task<bool> SendPdfEmailOutlookStaAsync(string pdfPath, List<PrintTabSummary>? rows, int pages, bool openDraft)
@@ -312,7 +311,7 @@ namespace MaterialReqAppV3
             string dateToken = DateTime.Now.ToString("MM/dd/yyyy");
             string who = GetEmailDisplayName();
             string pageWord = pages == 1 ? "page" : "pages";
-            string subject = $"Backorders Material Issue - {who} - {dateToken} - {pages} {pageWord}";
+            string subject = $"Backorders Material Request - {who} - {dateToken} - {pages} {pageWord}";
 
 
             string body = BuildEmailBody(rows, pages);
@@ -386,12 +385,11 @@ namespace MaterialReqAppV3
             rows ??= new List<PrintTabSummary>();
 
             var lines = new List<string>
-    {
-        $"Attached is the Backorders Material Issue PDF ({pages} {(pages == 1 ? "page" : "pages")}).",
-
-        "",
-        "Summary:"
-    };
+            {
+                $"Attached is the Backorders Material Request PDF ({pages} {(pages == 1 ? "page" : "pages")}).",
+                "",
+                "Summary:"
+            };
 
             foreach (var r in rows)
             {
@@ -505,14 +503,9 @@ namespace MaterialReqAppV3
         }
 
         private string GetEmailDisplayName()
-        {
-            // UserSettings has Name + EmployeeId (no EmailDisplayName / EmployeeName)
-            string name = (_settings?.Name ?? "").Trim();
-            string emp = (_settings?.EmployeeId ?? "").Trim();
-
-            if (!string.IsNullOrWhiteSpace(name) && !string.IsNullOrWhiteSpace(emp))
-                return $"{name} ({emp})";
-
+        {            
+            string name = (_settings?.Name ?? "").Trim(); 
+             
             if (!string.IsNullOrWhiteSpace(name))
                 return name;
 
@@ -700,6 +693,15 @@ namespace MaterialReqAppV3
 
         private async void Email_Click(object sender, RoutedEventArgs e)
         {
+            var result = MessageBox.Show(
+                this,
+                "Send the email now?",
+                "Confirm Email",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+
+            if (result != MessageBoxResult.Yes)
+                return;
             await EmailSelectedAsync(openDraft: false);
         }
 
