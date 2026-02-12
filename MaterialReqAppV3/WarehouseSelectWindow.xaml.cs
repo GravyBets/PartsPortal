@@ -75,6 +75,7 @@ namespace PartsPortal
 
         private void OpenBackorders()
         {
+            _settings = _settingsService.Load();
             string csvPath = GetCsvPathFromSettings();
             if (string.IsNullOrWhiteSpace(csvPath) || !File.Exists(csvPath))
             {

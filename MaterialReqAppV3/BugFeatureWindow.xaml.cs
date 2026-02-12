@@ -43,7 +43,7 @@ namespace PartsPortal
                     return;
                 }
 
-            string subject = $"Material Req App - {type} - {DateTime.Now:yyyy-MM-dd HH:mm}";
+            string subject = $"Parts Portal Application - {type} - {DateTime.Now:yyyy-MM-dd HH:mm}";
 
             string body = BuildBugFeatureEmailBody(type, details);
 
