@@ -4,7 +4,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Input;
 
-namespace MaterialReqAppV3
+namespace PartsPortal
 {
     public partial class AddBackorderDialog : Window
     {

@@ -1,6 +1,6 @@
 ﻿using System.Windows.Controls;
 
-namespace MaterialReqAppV3.Views
+namespace PartsPortal.Views
 {
     public partial class PartsBrowserView : UserControl
     {

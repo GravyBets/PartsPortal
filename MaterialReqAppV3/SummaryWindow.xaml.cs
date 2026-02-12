@@ -3,9 +3,9 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using MaterialReqAppV3.Models;
+using PartsPortal.Models;
 
-namespace MaterialReqAppV3
+namespace PartsPortal
 {
     public partial class SummaryWindow : Window
     {

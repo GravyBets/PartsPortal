@@ -4,7 +4,7 @@ using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Input;
 
-namespace MaterialReqAppV3
+namespace PartsPortal
 {
     public partial class AddEmailWindow : Window, INotifyPropertyChanged
     {

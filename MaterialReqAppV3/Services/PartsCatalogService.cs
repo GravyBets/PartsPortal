@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 
-namespace MaterialReqAppV3
+namespace PartsPortal
 {
     public class PartsCatalogService
     {

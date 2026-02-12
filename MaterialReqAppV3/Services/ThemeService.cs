@@ -2,7 +2,7 @@
 using System.Linq;
 using System.Windows;
 
-namespace MaterialReqAppV3.Services
+namespace PartsPortal.Services
 {
     public static class ThemeService
     {

@@ -1,9 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.14.36518.9 d17.14
+VisualStudioVersion = 17.14.36518.9
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MaterialReqAppV3", "MaterialReqAppV3\MaterialReqAppV3.csproj", "{79DB74C1-4098-460E-9ADF-C51B4CD4805A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PartsPortal", "MaterialReqAppV3\PartsPortal.csproj", "{79DB74C1-4098-460E-9ADF-C51B4CD4805A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

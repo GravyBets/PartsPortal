@@ -1,5 +1,5 @@
-﻿using MaterialReqAppV3.Models;
-using MaterialReqAppV3.Services;   // OutlookCom
+﻿using PartsPortal.Models;
+using PartsPortal.Services;   // OutlookCom
 using Syncfusion.Pdf;
 using Syncfusion.Pdf.Interactive;
 using Syncfusion.Pdf.Parsing;
@@ -19,7 +19,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 
-namespace MaterialReqAppV3
+namespace PartsPortal
 {
     [SupportedOSPlatform("windows")]
     public partial class BackordersWindow : Window

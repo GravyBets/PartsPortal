@@ -1,7 +1,7 @@
 ﻿using System.Windows;
 
 
-namespace MaterialReqAppV3
+namespace PartsPortal
 {
     public partial class TemplateNameWindow : Window
     {

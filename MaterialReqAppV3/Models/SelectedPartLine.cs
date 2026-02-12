@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel;
 
-namespace MaterialReqAppV3
+namespace PartsPortal
 {
     public class SelectedPartLine : INotifyPropertyChanged
     {

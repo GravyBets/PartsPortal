@@ -1,6 +1,6 @@
-﻿using MaterialReqAppV3.Models;
-using MaterialReqAppV3.Services;
-using MaterialReqAppV3.Views;
+﻿using PartsPortal.Models;
+using PartsPortal.Services;
+using PartsPortal.Views;
 using Syncfusion.Pdf;
 using Syncfusion.Pdf.Interactive;
 using Syncfusion.Pdf.Parsing;
@@ -30,7 +30,7 @@ using System.Windows.Media;
 
 
 
-namespace MaterialReqAppV3
+namespace PartsPortal
 {
     [SupportedOSPlatform("windows")]
     public partial class MainWindow : Window

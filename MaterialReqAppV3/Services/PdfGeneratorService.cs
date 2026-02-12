@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MaterialReqAppV3.Services
+namespace PartsPortal.Services
 {
     internal class PdfGeneratorService
     {

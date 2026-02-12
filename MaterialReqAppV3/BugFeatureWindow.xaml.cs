@@ -1,12 +1,12 @@
-﻿using MaterialReqAppV3.Models;
-using MaterialReqAppV3.Services;
+﻿using PartsPortal.Models;
+using PartsPortal.Services;
 using System;
 using System.Diagnostics;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace MaterialReqAppV3
+namespace PartsPortal
 {
     public partial class BugFeatureWindow : Window
     {

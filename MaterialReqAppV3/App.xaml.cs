@@ -1,8 +1,8 @@
 ﻿using System.Windows;
-using MaterialReqAppV3.Services;
+using PartsPortal.Services;
 using Syncfusion.Licensing;
 
-namespace MaterialReqAppV3
+namespace PartsPortal
 {
     public partial class App : Application
     {

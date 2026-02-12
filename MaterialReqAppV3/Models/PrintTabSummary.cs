@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace MaterialReqAppV3.Models
+namespace PartsPortal.Models
 {
     public class PrintTabSummary
     {

@@ -1,4 +1,4 @@
-﻿<Window x:Class="MaterialReqAppV3.MainWindow"
+﻿<Window x:Class="PartsPortal.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Material Requisition App"
@@ -6,7 +6,7 @@
         WindowState="Maximized"
         Background="{DynamicResource AppBackground}"        
         SnapsToDevicePixels="True"
-        Icon="Assets/MaterialReqAppIcon.ico">
+        Icon="/Assets/PartsPortalIcon.ico">
 
     <Window.Resources>
 

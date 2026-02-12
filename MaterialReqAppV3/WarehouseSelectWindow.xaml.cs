@@ -1,5 +1,5 @@
-﻿using MaterialReqAppV3.Models;
-using MaterialReqAppV3.Services;
+﻿using PartsPortal.Models;
+using PartsPortal.Services;
 using Microsoft.VisualBasic.FileIO;
 using System;
 using System.Collections.Generic;
@@ -8,8 +8,8 @@ using System.IO;
 using System.Linq;
 using System.Windows;
 
-namespace MaterialReqAppV3
-{
+namespace PartsPortal
+    {
     public partial class WarehouseSelectWindow : Window
     {
         private readonly SettingsService _settingsService = new();

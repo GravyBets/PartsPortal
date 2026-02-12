@@ -1,8 +1,8 @@
 ﻿using System.IO;
 using System.Text.Json;
-using MaterialReqAppV3.Models;
+using PartsPortal.Models;
 
-namespace MaterialReqAppV3.Services
+namespace PartsPortal.Services
 {
     public class BackorderStore
     {
@@ -41,7 +41,7 @@ namespace MaterialReqAppV3.Services
         {
             var dir = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "MaterialReqAppV3");
+                "PartsPortal");
             return Path.Combine(dir, "backorders.json");
         }
     }

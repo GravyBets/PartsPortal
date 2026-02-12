@@ -1,14 +1,14 @@
-﻿using MaterialReqAppV3.Models;
+﻿using PartsPortal.Models;
 using System;
 using System.IO;
 using System.Text.Json;
 using System.Linq;
 
-namespace MaterialReqAppV3
+namespace PartsPortal
 {
     public class SettingsService
     {
-        private const string AppFolderName = "MaterialReqAppV3";
+        private const string AppFolderName = "PartsPortal";
 
         private static string? TryResolveTeamsPartsCsvPath()
         {

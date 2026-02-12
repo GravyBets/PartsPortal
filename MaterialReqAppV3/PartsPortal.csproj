@@ -18,7 +18,6 @@
   <ItemGroup>
     <None Remove="Assets\CenterPointLogo_DarkText.png" />
     <None Remove="Assets\CenterPointLogo_LightText.png" />
-    <None Remove="Assets\MaterialReqAppIcon.ico" />
     <None Remove="Templates\Material_Requisition_Issue_Fillable.pdf" />
     <None Remove="Templates\Material_Requisition_Return_Fillable.pdf" />
   </ItemGroup>
@@ -44,7 +43,7 @@
     <Resource Include="Assets\CenterPointLogo_LightText.png">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Resource>
-    <Resource Include="Assets\MaterialReqAppIcon.ico" />
+    <Resource Include="Assets\PartsPortalIcon.ico" />
   </ItemGroup>
 
 </Project>

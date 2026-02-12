@@ -4,7 +4,7 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
 
-namespace MaterialReqAppV3.Models
+namespace PartsPortal.Models
 {
     public class UserSettings : INotifyPropertyChanged
     {

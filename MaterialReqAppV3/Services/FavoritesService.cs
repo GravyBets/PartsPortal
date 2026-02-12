@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
 
-namespace MaterialReqAppV3.Services
+namespace PartsPortal.Services
 {
     public class FavoritesService
     {
@@ -13,7 +13,7 @@ namespace MaterialReqAppV3.Services
         {
             string appDir = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "MaterialReqAppV3");
+                "PartsPortal");
 
             Directory.CreateDirectory(appDir);
             _path = Path.Combine(appDir, "favorites.json");

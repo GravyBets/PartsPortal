@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace MaterialReqAppV3.Models
+namespace PartsPortal.Models
 {
     public class EmailDirectoryEntry
     {

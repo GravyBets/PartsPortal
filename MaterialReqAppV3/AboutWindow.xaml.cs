@@ -3,7 +3,7 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Windows;
 
-namespace MaterialReqAppV3
+namespace PartsPortal
 {
     public partial class AboutWindow : Window
     {

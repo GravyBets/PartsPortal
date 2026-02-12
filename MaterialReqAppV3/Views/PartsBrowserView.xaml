@@ -1,4 +1,4 @@
-﻿<UserControl x:Class="MaterialReqAppV3.Views.PartsBrowserView"
+﻿<UserControl x:Class="PartsPortal.Views.PartsBrowserView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 

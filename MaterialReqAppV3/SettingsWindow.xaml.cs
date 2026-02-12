@@ -1,5 +1,5 @@
-﻿using MaterialReqAppV3.Models;
-using MaterialReqAppV3.Services;
+﻿using PartsPortal.Models;
+using PartsPortal.Services;
 using Microsoft.Win32;
 using System;
 using System.Collections.ObjectModel;
@@ -9,7 +9,7 @@ using System.Windows.Data;
 
 
 
-namespace MaterialReqAppV3
+namespace PartsPortal
 {
     public partial class SettingsWindow : Window
 
