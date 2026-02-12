@@ -20,21 +20,18 @@
   <ItemGroup>
     <None Remove="Assets\CenterPointLogo_DarkText.png" />
     <None Remove="Assets\CenterPointLogo_LightText.png" />
-    <None Remove="Assets\PartsPortalIcon.ico" />
-    <None Remove="Templates\Material_Requisition_Issue_Fillable.pdf" />
-    <None Remove="Templates\Material_Requisition_Return_Fillable.pdf" />
+    <None Remove="Assets\PartsPortalIcon.ico" />    
   </ItemGroup>
 
-  <ItemGroup>
-    <Content Include="Templates\Material_Requisition_Issue_Fillable.pdf">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Templates\Material_Requisition_Return_Fillable.pdf">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
+	<ItemGroup>
+		<Content Include="Templates\*.pdf">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+		</Content>
+	</ItemGroup>
 
-  <ItemGroup>
+
+	<ItemGroup>
     <PackageReference Include="Syncfusion.Licensing" Version="32.1.19" />
     <PackageReference Include="Syncfusion.Pdf.Net.Core" Version="32.1.19" />
   </ItemGroup>

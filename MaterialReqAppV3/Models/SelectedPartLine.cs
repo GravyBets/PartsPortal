@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel;
 
-namespace PartsPortal
+namespace PartsPortal.Models
 {
     public class SelectedPartLine : INotifyPropertyChanged
     {

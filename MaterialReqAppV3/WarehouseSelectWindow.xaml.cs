@@ -1,6 +1,5 @@
 ﻿using PartsPortal.Models;
 using PartsPortal.Services;
-using Microsoft.VisualBasic.FileIO;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -130,56 +129,11 @@ namespace PartsPortal
 
         private List<Part> LoadPartsFromCsv(string path)
         {
-            var list = new List<Part>();
-
-            using var parser = new TextFieldParser(path);
-            parser.SetDelimiters(",");
-            parser.HasFieldsEnclosedInQuotes = true;
-
-            if (parser.EndOfData) return list;
-
-            var headers = parser.ReadFields() ?? Array.Empty<string>();
-
-            int idxDesc = FindCol(headers, "Description", "Desc");
-            int idxMat = FindCol(headers, "Material", "Mat");
-            int idxWh = FindCol(headers, "Warehouse", "WH", "Building");
-
-            while (!parser.EndOfData)
-            {
-                var fields = parser.ReadFields();
-                if (fields == null || fields.Length == 0) continue;
-
-                string desc = GetField(fields, idxDesc);
-                string mat = GetField(fields, idxMat);
-                string wh = GetField(fields, idxWh);
-
-                if (string.IsNullOrWhiteSpace(desc) && string.IsNullOrWhiteSpace(mat))
-                    continue;
-
-                list.Add(new Part
-                {
-                    Description = desc,
-                    Material = mat,
-                    Warehouse = wh
-                });
-            }
-
-            return list;
-
-            static int FindCol(string[] headers, params string[] names)
-            {
-                for (int i = 0; i < headers.Length; i++)
-                {
-                    var h = (headers[i] ?? "").Trim();
-                    if (names.Any(n => string.Equals(h, n, StringComparison.OrdinalIgnoreCase)))
-                        return i;
-                }
-                return -1;
-            }
-
-            static string GetField(string[] fields, int idx)
-                => (idx >= 0 && idx < fields.Length) ? (fields[idx] ?? "").Trim() : "";
+            // Single source of truth for parsing (handles CSV + TSV, quotes, commas)
+            var svc = new PartsCatalogService();
+            return svc.LoadFromCsv(path);
         }
+
 
 
 

@@ -4,7 +4,7 @@ using System.IO;
 using System.Text.Json;
 using System.Linq;
 
-namespace PartsPortal
+namespace PartsPortal.Services
 {
     public class SettingsService
     {

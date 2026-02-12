@@ -71,10 +71,11 @@ namespace PartsPortal
             if (_allowClose)
                 return;
 
-            e.Cancel = true;
-
+            // user hit X (or you called Close while _allowClose is false)
             ShowWarehouseWindow();
-            Hide();
+
+            // allow the close to proceed (DO NOT set e.Cancel = true)
+            _allowClose = true;
         }
 
 
@@ -946,7 +947,7 @@ namespace PartsPortal
             }
 
             // Materialize once
-            var list = queryable.Take(250).ToList();
+            var list = queryable.Take(500).ToList();
 
             view.AllPartsListBox.ItemsSource = list;
 
@@ -1171,6 +1172,7 @@ namespace PartsPortal
                     return;
             }
 
+            _allowClose = true;
             ShowWarehouseWindow();
             Close();
         }
