@@ -15,11 +15,12 @@ namespace PartsPortal.Services
         public TemplatesService()
         {
             var appDir = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                AppFolderName);
+    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+    AppFolderName);
 
             _dataDir = Path.Combine(appDir, "Data");
             Directory.CreateDirectory(_dataDir);
+
         }
 
         public List<PartTemplate> Load(string warehouseKey)
@@ -52,15 +53,23 @@ namespace PartsPortal.Services
         {
             var path = GetTemplatesPath(warehouseKey);
 
-            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-
-            var json = JsonSerializer.Serialize(templates, new JsonSerializerOptions
+            try
             {
-                WriteIndented = true
-            });
+                Directory.CreateDirectory(Path.GetDirectoryName(path)!);
 
-            File.WriteAllText(path, json);
+                var json = JsonSerializer.Serialize(templates, new JsonSerializerOptions
+                {
+                    WriteIndented = true
+                });
+
+                File.WriteAllText(path, json);
+            }
+            catch
+            {
+                // optionally log to LocalAppData\PartsPortal\Logs
+            }
         }
+
 
         public void Upsert(List<PartTemplate> templates, PartTemplate t)
         {
@@ -88,13 +97,31 @@ namespace PartsPortal.Services
         {
             if (File.Exists(newPath)) return;
 
-            // Old location: <exe>\Data\templates_<warehouseKey>.json
-            var oldPath = Path.Combine(
-                AppDomain.CurrentDomain.BaseDirectory,
-                "Data",
-                $"templates_{warehouseKey}.json");
+            // Candidate old locations (try in order)
+            var candidates = new List<string>();
 
-            if (!File.Exists(oldPath)) return;
+            // 1) Old portable-style location: <exe>\Data\templates_<warehouseKey>.json
+            candidates.Add(Path.Combine(
+                AppContext.BaseDirectory,
+                "Data",
+                $"templates_{warehouseKey}.json"));
+
+            // 2) Old LocalAppData location (common/ideal)
+            candidates.Add(Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "PartsPortal",
+                "Data",
+                $"templates_{warehouseKey}.json"));
+
+            // 3) Old Documents location (if you ever used Documents)
+            candidates.Add(Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+                "PartsPortal",
+                "Data",
+                $"templates_{warehouseKey}.json"));
+
+            string? oldPath = candidates.FirstOrDefault(File.Exists);
+            if (oldPath == null) return;
 
             try
             {
@@ -106,6 +133,7 @@ namespace PartsPortal.Services
                 // Migration failure should not break the app
             }
         }
+
 
         private static string SanitizeKey(string key)
         {

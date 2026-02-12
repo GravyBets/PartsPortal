@@ -87,17 +87,16 @@ namespace PartsPortal.Services
 
         public void Save(UserSettings settings)
         {
-            string path = GetSettingsPath();
+            // Normalize
+            settings.PdfOutputFolder = Environment.ExpandEnvironmentVariables((settings.PdfOutputFolder ?? "").Trim());
 
+            string path = GetSettingsPath();
             Directory.CreateDirectory(Path.GetDirectoryName(path)!);
 
-            var json = JsonSerializer.Serialize(settings, new JsonSerializerOptions
-            {
-                WriteIndented = true
-            });
-
+            var json = JsonSerializer.Serialize(settings, new JsonSerializerOptions { WriteIndented = true });
             File.WriteAllText(path, json);
         }
+
 
         private static void ApplyDefaults(UserSettings s, string user)
         {
@@ -167,6 +166,28 @@ namespace PartsPortal.Services
                 if (!string.IsNullOrWhiteSpace(resolved))
                     s.CsvPath = resolved;
             }
+            // ✅ Default PDF output folder (never Program Files)
+            if (string.IsNullOrWhiteSpace(s.PdfOutputFolder))
+            {
+                s.PdfOutputFolder = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+                    "PartsPortal",
+                    "Output");
+            }
+            else
+            {
+                // Optional hardening: if someone saved a bad value pointing into Program Files, reset it
+                var p = s.PdfOutputFolder.Trim();
+                if (p.StartsWith(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), StringComparison.OrdinalIgnoreCase) ||
+                    p.StartsWith(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), StringComparison.OrdinalIgnoreCase))
+                {
+                    s.PdfOutputFolder = Path.Combine(
+                        Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+                        "PartsPortal",
+                        "Output");
+                }
+            }
+
         }
     }
 }

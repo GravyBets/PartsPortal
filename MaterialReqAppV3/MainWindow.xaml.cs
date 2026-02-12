@@ -839,15 +839,20 @@ namespace PartsPortal
         private string GetTabReason(TabItem tab) => tab.ToolTip?.ToString() ?? "";
         private void SetTabReason(TabItem tab, string reason) => tab.ToolTip = reason;
 
-        private string GetTemplatePath(bool isReturn)
+        private static string GetTemplatePath(bool isReturn)
         {
             string fileName = isReturn
                 ? "Material_Requisition_Return_Fillable.pdf"
                 : "Material_Requisition_Issue_Fillable.pdf";
 
-            string baseDir = AppDomain.CurrentDomain.BaseDirectory; // bin\Debug\net8.0-windows\
-            return System.IO.Path.Combine(baseDir, "Templates", fileName);
+            string path = Path.Combine(AppContext.BaseDirectory, "Templates", fileName);
+
+            if (!File.Exists(path))
+                throw new FileNotFoundException("Template PDF not found. The Templates folder may not have been installed correctly.", path);
+
+            return path;
         }
+
 
         private void OpenSettings_Click(object sender, RoutedEventArgs e)
         {
@@ -1700,13 +1705,8 @@ namespace PartsPortal
                 SetTabReason(current, SiteNameBox.Text ?? "");
 
             // Output folder
-            string baseDir = AppDomain.CurrentDomain.BaseDirectory;
-            string outDir =
-                !string.IsNullOrWhiteSpace(_settings?.PdfOutputFolder)
-                    ? _settings.PdfOutputFolder.Trim()
-                    : Path.Combine(baseDir, "Output");
-
-            Directory.CreateDirectory(outDir);
+            string outDir = ResolveOutputDirectory(_settings?.PdfOutputFolder);
+            Directory.CreateDirectory(outDir);           
 
             var candidateTabs = GetCandidateTabs();
             if (candidateTabs.Count == 0)
@@ -1854,6 +1854,37 @@ namespace PartsPortal
             }
             SetStatus("Created: " + outFile);
 
+        }
+
+        private static string ResolveOutputDirectory(string? configured)
+        {
+            // 1) If user configured a folder, try to use it (and verify it's writable)
+            if (!string.IsNullOrWhiteSpace(configured))
+            {
+                string candidate = Environment.ExpandEnvironmentVariables(configured.Trim());
+
+                try
+                {
+                    Directory.CreateDirectory(candidate);
+
+                    // Write test (prevents "looks fine but isn't writable" folders)
+                    string test = Path.Combine(candidate, ".__pp_write_test");
+                    File.WriteAllText(test, "ok");
+                    File.Delete(test);
+
+                    return candidate;
+                }
+                catch
+                {
+                    // fall through to a safe default
+                }
+            }
+
+            // 2) Safe default: Documents\PartsPortal\Output (easy for users to find)
+            string docs = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            string fallback = Path.Combine(docs, "PartsPortal", "Output");
+            Directory.CreateDirectory(fallback);
+            return fallback;
         }
 
         private Task<bool> SendPdfEmailOutlookStaAsync(string pdfPath, List<PrintTabSummary>? rows, int pages, bool openDraft)

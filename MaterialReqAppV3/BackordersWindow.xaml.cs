@@ -512,15 +512,22 @@ namespace PartsPortal
             return Environment.UserName;
         }
 
-        private string GetTemplatePath(bool isReturn)
+        private static string GetTemplatePath(bool isReturn)
         {
             string fileName = isReturn
                 ? "Material_Requisition_Return_Fillable.pdf"
                 : "Material_Requisition_Issue_Fillable.pdf";
 
-            string baseDir = AppDomain.CurrentDomain.BaseDirectory; // bin\Debug\net8.0-windows\
-            return System.IO.Path.Combine(baseDir, "Templates", fileName);
+            string path = Path.Combine(AppContext.BaseDirectory, "Templates", fileName);
+
+            if (!File.Exists(path))
+                throw new FileNotFoundException(
+                    "Template PDF not found. The Templates folder may not have been installed correctly.",
+                    path);
+
+            return path;
         }
+
 
         private void Home_Click(object sender, RoutedEventArgs e)
         {
@@ -796,15 +803,37 @@ namespace PartsPortal
 
         private string GetOutputFolder()
         {
-            string baseDir = AppDomain.CurrentDomain.BaseDirectory;
-            string outDir =
-                !string.IsNullOrWhiteSpace(_settings?.PdfOutputFolder)
-                    ? _settings.PdfOutputFolder.Trim()
-                    : Path.Combine(baseDir, "Output");
+            // 1) Use configured folder if present AND writable
+            var configured = (_settings?.PdfOutputFolder ?? "").Trim();
+            if (!string.IsNullOrWhiteSpace(configured))
+            {
+                string candidate = Environment.ExpandEnvironmentVariables(configured);
 
-            Directory.CreateDirectory(outDir);
-            return outDir;
-        }        
+                try
+                {
+                    Directory.CreateDirectory(candidate);
+
+                    // quick write test so we don't "accept" a folder we can't write to
+                    string test = Path.Combine(candidate, ".__pp_write_test");
+                    File.WriteAllText(test, "ok");
+                    File.Delete(test);
+
+                    return candidate;
+                }
+                catch
+                {
+                    // fall back below
+                }
+            }
+
+            // 2) Safe default: Documents\PartsPortal\Output (user-writable, easy to find)
+            string docs = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            string fallback = Path.Combine(docs, "PartsPortal", "Output");
+            Directory.CreateDirectory(fallback);
+            return fallback;
+        }
+
+
 
         private void SelectAllCheck_Changed(object sender, RoutedEventArgs e)
         {
