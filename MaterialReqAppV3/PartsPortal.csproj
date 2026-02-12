@@ -11,13 +11,16 @@
 	  <InformationalVersion>3.2.4 (Not Released)</InformationalVersion>
     <UseWPF>true</UseWPF>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-	  <ApplicationIcon>Assets\MaterialReqAppIcon.ico</ApplicationIcon>
+	  <ApplicationIcon>Assets\PartsPortalIcon.ico</ApplicationIcon>
+	  <AssemblyName>PartsPortal</AssemblyName>
+	  <RootNamespace>PartsPortal</RootNamespace>
 	  
   </PropertyGroup>
 
   <ItemGroup>
     <None Remove="Assets\CenterPointLogo_DarkText.png" />
     <None Remove="Assets\CenterPointLogo_LightText.png" />
+    <None Remove="Assets\PartsPortalIcon.ico" />
     <None Remove="Templates\Material_Requisition_Issue_Fillable.pdf" />
     <None Remove="Templates\Material_Requisition_Return_Fillable.pdf" />
   </ItemGroup>
