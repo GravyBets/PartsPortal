@@ -24,7 +24,7 @@
   </ItemGroup>
 
 	<ItemGroup>
-		<Content Include="Templates\*.pdf">
+		<Content Include="Templates\**\*">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
 		</Content>

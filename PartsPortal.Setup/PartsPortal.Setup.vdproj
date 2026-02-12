@@ -19,6 +19,12 @@
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
+        "Entry"
+        {
+        "MsmKey" = "8:_CBF3009B89DA497F93BAC9EDAEAB9250"
+        "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
     }
     "Configurations"
     {
@@ -37,6 +43,14 @@
         "PrivateKeyFile" = "8:"
         "TimeStampServer" = "8:"
         "InstallerBootstrapper" = "3:2"
+            "BootstrapperCfg:{63ACBE69-63AA-4F98-B2B6-99F9E24495F2}"
+            {
+            "Enabled" = "11:TRUE"
+            "PromptEnabled" = "11:TRUE"
+            "PrerequisitesLocation" = "2:1"
+            "Url" = "8:"
+            "ComponentsUrl" = "8:"
+            }
         }
         "Release"
         {
@@ -53,6 +67,22 @@
         "PrivateKeyFile" = "8:"
         "TimeStampServer" = "8:"
         "InstallerBootstrapper" = "3:2"
+            "BootstrapperCfg:{63ACBE69-63AA-4F98-B2B6-99F9E24495F2}"
+            {
+            "Enabled" = "11:TRUE"
+            "PromptEnabled" = "11:TRUE"
+            "PrerequisitesLocation" = "2:1"
+            "Url" = "8:"
+            "ComponentsUrl" = "8:"
+                "Items"
+                {
+                    "{EDC2488A-8267-493A-A98E-7D9C3B36CDF3}:.NETFramework,Version=v4.7.2"
+                    {
+                    "Name" = "8:Microsoft .NET Framework 4.7.2 (x86 and x64)"
+                    "ProductCode" = "8:.NETFramework,Version=v4.7.2"
+                    }
+                }
+            }
         }
     }
     "Deployable"
@@ -84,6 +114,26 @@
         }
         "File"
         {
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_CBF3009B89DA497F93BAC9EDAEAB9250"
+            {
+            "SourcePath" = "8:..\\MaterialReqAppV3\\Assets\\PartsPortalIcon.ico"
+            "TargetName" = "8:PartsPortalIcon.ico"
+            "Tag" = "8:"
+            "Folder" = "8:_31E9BFDC05CA490292C40D8F9FDB26FE"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            }
         }
         "FileType"
         {
@@ -163,7 +213,7 @@
         "Name" = "8:Microsoft Visual Studio"
         "ProductName" = "8:PartsPortal.Setup"
         "ProductCode" = "8:{8A6E82E9-6278-466D-93B7-10B1F589205C}"
-        "PackageCode" = "8:{DA36575A-CDFF-413E-B44E-60AC3022089E}"
+        "PackageCode" = "8:{B3DFCB72-60ED-4ED5-BC88-2615F30DA0F8}"
         "UpgradeCode" = "8:{7E8E1151-E15D-4976-829E-DE9F848649F2}"
         "AspNetVersion" = "8:2.0.50727.0"
         "RestartWWWService" = "11:FALSE"
@@ -171,7 +221,7 @@
         "DetectNewerInstalledVersion" = "11:TRUE"
         "InstallAllUsers" = "11:TRUE"
         "ProductVersion" = "8:1.0.0"
-        "Manufacturer" = "8:CenterPoint Energy"
+        "Manufacturer" = "8:Radio Shop"
         "ARPHELPTELEPHONE" = "8:"
         "ARPHELPLINK" = "8:"
         "Title" = "8:PartsPortal.Setup"
@@ -294,7 +344,7 @@
             "Target" = "8:_3F588F67016E4C79AF17B1BC2C74AEDE"
             "Folder" = "8:_3D4BF5C670904EB98B9272EBA9AF390C"
             "WorkingFolder" = "8:_31E9BFDC05CA490292C40D8F9FDB26FE"
-            "Icon" = "8:"
+            "Icon" = "8:_CBF3009B89DA497F93BAC9EDAEAB9250"
             "Feature" = "8:"
             }
             "{970C0BB2-C7D0-45D7-ABFA-7EC378858BC0}:_6E4654A2294D409BB18FB842F41CBE95"
@@ -308,7 +358,7 @@
             "Target" = "8:_3F588F67016E4C79AF17B1BC2C74AEDE"
             "Folder" = "8:_8572A7F51CC54AC0973FBDD8A570BB1B"
             "WorkingFolder" = "8:_31E9BFDC05CA490292C40D8F9FDB26FE"
-            "Icon" = "8:"
+            "Icon" = "8:_CBF3009B89DA497F93BAC9EDAEAB9250"
             "Feature" = "8:"
             }
         }
@@ -712,7 +762,7 @@
         {
             "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_3F588F67016E4C79AF17B1BC2C74AEDE"
             {
-            "SourcePath" = "8:..\\MaterialReqAppV3\\bin\\Release\\net8.0-windows\\publish\\win-x64\\PartsPortal.exe"
+            "SourcePath" = "8:..\\MaterialReqAppV3\\obj\\Release\\net8.0-windows\\win-x64\\apphost.exe"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_31E9BFDC05CA490292C40D8F9FDB26FE"
