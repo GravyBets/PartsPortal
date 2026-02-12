@@ -69,7 +69,7 @@ namespace MaterialReqAppV3
 
             var main = new MainWindow(selected);
             main.Show();
-            Close();
+            Hide();
         }
 
 
