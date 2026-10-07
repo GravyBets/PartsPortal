@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.14.36518.9
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PartsPortal", "MaterialReqAppV3\PartsPortal.csproj", "{79DB74C1-4098-460E-9ADF-C51B4CD4805A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PartsPortal.Client", "src\PartsPortal.Client\PartsPortal.Client.csproj", "{79DB74C1-4098-460E-9ADF-C51B4CD4805A}"
 EndProject
 Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "PartsPortal.Setup", "PartsPortal.Setup\PartsPortal.Setup.vdproj", "{5BA48D44-2840-9975-A350-D7C5698B7D1D}"
 EndProject
