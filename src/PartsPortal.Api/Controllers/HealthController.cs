@@ -13,21 +13,22 @@ public sealed class HealthController : ControllerBase
     [ProducesResponseType<ApiHealthDto>(StatusCodes.Status200OK)]
     public async Task<ActionResult<ApiHealthDto>> Get(CancellationToken cancellationToken)
     {
-        var db = HttpContext.RequestServices.GetService<PartsPortalDbContext>();
         var databaseStatus = "not-configured";
 
-        if (db is not null)
+        try
         {
-            try
+            var db = HttpContext.RequestServices.GetService<PartsPortalDbContext>();
+
+            if (db is not null)
             {
                 databaseStatus = await db.Database.CanConnectAsync(cancellationToken)
                     ? "reachable"
                     : "unreachable";
             }
-            catch
-            {
-                databaseStatus = "unreachable";
-            }
+        }
+        catch
+        {
+            databaseStatus = "unreachable";
         }
 
         return Ok(new ApiHealthDto(
