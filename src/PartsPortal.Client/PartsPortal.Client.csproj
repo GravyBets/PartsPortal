@@ -1,20 +1,23 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-	  <Version>3.2.4</Version>
-	  <AssemblyVersion>3.2.4.1</AssemblyVersion>
-	  <FileVersion>3.2.4.1</FileVersion>
-	  <InformationalVersion>3.2.4 (Not Released)</InformationalVersion>
+
+    <Version>3.2.4</Version>
+    <AssemblyVersion>3.2.4.1</AssemblyVersion>
+    <FileVersion>3.2.4.1</FileVersion>
+    <InformationalVersion>3.2.4 (Not Released)</InformationalVersion>
+
     <UseWPF>true</UseWPF>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-	  <ApplicationIcon>Assets\PartsPortalIcon.ico</ApplicationIcon>
-	  <AssemblyName>PartsPortal</AssemblyName>
-	  <RootNamespace>PartsPortal</RootNamespace>
-	  
+    <ApplicationIcon>Assets\PartsPortalIcon.ico</ApplicationIcon>
+
+    <!-- Keep the shipped app identity as PartsPortal even though the project is PartsPortal.Client. -->
+    <AssemblyName>PartsPortal</AssemblyName>
+    <RootNamespace>PartsPortal</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
