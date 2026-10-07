@@ -1,23 +1,38 @@
 # PartsPortal API deployment
 
-The API is intended to run independently from SmartGridSuite on the existing Linux VM.
+PartsPortal is hosted independently from SmartGridSuite on the existing Linux VM.
 
-Recommended layout:
+## VM layout
 
-- /opt/partsportal/api - published API files
-- /etc/partsportal/partsportal.env - server-only configuration/secrets
-- partsportal-api.service - independent systemd service
-- HTTP listener: 127.0.0.1:5085
+- `/opt/partsportal/api` - self-contained Linux API publish
+- `/etc/partsportal/partsportal-api.env` - server-only environment/secrets
+- `/var/log/partsportal/api.log` - API log
+- `/etc/init.d/partsportal-api` - SysV init service
+- API listener: `127.0.0.1:5085`
 
-The production database connection string should be supplied through
-ConnectionStrings__PartsPortalDb in the server environment file. Do not store
-the real database password in appsettings.json or source control.
+The API should be published as a self-contained `linux-x64` application so the
+VM does not require a machine-wide .NET runtime.
 
-Initial verification endpoints:
+The real database password belongs only in
+`/etc/partsportal/partsportal-api.env`. Never store it in source control.
 
-- GET / -> API process status
-- GET /api/health -> API and database reachability
-- GET /api/system/client-version -> client version policy
+## Initial verification endpoints
 
-The reverse-proxy/download URL will be finalized when Phase 3 adds the
-PartsPortal release/update site.
+Direct on the VM:
+
+- `http://127.0.0.1:5085/`
+- `http://127.0.0.1:5085/api/health`
+- `http://127.0.0.1:5085/api/system/client-version`
+
+## nginx plan
+
+SmartGridSuite already owns the VM's default server and `/api/` path.
+PartsPortal will therefore use its own path prefix instead of changing the
+existing SmartGridSuite route.
+
+Planned public paths:
+
+- `/partsportal/api/...` -> `http://127.0.0.1:5085/api/...`
+- `/partsportal/install/` -> PartsPortal installer/download files
+
+The install/download site is finalized in Phase 3.

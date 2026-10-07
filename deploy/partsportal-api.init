@@ -1,0 +1,81 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          partsportal-api
+# Required-Start:    $network $remote_fs
+# Required-Stop:     $network $remote_fs
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: PartsPortal API
+### END INIT INFO
+
+APP_DIR="/opt/partsportal/api"
+DAEMON="$APP_DIR/PartsPortal.Api"
+ENV_FILE="/etc/partsportal/partsportal-api.env"
+PIDFILE="/var/run/partsportal-api.pid"
+LOGFILE="/var/log/partsportal/api.log"
+USER="partsportal"
+
+case "$1" in
+  start)
+    echo "Starting PartsPortal API..."
+
+    if [ ! -x "$DAEMON" ]; then
+      echo "ERROR: API executable not found or not executable: $DAEMON"
+      exit 1
+    fi
+
+    if [ ! -f "$ENV_FILE" ]; then
+      echo "ERROR: Env file not found: $ENV_FILE"
+      exit 1
+    fi
+
+    . "$ENV_FILE"
+
+    start-stop-daemon --start \
+      --background \
+      --make-pidfile \
+      --pidfile "$PIDFILE" \
+      --chuid "$USER" \
+      --startas /bin/bash \
+      -- -c "cd '$APP_DIR' && exec '$DAEMON' >> '$LOGFILE' 2>&1"
+
+    echo "Started."
+    ;;
+
+  stop)
+    echo "Stopping PartsPortal API..."
+    start-stop-daemon --stop --pidfile "$PIDFILE" --retry 10
+    rm -f "$PIDFILE"
+    echo "Stopped."
+    ;;
+
+  restart)
+    "$0" stop
+    sleep 2
+    "$0" start
+    ;;
+
+  status)
+    if [ -f "$PIDFILE" ]; then
+      PID=$(cat "$PIDFILE")
+      if kill -0 "$PID" 2>/dev/null; then
+        echo "PartsPortal API is running. PID: $PID"
+        exit 0
+      fi
+    fi
+
+    echo "PartsPortal API is not running."
+    exit 3
+    ;;
+
+  logs)
+    tail -n 100 "$LOGFILE"
+    ;;
+
+  *)
+    echo "Usage: /etc/init.d/partsportal-api {start|stop|restart|status|logs}"
+    exit 1
+    ;;
+esac
+
+exit 0
