@@ -116,7 +116,7 @@
         {
             "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_CBF3009B89DA497F93BAC9EDAEAB9250"
             {
-            "SourcePath" = "8:..\\MaterialReqAppV3\\Assets\\PartsPortalIcon.ico"
+            "SourcePath" = "8:..\\src\\PartsPortal.Client\\Assets\\PartsPortalIcon.ico"
             "TargetName" = "8:PartsPortalIcon.ico"
             "Tag" = "8:"
             "Folder" = "8:_31E9BFDC05CA490292C40D8F9FDB26FE"
@@ -762,7 +762,7 @@
         {
             "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_3F588F67016E4C79AF17B1BC2C74AEDE"
             {
-            "SourcePath" = "8:..\\MaterialReqAppV3\\obj\\Release\\net8.0-windows\\win-x64\\apphost.exe"
+            "SourcePath" = "8:..\\src\\PartsPortal.Client\\obj\\Release\\net8.0-windows\\win-x64\\apphost.exe"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_31E9BFDC05CA490292C40D8F9FDB26FE"
