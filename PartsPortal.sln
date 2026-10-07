@@ -1,9 +1,12 @@
-﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.14.36518.9
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PartsPortal.Client", "src\PartsPortal.Client\PartsPortal.Client.csproj", "{79DB74C1-4098-460E-9ADF-C51B4CD4805A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PartsPortal.Api", "src\PartsPortal.Api\PartsPortal.Api.csproj", "{A4B56C10-0A5E-4E4B-8FA2-1D2DE0A4D847}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PartsPortal.Contracts", "src\PartsPortal.Contracts\PartsPortal.Contracts.csproj", "{C7E7652A-8BAA-44B8-9B4C-4C1595836609}"
 EndProject
 Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "PartsPortal.Setup", "PartsPortal.Setup\PartsPortal.Setup.vdproj", "{5BA48D44-2840-9975-A350-D7C5698B7D1D}"
 EndProject
@@ -17,6 +20,14 @@ Global
 		{79DB74C1-4098-460E-9ADF-C51B4CD4805A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{79DB74C1-4098-460E-9ADF-C51B4CD4805A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{79DB74C1-4098-460E-9ADF-C51B4CD4805A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A4B56C10-0A5E-4E4B-8FA2-1D2DE0A4D847}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A4B56C10-0A5E-4E4B-8FA2-1D2DE0A4D847}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A4B56C10-0A5E-4E4B-8FA2-1D2DE0A4D847}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A4B56C10-0A5E-4E4B-8FA2-1D2DE0A4D847}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C7E7652A-8BAA-44B8-9B4C-4C1595836609}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C7E7652A-8BAA-44B8-9B4C-4C1595836609}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C7E7652A-8BAA-44B8-9B4C-4C1595836609}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C7E7652A-8BAA-44B8-9B4C-4C1595836609}.Release|Any CPU.Build.0 = Release|Any CPU
 		{5BA48D44-2840-9975-A350-D7C5698B7D1D}.Debug|Any CPU.ActiveCfg = Debug
 		{5BA48D44-2840-9975-A350-D7C5698B7D1D}.Release|Any CPU.ActiveCfg = Release
 	EndGlobalSection

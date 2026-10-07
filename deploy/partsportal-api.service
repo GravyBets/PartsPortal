@@ -1,0 +1,17 @@
+[Unit]
+Description=PartsPortal API
+After=network.target
+
+[Service]
+WorkingDirectory=/opt/partsportal/api
+ExecStart=/usr/bin/dotnet /opt/partsportal/api/PartsPortal.Api.dll
+Restart=always
+RestartSec=5
+User=partsportal
+Group=partsportal
+Environment=ASPNETCORE_ENVIRONMENT=Production
+Environment=ASPNETCORE_URLS=http://127.0.0.1:5085
+EnvironmentFile=-/etc/partsportal/partsportal.env
+
+[Install]
+WantedBy=multi-user.target
