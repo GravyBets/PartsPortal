@@ -1,14 +1,14 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Version>3.2.6</Version>
-    <AssemblyVersion>3.2.6</AssemblyVersion>
-    <FileVersion>3.2.6</FileVersion>
-    <InformationalVersion>3.2.6 (Released)</InformationalVersion>
+    <Version>3.2.8</Version>
+    <AssemblyVersion>3.2.8</AssemblyVersion>
+    <FileVersion>3.2.8</FileVersion>
+    <InformationalVersion>3.2.8 (Released)</InformationalVersion>
     <UseWPF>true</UseWPF>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Assets\PartsPortalIcon.ico</ApplicationIcon>
@@ -49,3 +49,4 @@
   </ItemGroup>
 
 </Project>
+
