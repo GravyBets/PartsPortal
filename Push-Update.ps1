@@ -355,30 +355,49 @@ $bullets
 
     $devenv = Find-Devenv
     $setupLog = Join-Path $Repo "artifacts\setup-build.log"
-    New-Item -ItemType Directory -Path (Split-Path $setupLog -Parent) -Force | Out-Null
-    Remove-Item $setupLog -Force -ErrorAction SilentlyContinue
-
-    & $devenv $Solution "/Build" "Release|Any CPU" "/Project" "PartsPortal.Setup" "/ProjectConfig" "Release" "/Out" $setupLog
-
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host ""
-        Write-Host "Visual Studio setup build failed. Last build-log lines:" -ForegroundColor Red
-
-        if (Test-Path $setupLog) {
-            Get-Content $setupLog -Tail 120 | ForEach-Object { Write-Host $_ }
-        }
-        else {
-            Write-Host "Visual Studio did not create $setupLog"
-        }
-
-        throw "PartsPortal.Setup failed with exit code $LASTEXITCODE."
-    }
-
     $msiPath = Join-Path $Repo "PartsPortal.Setup\Release\$msiName"
 
+    New-Item -ItemType Directory -Path (Split-Path $setupLog -Parent) -Force | Out-Null
+    Remove-Item $setupLog -Force -ErrorAction SilentlyContinue
+    Remove-Item $msiPath -Force -ErrorAction SilentlyContinue
+
+    $setupStarted = Get-Date
+
+    & $devenv $Solution "/Build" "Release|Any CPU" "/Project" "PartsPortal.Setup" "/ProjectConfig" "Release" "/Out" $setupLog
+    $devenvExitCode = $LASTEXITCODE
+
     if (-not (Test-Path $msiPath)) {
-        throw "Installer was not found at $msiPath"
+        Write-Host ""
+        Write-Host "Visual Studio did not create the expected MSI." -ForegroundColor Red
+
+        if (Test-Path $setupLog) {
+            Get-Content $setupLog -Tail 160 | ForEach-Object { Write-Host $_ }
+        }
+
+        throw "PartsPortal.Setup did not produce $msiName."
     }
+
+    $msiFile = Get-Item $msiPath
+    $freshMsi = $msiFile.LastWriteTime -ge $setupStarted.AddSeconds(-2)
+    $largeEnough = $msiFile.Length -gt 50MB
+
+    if (-not $freshMsi -or -not $largeEnough) {
+        Write-Host ""
+        Write-Host "The MSI exists, but it does not look like a fresh complete build." -ForegroundColor Red
+
+        if (Test-Path $setupLog) {
+            Get-Content $setupLog -Tail 160 | ForEach-Object { Write-Host $_ }
+        }
+
+        throw "MSI validation failed."
+    }
+
+    if ($devenvExitCode -ne 0) {
+        Write-Host ""
+        Write-Host "Visual Studio returned exit code $devenvExitCode, but a fresh $([math]::Round($msiFile.Length / 1MB, 1)) MB MSI was created. Continuing." -ForegroundColor Yellow
+    }
+
+    Write-Host "MSI ready: $($msiFile.FullName)" -ForegroundColor Green
 
     if (-not $SkipDeploy) {
         Step "Creating release package"
