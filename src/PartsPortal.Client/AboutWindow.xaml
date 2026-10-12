@@ -23,7 +23,7 @@
                 </Grid.RowDefinitions>
 
                 <!-- Title -->
-                <TextBlock Text="Material Requisition"
+                <TextBlock Text="PartsPortal"
                            FontSize="24"
                            FontWeight="Bold"
                            Foreground="{DynamicResource TextPrimary}"/>
