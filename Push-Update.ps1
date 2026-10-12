@@ -80,17 +80,74 @@ function Write-Utf8NoBom([string]$Path, [string]$Content) {
 }
 
 function Find-Devenv {
-    $vswhere = Join-Path ([Environment]::GetFolderPath("ProgramFilesX86")) "Microsoft Visual Studio\Installer\vswhere.exe"
-    if (-not (Test-Path $vswhere)) {
-        throw "vswhere.exe was not found. Visual Studio is required to build PartsPortal.Setup."
+    # 1) If Visual Studio is already on PATH, use it.
+    foreach ($name in @("devenv.com", "devenv.exe")) {
+        $cmd = Get-Command $name -ErrorAction SilentlyContinue
+        if ($cmd -and (Test-Path $cmd.Source)) {
+            Write-Host "Using Visual Studio: $($cmd.Source)" -ForegroundColor DarkGray
+            return $cmd.Source
+        }
     }
 
-    $devenv = & $vswhere -latest -products * -find Common7\IDE\devenv.com | Select-Object -First 1
-    if (-not $devenv -or -not (Test-Path $devenv)) {
-        throw "Visual Studio devenv.com was not found."
+    # 2) Ask vswhere. Include prerelease installs because newer Visual Studio
+    #    versions may not be returned by a plain -latest query.
+    $vswhereCandidates = @(
+        (Join-Path ([Environment]::GetFolderPath("ProgramFilesX86")) "Microsoft Visual Studio\Installer\vswhere.exe"),
+        (Join-Path ([Environment]::GetFolderPath("ProgramFiles")) "Microsoft Visual Studio\Installer\vswhere.exe")
+    )
+
+    foreach ($vswhere in $vswhereCandidates | Select-Object -Unique) {
+        if (-not (Test-Path $vswhere)) {
+            continue
+        }
+
+        foreach ($target in @("Common7\IDE\devenv.com", "Common7\IDE\devenv.exe")) {
+            $found = & $vswhere -latest -prerelease -products * -find $target 2>$null | Select-Object -First 1
+            if ($found -and (Test-Path $found)) {
+                Write-Host "Using Visual Studio: $found" -ForegroundColor DarkGray
+                return $found
+            }
+        }
+
+        $installRoots = & $vswhere -all -prerelease -products * -property installationPath 2>$null
+        foreach ($installRoot in $installRoots) {
+            foreach ($file in @("devenv.com", "devenv.exe")) {
+                $candidate = Join-Path $installRoot "Common7\IDE\$file"
+                if (Test-Path $candidate) {
+                    Write-Host "Using Visual Studio: $candidate" -ForegroundColor DarkGray
+                    return $candidate
+                }
+            }
+        }
     }
 
-    return $devenv
+    # 3) Last-resort direct search. This covers custom/newer Visual Studio
+    #    folder layouts that vswhere does not report correctly.
+    $searchRoots = @(
+        (Join-Path ([Environment]::GetFolderPath("ProgramFiles")) "Microsoft Visual Studio"),
+        (Join-Path ([Environment]::GetFolderPath("ProgramFilesX86")) "Microsoft Visual Studio")
+    ) | Select-Object -Unique
+
+    foreach ($root in $searchRoots) {
+        if (-not (Test-Path $root)) {
+            continue
+        }
+
+        $found = Get-ChildItem $root -Filter "devenv.com" -File -Recurse -ErrorAction SilentlyContinue |
+            Select-Object -First 1
+
+        if (-not $found) {
+            $found = Get-ChildItem $root -Filter "devenv.exe" -File -Recurse -ErrorAction SilentlyContinue |
+                Select-Object -First 1
+        }
+
+        if ($found) {
+            Write-Host "Using Visual Studio: $($found.FullName)" -ForegroundColor DarkGray
+            return $found.FullName
+        }
+    }
+
+    throw "Visual Studio IDE was not found. Open Visual Studio Installer and confirm a full Visual Studio installation is present."
 }
 
 Set-Location $Repo
