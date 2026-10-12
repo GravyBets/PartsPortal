@@ -34,12 +34,18 @@ namespace PartsPortal
                 if (update is null || !update.IsUpdateAvailable)
                     return;
 
-                var dialog = new UpdateAvailableWindow(update)
+                await owner.Dispatcher.InvokeAsync(() =>
                 {
-                    Owner = owner
-                };
+                    if (!owner.IsLoaded || !owner.IsVisible)
+                        return;
 
-                dialog.ShowDialog();
+                    var dialog = new UpdateAvailableWindow(update)
+                    {
+                        Owner = owner
+                    };
+
+                    dialog.ShowDialog();
+                });
             }
             catch
             {
