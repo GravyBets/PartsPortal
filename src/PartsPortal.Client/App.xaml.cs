@@ -20,23 +20,43 @@ namespace PartsPortal
             ThemeService.Apply(settings.IsDarkMode);
 
             var w = new WarehouseSelectWindow();
-            w.Show();
+            var updateCheckStarted = false;
 
-            _ = CheckForUpdatesAsync(w);
+            w.ContentRendered += async (_, _) =>
+            {
+                if (updateCheckStarted)
+                    return;
+
+                updateCheckStarted = true;
+                await CheckForUpdatesAsync(w);
+            };
+
+            w.Show();
         }
 
         private static async Task CheckForUpdatesAsync(Window owner)
         {
             try
             {
+                UpdateLog.Write("Automatic update check started.");
+
                 var update = await new UpdateService().CheckAsync();
 
-                if (update is null || !update.IsUpdateAvailable)
+                if (update is null)
+                {
+                    UpdateLog.Write("Automatic update check did not return version information.");
+                    return;
+                }
+
+                UpdateLog.Write(
+                    $"Automatic update check: installed={update.CurrentVersion}, latest={update.LatestVersion}, minimum={update.MinimumSupportedVersion}.");
+
+                if (!update.IsUpdateAvailable)
                     return;
 
                 await owner.Dispatcher.InvokeAsync(() =>
                 {
-                    if (!owner.IsLoaded || !owner.IsVisible)
+                    if (!owner.IsVisible)
                         return;
 
                     var dialog = new UpdateAvailableWindow(update)
@@ -47,10 +67,11 @@ namespace PartsPortal
                     dialog.ShowDialog();
                 });
             }
-            catch
+            catch (Exception ex)
             {
-                // Update checks are intentionally non-blocking. PartsPortal must still
-                // launch normally if the VM/API is unavailable.
+                // Update checks remain non-blocking, but failures are now logged so
+                // they can be diagnosed instead of disappearing silently.
+                UpdateLog.Write("Automatic update check failed.", ex);
             }
         }
     }

@@ -18,18 +18,34 @@ public sealed class UpdateService
     {
         try
         {
+            UpdateLog.Write($"Requesting update metadata from {new Uri(Http.BaseAddress!, "system/client-version")}.");
+
             var info = await Http.GetFromJsonAsync<ClientVersionInfoDto>(
                 "system/client-version",
                 cancellationToken);
 
-            if (info is null ||
-                !TryParseVersion(info.LatestVersion, out var latest) ||
-                !TryParseVersion(info.MinimumSupportedVersion, out var minimum))
+            if (info is null)
             {
+                UpdateLog.Write("Update endpoint returned no payload.");
+                return null;
+            }
+
+            if (!TryParseVersion(info.LatestVersion, out var latest))
+            {
+                UpdateLog.Write($"Could not parse latestVersion '{info.LatestVersion}'.");
+                return null;
+            }
+
+            if (!TryParseVersion(info.MinimumSupportedVersion, out var minimum))
+            {
+                UpdateLog.Write($"Could not parse minimumSupportedVersion '{info.MinimumSupportedVersion}'.");
                 return null;
             }
 
             var current = GetCurrentVersion();
+
+            UpdateLog.Write(
+                $"Update metadata received: installed={current}, latest={latest}, minimum={minimum}, download='{info.DownloadUrl}'.");
 
             return new UpdateCheckResult(
                 current,
@@ -38,16 +54,19 @@ public sealed class UpdateService
                 info.DownloadUrl ?? string.Empty,
                 info.ReleaseNotes ?? Array.Empty<string>());
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException ex)
         {
+            UpdateLog.Write("Update check timed out or was cancelled.", ex);
             return null;
         }
-        catch (HttpRequestException)
+        catch (HttpRequestException ex)
         {
+            UpdateLog.Write("Update HTTP request failed.", ex);
             return null;
         }
-        catch
+        catch (Exception ex)
         {
+            UpdateLog.Write("Unexpected update check failure.", ex);
             return null;
         }
     }
@@ -71,7 +90,10 @@ public sealed class UpdateService
         if (string.IsNullOrWhiteSpace(value))
             return false;
 
-        var core = value.Trim().Split(new[] { ' ', '+', '-' }, StringSplitOptions.RemoveEmptyEntries)[0];
+        var core = value.Trim().Split(
+            new[] { ' ', '+', '-' },
+            StringSplitOptions.RemoveEmptyEntries)[0];
+
         if (!Version.TryParse(core, out var parsed) || parsed is null)
             return false;
 
