@@ -71,7 +71,7 @@ public sealed class UpdateService
         if (string.IsNullOrWhiteSpace(value))
             return false;
 
-        var core = value.Trim().Split(' ', '+', '-', StringSplitOptions.RemoveEmptyEntries)[0];
+        var core = value.Trim().Split(new[] { ' ', '+', '-' }, StringSplitOptions.RemoveEmptyEntries)[0];
         if (!Version.TryParse(core, out var parsed) || parsed is null)
             return false;
 
