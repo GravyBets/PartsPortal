@@ -351,11 +351,25 @@ $bullets
     Step "Building MSI installer"
 
     $devenv = Find-Devenv
-    Run $devenv @(
-        $Solution,
-        "/Build", "Release",
-        "/Project", "PartsPortal.Setup"
-    )
+    $setupLog = Join-Path $Repo "artifacts\setup-build.log"
+    New-Item -ItemType Directory -Path (Split-Path $setupLog -Parent) -Force | Out-Null
+    Remove-Item $setupLog -Force -ErrorAction SilentlyContinue
+
+    & $devenv $Solution "/Build" "Release|Any CPU" "/Project" "PartsPortal.Setup" "/ProjectConfig" "Release" "/Out" $setupLog
+
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host ""
+        Write-Host "Visual Studio setup build failed. Last build-log lines:" -ForegroundColor Red
+
+        if (Test-Path $setupLog) {
+            Get-Content $setupLog -Tail 120 | ForEach-Object { Write-Host $_ }
+        }
+        else {
+            Write-Host "Visual Studio did not create $setupLog"
+        }
+
+        throw "PartsPortal.Setup failed with exit code $LASTEXITCODE."
+    }
 
     $msiPath = Join-Path $Repo "PartsPortal.Setup\Release\$msiName"
 
