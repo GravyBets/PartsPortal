@@ -75,6 +75,9 @@ function ShellValue([string]$Value) {
 }
 
 function Write-Utf8NoBom([string]$Path, [string]$Content) {
+    # Files consumed by Linux must use LF endings. PowerShell here-strings on
+    # Windows otherwise produce CRLF, which breaks bash options such as pipefail.
+    $Content = $Content.Replace("`r`n", "`n").Replace("`r", "`n")
     $encoding = New-Object System.Text.UTF8Encoding($false)
     [System.IO.File]::WriteAllText($Path, $Content, $encoding)
 }
