@@ -38,8 +38,8 @@ function Step([string]$Message) {
     Write-Host "==> $Message" -ForegroundColor Cyan
 }
 
-function Run([string]$Exe, [string[]]$Args) {
-    & $Exe @Args
+function Run([string]$Exe, [string[]]$ArgumentList) {
+    & $Exe @ArgumentList
     if ($LASTEXITCODE -ne 0) {
         throw "$Exe failed with exit code $LASTEXITCODE."
     }
