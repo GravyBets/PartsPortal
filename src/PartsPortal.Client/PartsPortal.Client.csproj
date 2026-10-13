@@ -10,7 +10,6 @@
     <FileVersion>3.2.10</FileVersion>
     <InformationalVersion>3.2.10 (Released)</InformationalVersion>
     <UseWPF>true</UseWPF>
-    <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Assets\PartsPortalIcon.ico</ApplicationIcon>
     <AssemblyName>PartsPortal</AssemblyName>
     <RootNamespace>PartsPortal</RootNamespace>
