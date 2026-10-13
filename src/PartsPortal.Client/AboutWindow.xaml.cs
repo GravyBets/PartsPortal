@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using System.Reflection;
 using System.Windows;
-using PartsPortal.Services;
 
 namespace PartsPortal
 {
@@ -57,66 +56,6 @@ namespace PartsPortal
             catch
             {
                 VersionText.Text = "Version (unknown)";
-            }
-        }
-
-        private async void CheckUpdates_Click(object sender, RoutedEventArgs e)
-        {
-            CheckUpdatesButton.IsEnabled = false;
-            UpdateStatusText.Text = "Checking...";
-
-            try
-            {
-                UpdateLog.Write("Manual update check started from About window.");
-
-                var update = await new UpdateService().CheckAsync();
-
-                if (update is null)
-                {
-                    UpdateStatusText.Text = "Could not check for updates.";
-                    MessageBox.Show(
-                        $"PartsPortal could not reach or read the update service.\n\nDiagnostic log:\n{UpdateLog.LogPath}",
-                        "PartsPortal Update",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Warning);
-                    return;
-                }
-
-                if (!update.IsUpdateAvailable)
-                {
-                    UpdateStatusText.Text = "You're up to date.";
-                    MessageBox.Show(
-                        $"PartsPortal {update.CurrentVersion.Major}.{update.CurrentVersion.Minor}.{update.CurrentVersion.Build} is up to date.",
-                        "PartsPortal Update",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Information);
-                    return;
-                }
-
-                UpdateStatusText.Text =
-                    $"Version {update.LatestVersion.Major}.{update.LatestVersion.Minor}.{update.LatestVersion.Build} available.";
-
-                var dialog = new UpdateAvailableWindow(update)
-                {
-                    Owner = this
-                };
-
-                dialog.ShowDialog();
-            }
-            catch (Exception ex)
-            {
-                UpdateLog.Write("Manual update check failed.", ex);
-                UpdateStatusText.Text = "Update check failed.";
-
-                MessageBox.Show(
-                    $"The update check failed.\n\nDiagnostic log:\n{UpdateLog.LogPath}",
-                    "PartsPortal Update",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error);
-            }
-            finally
-            {
-                CheckUpdatesButton.IsEnabled = true;
             }
         }
 

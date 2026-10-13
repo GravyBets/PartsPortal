@@ -1,25 +1,12 @@
-﻿param(
+param(
     [string]$Version,
     [string[]]$ReleaseNotes,
-    [string]$MinimumSupportedVersion,
     [switch]$SkipGit,
     [switch]$SkipDeploy
 )
 
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
-
-# ---------------------------------------------------------------------------
-# PartsPortal one-command release script
-#
-# Normal:
-#   .\Push-Update.ps1
-#
-# Examples:
-#   .\Push-Update.ps1 -Version 3.2.7 -ReleaseNotes @("Fix one","Fix two")
-#   .\Push-Update.ps1 -SkipDeploy
-#   .\Push-Update.ps1 -SkipGit
-# ---------------------------------------------------------------------------
 
 $Repo = $PSScriptRoot
 $Vm = "10.130.206.135"
@@ -29,9 +16,9 @@ $VersionApi = "http://$Vm/partsportal/api/system/client-version"
 
 $ClientProject = Join-Path $Repo "src\PartsPortal.Client\PartsPortal.Client.csproj"
 $ApiSettings = Join-Path $Repo "src\PartsPortal.Api\appsettings.json"
-$SetupProject = Join-Path $Repo "PartsPortal.Setup\PartsPortal.Setup.vdproj"
-$Solution = Join-Path $Repo "PartsPortal.sln"
+$ClickOnceProfile = Join-Path $Repo "src\PartsPortal.Client\Properties\PublishProfiles\ClickOnceProfile.pubxml"
 $InstallPage = Join-Path $Repo "deploy\install\index.html"
+$ClickOnceOutput = Join-Path $Repo "src\PartsPortal.Client\bin\Release\net8.0-windows\win-x64\clickonce"
 
 function Step([string]$Message) {
     Write-Host ""
@@ -46,8 +33,8 @@ function Run([string]$Exe, [string[]]$ArgumentList) {
 }
 
 function Current-Version {
-    [xml]$x = Get-Content $ClientProject
-    return ([string]$x.Project.PropertyGroup.Version).Trim()
+    [xml]$xml = Get-Content $ClientProject
+    return ([string]$xml.Project.PropertyGroup.Version).Trim()
 }
 
 function Next-Patch([string]$Value) {
@@ -55,10 +42,10 @@ function Next-Patch([string]$Value) {
     return "$($v.Major).$($v.Minor).$($v.Build + 1)"
 }
 
-function Validate-Version([string]$Value, [string]$Name) {
+function Validate-Version([string]$Value) {
     $parsed = $null
     if (-not [Version]::TryParse($Value, [ref]$parsed) -or $Value.Split('.').Count -ne 3) {
-        throw "$Name must use three parts, for example 3.2.7."
+        throw "Version must use three parts, for example 3.2.10."
     }
 }
 
@@ -67,95 +54,53 @@ function Html([string]$Value) {
 }
 
 function ShellValue([string]$Value) {
-    $Value = $Value.Replace("\", "\\")
-    $Value = $Value.Replace('"', '\"')
-    $Value = $Value.Replace('$', '\$')
-    $Value = $Value.Replace('`', '\`')
+    $Value = $Value.Replace("\", "\\").Replace('"', '\"').Replace('$', '\$')
     return '"' + $Value + '"'
 }
 
 function Write-Utf8NoBom([string]$Path, [string]$Content) {
-    # Files consumed by Linux must use LF endings. PowerShell here-strings on
-    # Windows otherwise produce CRLF, which breaks bash options such as pipefail.
     $Content = $Content.Replace("`r`n", "`n").Replace("`r", "`n")
     $encoding = New-Object System.Text.UTF8Encoding($false)
     [System.IO.File]::WriteAllText($Path, $Content, $encoding)
 }
 
-function Find-Devenv {
-    # 1) If Visual Studio is already on PATH, use it.
-    foreach ($name in @("devenv.com", "devenv.exe")) {
-        $cmd = Get-Command $name -ErrorAction SilentlyContinue
-        if ($cmd -and (Test-Path $cmd.Source)) {
-            Write-Host "Using Visual Studio: $($cmd.Source)" -ForegroundColor DarkGray
-            return $cmd.Source
+function Find-MSBuild {
+    $cmd = Get-Command "msbuild.exe" -ErrorAction SilentlyContinue
+    if ($cmd -and (Test-Path $cmd.Source)) {
+        return $cmd.Source
+    }
+
+    $vswhere = Join-Path ([Environment]::GetFolderPath("ProgramFilesX86")) "Microsoft Visual Studio\Installer\vswhere.exe"
+    if (Test-Path $vswhere) {
+        $found = & $vswhere -latest -prerelease -products * -find "MSBuild\Current\Bin\MSBuild.exe" 2>$null |
+            Select-Object -First 1
+        if ($found -and (Test-Path $found)) {
+            return $found
         }
     }
 
-    # 2) Ask vswhere. Include prerelease installs because newer Visual Studio
-    #    versions may not be returned by a plain -latest query.
-    $vswhereCandidates = @(
-        (Join-Path ([Environment]::GetFolderPath("ProgramFilesX86")) "Microsoft Visual Studio\Installer\vswhere.exe"),
-        (Join-Path ([Environment]::GetFolderPath("ProgramFiles")) "Microsoft Visual Studio\Installer\vswhere.exe")
-    )
-
-    foreach ($vswhere in $vswhereCandidates | Select-Object -Unique) {
-        if (-not (Test-Path $vswhere)) {
-            continue
-        }
-
-        foreach ($target in @("Common7\IDE\devenv.com", "Common7\IDE\devenv.exe")) {
-            $found = & $vswhere -latest -prerelease -products * -find $target 2>$null | Select-Object -First 1
-            if ($found -and (Test-Path $found)) {
-                Write-Host "Using Visual Studio: $found" -ForegroundColor DarkGray
-                return $found
-            }
-        }
-
-        $installRoots = & $vswhere -all -prerelease -products * -property installationPath 2>$null
-        foreach ($installRoot in $installRoots) {
-            foreach ($file in @("devenv.com", "devenv.exe")) {
-                $candidate = Join-Path $installRoot "Common7\IDE\$file"
-                if (Test-Path $candidate) {
-                    Write-Host "Using Visual Studio: $candidate" -ForegroundColor DarkGray
-                    return $candidate
-                }
-            }
-        }
-    }
-
-    # 3) Last-resort direct search. This covers custom/newer Visual Studio
-    #    folder layouts that vswhere does not report correctly.
-    $searchRoots = @(
+    $roots = @(
         (Join-Path ([Environment]::GetFolderPath("ProgramFiles")) "Microsoft Visual Studio"),
         (Join-Path ([Environment]::GetFolderPath("ProgramFilesX86")) "Microsoft Visual Studio")
     ) | Select-Object -Unique
 
-    foreach ($root in $searchRoots) {
-        if (-not (Test-Path $root)) {
-            continue
-        }
+    foreach ($root in $roots) {
+        if (-not (Test-Path $root)) { continue }
 
-        $found = Get-ChildItem $root -Filter "devenv.com" -File -Recurse -ErrorAction SilentlyContinue |
+        $found = Get-ChildItem $root -Filter "MSBuild.exe" -File -Recurse -ErrorAction SilentlyContinue |
+            Where-Object { $_.FullName -match "MSBuild\\Current\\Bin\\MSBuild\.exe$" } |
             Select-Object -First 1
 
-        if (-not $found) {
-            $found = Get-ChildItem $root -Filter "devenv.exe" -File -Recurse -ErrorAction SilentlyContinue |
-                Select-Object -First 1
-        }
-
         if ($found) {
-            Write-Host "Using Visual Studio: $($found.FullName)" -ForegroundColor DarkGray
             return $found.FullName
         }
     }
 
-    throw "Visual Studio IDE was not found. Open Visual Studio Installer and confirm a full Visual Studio installation is present."
+    throw "MSBuild.exe was not found."
 }
 
 Set-Location $Repo
 
-# Keep release commits clean: do not sweep unrelated edits into a deployment.
 $dirty = & git status --porcelain
 if ($LASTEXITCODE -ne 0) {
     throw "This folder is not a Git repository."
@@ -173,16 +118,7 @@ if (-not $Version) {
     $answer = Read-Host "New PartsPortal version [$defaultVersion]"
     $Version = if ([string]::IsNullOrWhiteSpace($answer)) { $defaultVersion } else { $answer.Trim() }
 }
-Validate-Version $Version "Version"
-
-$settings = Get-Content $ApiSettings -Raw | ConvertFrom-Json
-
-if (-not $MinimumSupportedVersion) {
-    $oldMinimum = [string]$settings.ClientVersion.MinimumSupportedVersion
-    $answer = Read-Host "Minimum supported version [$oldMinimum]"
-    $MinimumSupportedVersion = if ([string]::IsNullOrWhiteSpace($answer)) { $oldMinimum } else { $answer.Trim() }
-}
-Validate-Version $MinimumSupportedVersion "MinimumSupportedVersion"
+Validate-Version $Version
 
 if (-not $ReleaseNotes -or $ReleaseNotes.Count -eq 0) {
     $notes = [System.Collections.Generic.List[string]]::new()
@@ -192,9 +128,7 @@ if (-not $ReleaseNotes -or $ReleaseNotes.Count -eq 0) {
 
     while ($true) {
         $note = Read-Host "Release note"
-        if ([string]::IsNullOrWhiteSpace($note)) {
-            break
-        }
+        if ([string]::IsNullOrWhiteSpace($note)) { break }
         $notes.Add($note.Trim())
     }
 
@@ -205,88 +139,58 @@ if (-not $ReleaseNotes -or $ReleaseNotes.Count -eq 0) {
     $ReleaseNotes = $notes.ToArray()
 }
 
-$msiName = "PartsPortal-Setup-$Version.msi"
-$downloadUrl = "$InstallBase/$msiName"
+$applicationVersion = "$Version.0"
+$deploymentUrl = "$InstallBase/PartsPortal.application"
 
 Write-Host ""
-Write-Host "PartsPortal release" -ForegroundColor Green
+Write-Host "PartsPortal ClickOnce release" -ForegroundColor Green
 Write-Host "  Current version : $current"
 Write-Host "  New version     : $Version"
-Write-Host "  Minimum version : $MinimumSupportedVersion"
-Write-Host "  Installer       : $msiName"
+Write-Host "  ClickOnce       : $applicationVersion"
 Write-Host "  VM              : $Vm"
 Write-Host ""
 
-$confirm = Read-Host "Build and push this release? [Y/n]"
+$confirm = Read-Host "Build and push this ClickOnce release? [Y/n]"
 if ($confirm -match "^(n|no)$") {
     Write-Host "Cancelled."
     exit 0
 }
 
-# Preserve editable files so a failed build/deploy can return the repo to clean.
 $originalClient = Get-Content $ClientProject -Raw
 $originalApiSettings = Get-Content $ApiSettings -Raw
-$originalSetup = Get-Content $SetupProject -Raw
+$originalProfile = Get-Content $ClickOnceProfile -Raw
 $originalIndex = Get-Content $InstallPage -Raw
-
-$keepLocalReleaseChanges = $false
+$keepChanges = $false
 
 try {
-    Step "Updating client version"
+    Step "Updating client and ClickOnce versions"
 
-    $text = $originalClient
-    $text = [regex]::Replace($text, "<Version>.*?</Version>", "<Version>$Version</Version>", 1)
-    $text = [regex]::Replace($text, "<AssemblyVersion>.*?</AssemblyVersion>", "<AssemblyVersion>$Version</AssemblyVersion>", 1)
-    $text = [regex]::Replace($text, "<FileVersion>.*?</FileVersion>", "<FileVersion>$Version</FileVersion>", 1)
-    $text = [regex]::Replace($text, "<InformationalVersion>.*?</InformationalVersion>", "<InformationalVersion>$Version (Released)</InformationalVersion>", 1)
-    Set-Content $ClientProject $text -Encoding UTF8
+    $clientText = $originalClient
+    $clientText = [regex]::Replace($clientText, "<Version>.*?</Version>", "<Version>$Version</Version>", 1)
+    $clientText = [regex]::Replace($clientText, "<AssemblyVersion>.*?</AssemblyVersion>", "<AssemblyVersion>$Version</AssemblyVersion>", 1)
+    $clientText = [regex]::Replace($clientText, "<FileVersion>.*?</FileVersion>", "<FileVersion>$Version</FileVersion>", 1)
+    $clientText = [regex]::Replace($clientText, "<InformationalVersion>.*?</InformationalVersion>", "<InformationalVersion>$Version (Released)</InformationalVersion>", 1)
+    Set-Content $ClientProject $clientText -Encoding UTF8
 
-    Step "Updating MSI metadata"
-
-    $vd = $originalSetup
-    $productCode = ([Guid]::NewGuid().ToString("B")).ToUpper()
-    $packageCode = ([Guid]::NewGuid().ToString("B")).ToUpper()
-
-    $vd = [regex]::Replace(
-        $vd,
-        '"OutputFilename" = "8:Release\\[^"]+\.msi"',
-        '"OutputFilename" = "8:Release\\' + $msiName + '"',
+    $profileText = $originalProfile
+    $profileText = [regex]::Replace(
+        $profileText,
+        "<ApplicationVersion>.*?</ApplicationVersion>",
+        "<ApplicationVersion>$applicationVersion</ApplicationVersion>",
         1)
+    Set-Content $ClickOnceProfile $profileText -Encoding UTF8
 
-    $vd = [regex]::Replace(
-        $vd,
-        '"ProductVersion" = "8:[^"]+"',
-        '"ProductVersion" = "8:' + $Version + '"',
-        1)
+    Step "Updating release metadata"
 
-    # This matches the setup project's GUID ProductCode, not the prerequisite ProductCode.
-    $vd = [regex]::Replace(
-        $vd,
-        '"ProductCode" = "8:\{[A-Fa-f0-9-]+\}"',
-        '"ProductCode" = "8:' + $productCode + '"',
-        1)
-
-    $vd = [regex]::Replace(
-        $vd,
-        '"PackageCode" = "8:\{[A-Fa-f0-9-]+\}"',
-        '"PackageCode" = "8:' + $packageCode + '"',
-        1)
-
-    $vd = $vd.Replace('"RemovePreviousVersions" = "11:FALSE"', '"RemovePreviousVersions" = "11:TRUE"')
-    Set-Content $SetupProject $vd -Encoding UTF8
-
-    Step "Updating release API defaults"
-
+    $settings = Get-Content $ApiSettings -Raw | ConvertFrom-Json
     $settings.ClientVersion.LatestVersion = $Version
-    $settings.ClientVersion.MinimumSupportedVersion = $MinimumSupportedVersion
-    $settings.ClientVersion.DownloadUrl = $downloadUrl
+    $settings.ClientVersion.MinimumSupportedVersion = $Version
+    $settings.ClientVersion.DownloadUrl = $deploymentUrl
     $settings.ClientVersion.ReleaseNotes = @($ReleaseNotes)
     $settings | ConvertTo-Json -Depth 10 | Set-Content $ApiSettings -Encoding UTF8
 
-    Step "Generating install page"
-
     $bullets = ($ReleaseNotes | ForEach-Object {
-        "      <li>$(Html $_)</li>"
+        "  <li>$(Html $_)</li>"
     }) -join [Environment]::NewLine
 
     $page = @"
@@ -302,278 +206,146 @@ main{width:min(680px,calc(100% - 40px));background:#111827;border:1px solid #334
 .version{color:#94a3b8;margin-bottom:24px}
 a{display:inline-block;padding:12px 18px;border-radius:10px;background:#2563eb;color:white;text-decoration:none;font-weight:600}
 li{margin:8px 0;color:#cbd5e1}
+.note{margin-top:24px;color:#94a3b8;font-size:13px;line-height:1.5}
 </style>
 </head>
 <body>
 <main>
 <h1>PartsPortal</h1>
 <div class="version">Current release: $(Html $Version)</div>
-<a href="$(Html $msiName)">Download PartsPortal $(Html $Version)</a>
+<a href="PartsPortal.application">Install / Update PartsPortal</a>
 <h2>What's new</h2>
 <ul>
 $bullets
 </ul>
+<div class="note">Install PartsPortal once with ClickOnce. Future releases are checked automatically when PartsPortal starts.</div>
 </main>
 </body>
 </html>
 "@
-
     Set-Content $InstallPage $page -Encoding UTF8
 
-    Step "Building PartsPortal"
+    Step "Building Contracts and API"
+    Run "dotnet" @("build", "src\PartsPortal.Contracts\PartsPortal.Contracts.csproj", "-c", "Release")
+    Run "dotnet" @("build", "src\PartsPortal.Api\PartsPortal.Api.csproj", "-c", "Release")
 
-    Run "dotnet" @(
-        "build",
-        "src\PartsPortal.Contracts\PartsPortal.Contracts.csproj",
-        "-c", "Release"
-    )
-
-    Run "dotnet" @(
-        "build",
-        "src\PartsPortal.Api\PartsPortal.Api.csproj",
-        "-c", "Release"
-    )
-
-    Run "dotnet" @(
-        "build",
-        "src\PartsPortal.Client\PartsPortal.Client.csproj",
-        "-c", "Release"
-    )
-
-    Step "Publishing Windows client"
-
-    Run "dotnet" @(
-        "publish",
-        "src\PartsPortal.Client\PartsPortal.Client.csproj",
-        "-c", "Release",
-        "-r", "win-x64",
-        "--self-contained", "true",
-        "-p:PublishProfile=FolderProfile"
-    )
-
-    Step "Building MSI installer"
-
-    $devenv = Find-Devenv
-    $setupLog = Join-Path $Repo "artifacts\setup-build.log"
-    $msiPath = Join-Path $Repo "PartsPortal.Setup\Release\$msiName"
-
-    New-Item -ItemType Directory -Path (Split-Path $setupLog -Parent) -Force | Out-Null
-    Remove-Item $setupLog -Force -ErrorAction SilentlyContinue
-    Remove-Item $msiPath -Force -ErrorAction SilentlyContinue
-
-    $setupStarted = Get-Date
-
-    & $devenv $Solution "/Build" "Release|Any CPU" "/Project" "PartsPortal.Setup" "/ProjectConfig" "Release" "/Out" $setupLog
-    $devenvExitCode = $LASTEXITCODE
-
-    if (-not (Test-Path $msiPath)) {
-        Write-Host ""
-        Write-Host "Visual Studio did not create the expected MSI." -ForegroundColor Red
-
-        if (Test-Path $setupLog) {
-            Get-Content $setupLog -Tail 160 | ForEach-Object { Write-Host $_ }
-        }
-
-        throw "PartsPortal.Setup did not produce $msiName."
+    Step "Publishing ClickOnce client"
+    if (Test-Path $ClickOnceOutput) {
+        Remove-Item $ClickOnceOutput -Recurse -Force
     }
 
-    $msiFile = Get-Item $msiPath
-    $freshMsi = $msiFile.LastWriteTime -ge $setupStarted.AddSeconds(-2)
-    $largeEnough = $msiFile.Length -gt 50MB
+    $msbuild = Find-MSBuild
+    Write-Host "Using MSBuild: $msbuild" -ForegroundColor DarkGray
 
-    if (-not $freshMsi -or -not $largeEnough) {
-        Write-Host ""
-        Write-Host "The MSI exists, but it does not look like a fresh complete build." -ForegroundColor Red
+    Run $msbuild @(
+        $ClientProject,
+        "/t:Publish",
+        "/p:Configuration=Release",
+        "/p:PublishProfile=ClickOnceProfile",
+        "/p:ApplicationVersion=$applicationVersion",
+        "/p:RuntimeIdentifier=win-x64",
+        "/p:SelfContained=true",
+        "/restore"
+    )
 
-        if (Test-Path $setupLog) {
-            Get-Content $setupLog -Tail 160 | ForEach-Object { Write-Host $_ }
-        }
-
-        throw "MSI validation failed."
+    $manifest = Join-Path $ClickOnceOutput "PartsPortal.application"
+    if (-not (Test-Path $manifest)) {
+        throw "ClickOnce publish did not create PartsPortal.application in $ClickOnceOutput"
     }
 
-    if ($devenvExitCode -ne 0) {
-        Write-Host ""
-        Write-Host "Visual Studio returned exit code $devenvExitCode, but a fresh $([math]::Round($msiFile.Length / 1MB, 1)) MB MSI was created. Continuing." -ForegroundColor Yellow
+    $appFiles = Join-Path $ClickOnceOutput "Application Files"
+    if (-not (Test-Path $appFiles)) {
+        throw "ClickOnce publish did not create the Application Files directory."
     }
 
-    Write-Host "MSI ready: $($msiFile.FullName)" -ForegroundColor Green
-
-    if (-not $SkipDeploy) {
-        Step "Creating release package"
+    if ($SkipDeploy) {
+        $keepChanges = $true
+        Write-Host ""
+        Write-Host "ClickOnce publish completed. Deployment skipped." -ForegroundColor Yellow
+    }
+    else {
+        Step "Creating ClickOnce release ZIP"
 
         $artifactDir = Join-Path $Repo "artifacts"
-        $packageDir = Join-Path $artifactDir "PartsPortal-$Version"
-        $zipPath = Join-Path $artifactDir "PartsPortal-Release-$Version.zip"
-
-        if (Test-Path $packageDir) {
-            Remove-Item $packageDir -Recurse -Force
-        }
-
-        New-Item -ItemType Directory -Path $packageDir -Force | Out-Null
+        $zipPath = Join-Path $artifactDir "PartsPortal-ClickOnce-$Version.zip"
         New-Item -ItemType Directory -Path $artifactDir -Force | Out-Null
 
-        Copy-Item $msiPath (Join-Path $packageDir $msiName)
-        Copy-Item $InstallPage (Join-Path $packageDir "index.html")
+        Copy-Item $InstallPage (Join-Path $ClickOnceOutput "index.html") -Force
 
         $policy = [System.Collections.Generic.List[string]]::new()
         $policy.Add("export ClientVersion__LatestVersion=$(ShellValue $Version)")
-        $policy.Add("export ClientVersion__MinimumSupportedVersion=$(ShellValue $MinimumSupportedVersion)")
-        $policy.Add("export ClientVersion__DownloadUrl=$(ShellValue $downloadUrl)")
+        $policy.Add("export ClientVersion__MinimumSupportedVersion=$(ShellValue $Version)")
+        $policy.Add("export ClientVersion__DownloadUrl=$(ShellValue $deploymentUrl)")
 
         for ($i = 0; $i -lt $ReleaseNotes.Count; $i++) {
             $policy.Add("export ClientVersion__ReleaseNotes__$i=$(ShellValue $ReleaseNotes[$i])")
         }
 
-        Write-Utf8NoBom `
-            (Join-Path $packageDir "policy.env") `
-            ($policy -join "`n")
-
-        # Generated dynamically so there is only one source file to maintain.
-        $remoteHelper = @'
-#!/bin/bash
-set -euo pipefail
-
-VERSION="$1"
-
-if [ -z "$VERSION" ]; then
-    echo "Usage: install-release.sh <version>"
-    exit 1
-fi
-
-BASE_DIR="$(cd "$(dirname "$0")" && pwd)"
-MSI_NAME="PartsPortal-Setup-$VERSION.msi"
-INSTALL_DIR="/var/www/partsportal/install"
-ENV_FILE="/etc/partsportal/partsportal-api.env"
-STAMP="$(date +%Y%m%d-%H%M%S)"
-
-ENV_BACKUP="$ENV_FILE.bak-$STAMP"
-INDEX_BACKUP="$INSTALL_DIR/index.html.bak-$STAMP"
-MSI_BACKUP="$INSTALL_DIR/$MSI_NAME.bak-$STAMP"
-
-test -f "$BASE_DIR/$MSI_NAME"
-test -f "$BASE_DIR/index.html"
-test -f "$BASE_DIR/policy.env"
-
-mkdir -p "$INSTALL_DIR"
-
-cp "$ENV_FILE" "$ENV_BACKUP"
-
-if [ -f "$INSTALL_DIR/index.html" ]; then
-    cp "$INSTALL_DIR/index.html" "$INDEX_BACKUP"
-fi
-
-if [ -f "$INSTALL_DIR/$MSI_NAME" ]; then
-    cp "$INSTALL_DIR/$MSI_NAME" "$MSI_BACKUP"
-fi
-
-rollback() {
-    trap - ERR
-    echo "Deployment failed. Restoring the previous PartsPortal server policy."
-
-    cp "$ENV_BACKUP" "$ENV_FILE"
-    chown root:partsportal "$ENV_FILE"
-    chmod 0640 "$ENV_FILE"
-
-    if [ -f "$INDEX_BACKUP" ]; then
-        cp "$INDEX_BACKUP" "$INSTALL_DIR/index.html"
-    fi
-
-    if [ -f "$MSI_BACKUP" ]; then
-        cp "$MSI_BACKUP" "$INSTALL_DIR/$MSI_NAME"
-    else
-        rm -f "$INSTALL_DIR/$MSI_NAME"
-    fi
-
-    service partsportal-api restart || true
-}
-
-trap rollback ERR
-
-install -m 0644 "$BASE_DIR/$MSI_NAME" "$INSTALL_DIR/$MSI_NAME"
-install -m 0644 "$BASE_DIR/index.html" "$INSTALL_DIR/index.html"
-
-grep -v '^export ClientVersion__' "$ENV_FILE" > "$ENV_FILE.new"
-cat "$BASE_DIR/policy.env" >> "$ENV_FILE.new"
-
-chown root:partsportal "$ENV_FILE.new"
-chmod 0640 "$ENV_FILE.new"
-mv "$ENV_FILE.new" "$ENV_FILE"
-
-service partsportal-api restart
-sleep 3
-
-curl -fsS http://127.0.0.1:5085/api/system/client-version |
-    grep -Fq "\"latestVersion\":\"$VERSION\""
-
-curl -fsSI "http://127.0.0.1/partsportal/install/$MSI_NAME" >/dev/null
-
-trap - ERR
-
-echo
-echo "PartsPortal $VERSION deployed successfully."
-'@
-
-        Write-Utf8NoBom `
-            (Join-Path $packageDir "install-release.sh") `
-            $remoteHelper
+        Write-Utf8NoBom (Join-Path $ClickOnceOutput "policy.env") ($policy -join "`n")
 
         if (Test-Path $zipPath) {
             Remove-Item $zipPath -Force
         }
 
-        Compress-Archive `
-            -Path (Join-Path $packageDir "*") `
-            -DestinationPath $zipPath `
-            -Force
+        Compress-Archive -Path (Join-Path $ClickOnceOutput "*") -DestinationPath $zipPath -Force
 
-        Step "Uploading release package"
-
-        $remoteZip = "{0}@{1}:~/PartsPortal-Release-{2}.zip" -f $VmUser, $Vm, $Version
+        Step "Uploading ClickOnce release"
+        $remoteZip = "{0}@{1}:~/PartsPortal-ClickOnce-{2}.zip" -f $VmUser, $Vm, $Version
         Run "scp" @($zipPath, $remoteZip)
 
-        Step "Deploying release on VM"
+        Step "Deploying ClickOnce release on VM"
 
-        $remoteCommand =
-            "rm -rf ~/partsportal-release-$Version && " +
-            "mkdir -p ~/partsportal-release-$Version && " +
-            "unzip -q -o ~/PartsPortal-Release-$Version.zip -d ~/partsportal-release-$Version && " +
-            "sudo bash ~/partsportal-release-$Version/install-release.sh $Version && " +
-            "rm -rf ~/partsportal-release-$Version ~/PartsPortal-Release-$Version.zip"
+        $remote = @"
+set -e
+rm -rf ~/partsportal-clickonce-$Version
+mkdir -p ~/partsportal-clickonce-$Version
+unzip -q -o ~/PartsPortal-ClickOnce-$Version.zip -d ~/partsportal-clickonce-$Version
 
-        Run "ssh" @("-t", "$VmUser@$Vm", $remoteCommand)
+sudo mkdir -p /var/www/partsportal/install
+sudo cp /etc/partsportal/partsportal-api.env /etc/partsportal/partsportal-api.env.bak-clickonce
+sudo rm -rf /var/www/partsportal/install/Application\ Files
+sudo cp -R ~/partsportal-clickonce-$Version/. /var/www/partsportal/install/
 
-        Step "Verifying deployment from workstation"
+sudo sh -c "grep -v '^export ClientVersion__' /etc/partsportal/partsportal-api.env > /etc/partsportal/partsportal-api.env.new"
+sudo sh -c "cat /var/www/partsportal/install/policy.env >> /etc/partsportal/partsportal-api.env.new"
+sudo chown root:partsportal /etc/partsportal/partsportal-api.env.new
+sudo chmod 640 /etc/partsportal/partsportal-api.env.new
+sudo mv /etc/partsportal/partsportal-api.env.new /etc/partsportal/partsportal-api.env
+sudo rm -f /var/www/partsportal/install/policy.env
+sudo chown -R root:root /var/www/partsportal/install
+sudo find /var/www/partsportal/install -type d -exec chmod 755 {} \;
+sudo find /var/www/partsportal/install -type f -exec chmod 644 {} \;
+
+sudo service partsportal-api restart
+
+rm -rf ~/partsportal-clickonce-$Version ~/PartsPortal-ClickOnce-$Version.zip
+"@
+
+        Run "ssh" @("-t", "$VmUser@$Vm", $remote)
+
+        Step "Verifying ClickOnce deployment"
+        Start-Sleep -Seconds 3
+
+        $head = Invoke-WebRequest $deploymentUrl -Method Head -TimeoutSec 20
+        if ($head.StatusCode -ne 200) {
+            throw "PartsPortal.application returned HTTP $($head.StatusCode)."
+        }
 
         $live = Invoke-RestMethod $VersionApi -TimeoutSec 10
-
         if ([string]$live.latestVersion -ne $Version) {
-            throw "Server reports latestVersion '$($live.latestVersion)' instead of '$Version'."
+            throw "Version API reports '$($live.latestVersion)' instead of '$Version'."
         }
 
-        $head = Invoke-WebRequest $downloadUrl -Method Head -TimeoutSec 20
-
-        if ($head.StatusCode -ne 200) {
-            throw "Installer URL returned HTTP $($head.StatusCode)."
-        }
-
-        $keepLocalReleaseChanges = $true
-    }
-    else {
-        $keepLocalReleaseChanges = $true
-        Write-Host ""
-        Write-Host "Build complete. Server deployment skipped." -ForegroundColor Yellow
+        $keepChanges = $true
     }
 
     if (-not $SkipGit) {
         Step "Committing and pushing Git"
-
         Run "git" @("add", "-A")
 
         & git diff --cached --quiet
-
         if ($LASTEXITCODE -ne 0) {
-            Run "git" @("commit", "-m", "Release PartsPortal $Version")
+            Run "git" @("commit", "-m", "Release PartsPortal $Version via ClickOnce")
         }
 
         Run "git" @("push")
@@ -581,26 +353,23 @@ echo "PartsPortal $VERSION deployed successfully."
 
     Write-Host ""
     Write-Host "========================================" -ForegroundColor Green
-    Write-Host " PartsPortal $Version release complete" -ForegroundColor Green
+    Write-Host " PartsPortal $Version ClickOnce release complete" -ForegroundColor Green
     Write-Host "========================================" -ForegroundColor Green
-
-    if (-not $SkipDeploy) {
-        Write-Host "Download: $downloadUrl"
-    }
+    Write-Host "Install: $deploymentUrl"
 }
 catch {
-    if (-not $keepLocalReleaseChanges) {
+    if (-not $keepChanges) {
         Write-Host ""
-        Write-Host "Release failed before completion. Restoring local version files..." -ForegroundColor Yellow
+        Write-Host "Release failed. Restoring local release files..." -ForegroundColor Yellow
 
         Set-Content $ClientProject $originalClient -Encoding UTF8
         Set-Content $ApiSettings $originalApiSettings -Encoding UTF8
-        Set-Content $SetupProject $originalSetup -Encoding UTF8
+        Set-Content $ClickOnceProfile $originalProfile -Encoding UTF8
         Set-Content $InstallPage $originalIndex -Encoding UTF8
     }
 
     Write-Host ""
-    Write-Host "PUSH UPDATE FAILED" -ForegroundColor Red
+    Write-Host "CLICKONCE RELEASE FAILED" -ForegroundColor Red
     Write-Host $_.Exception.Message -ForegroundColor Red
     throw
 }

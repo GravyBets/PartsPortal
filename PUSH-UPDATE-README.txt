@@ -1,52 +1,57 @@
-PARTSPORTAL PUSH UPDATE
-=======================
+PARTSPORTAL CLICKONCE PUSH UPDATE
+================================
 
-Put Push-Update.ps1 and Push-Update.cmd in the ROOT of the PartsPortal repo,
-next to PartsPortal.sln.
+PartsPortal now uses ClickOnce for client installation and updates.
 
-Easiest use:
-  Double-click Push-Update.cmd
-
-Or from PowerShell:
+Normal release:
   .\Push-Update.ps1
 
-It will ask for:
+Or double-click:
+  Push-Update.cmd
+
+The script asks for:
   1. New PartsPortal version (defaults to the next patch)
-  2. Minimum supported version
-  3. Release notes (one per line)
-  4. One final confirmation
+  2. Release notes
+  3. One final confirmation
 
 Then it automatically:
-  - Updates PartsPortal.Client version metadata
-  - Updates the MSI ProductCode / PackageCode and installer version
-  - Keeps the existing MSI UpgradeCode
+  - Updates PartsPortal assembly/file/informational versions
+  - Updates the ClickOnce ApplicationVersion
   - Updates API release metadata
-  - Rebuilds the download page
+  - Rebuilds the internal download page
   - Builds Contracts, API, and Client
-  - Publishes the self-contained Windows client
-  - Builds PartsPortal.Setup in Release
-  - Creates ONE release ZIP
+  - Publishes a self-contained win-x64 ClickOnce deployment with MSBuild
+  - Packages the full ClickOnce deployment folder
   - SCPs it to 10.130.206.135
-  - Installs the MSI/download page on nginx
+  - Copies the deployment manifest and versioned application files into nginx
   - Updates ONLY ClientVersion__* values in the VM env file
-  - Does NOT replace or expose the PartsPortal DB password
   - Restarts partsportal-api
-  - Verifies the live API version
-  - Verifies the MSI URL
+  - Verifies the live version endpoint
+  - Verifies PartsPortal.application is downloadable
   - Commits and pushes the release to Git
-
-The VM helper keeps backups of the prior environment/index/MSI and rolls the
-server policy back if deployment verification fails.
 
 Useful:
   .\Push-Update.ps1 -SkipDeploy
   .\Push-Update.ps1 -SkipGit
 
 Example:
-  .\Push-Update.ps1 -Version 3.2.7 -ReleaseNotes @(
-      "Fixed automatic update notifications.",
-      "Finished PartsPortal branding."
+  .\Push-Update.ps1 -Version 3.2.10 -ReleaseNotes @(
+      "Converted PartsPortal deployment to ClickOnce.",
+      "Future releases update automatically at app startup."
   )
 
-The script intentionally refuses to start when Git has uncommitted changes so
-unrelated work cannot accidentally get swept into a release commit.
+ONE-TIME MSI -> CLICKONCE TRANSITION
+-----------------------------------
+The existing MSI-installed PartsPortal and the ClickOnce-installed PartsPortal
+are separate Windows installations. For the first ClickOnce release only:
+
+  1. Publish the ClickOnce release.
+  2. Uninstall the old MSI PartsPortal entry.
+  3. Open http://10.130.206.135/partsportal/install/
+  4. Install PartsPortal from PartsPortal.application.
+
+PartsPortal user settings are stored under the user's AppData PartsPortal folder,
+so this deployment transition does not intentionally remove those settings.
+
+After that first ClickOnce install, later ClickOnce releases are detected at app
+startup by ClickOnce itself.

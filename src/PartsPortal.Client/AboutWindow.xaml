@@ -78,24 +78,14 @@
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
-                    <TextBlock x:Name="UpdateStatusText"
+                    <TextBlock Text="Updates are managed automatically by ClickOnce."
                                VerticalAlignment="Center"
                                Foreground="{DynamicResource TextSecondary}"
                                FontSize="12"/>
 
-                    <Button x:Name="CheckUpdatesButton"
-                            Grid.Column="1"
-                            Content="Check for Updates"
-                            Height="38"
-                            Padding="16,0"
-                            Margin="0,0,10,0"
-                            Style="{StaticResource SecondaryButtonStyle}"
-                            Click="CheckUpdates_Click"/>
-
-                    <Button Grid.Column="2"
+                    <Button Grid.Column="1"
                             Content="Close"
                             Width="130"
                             Height="38"
