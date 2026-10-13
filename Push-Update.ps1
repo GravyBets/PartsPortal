@@ -88,6 +88,30 @@ function Write-TextWithRetry(
         }
     }
 }
+function Remove-PathWithRetry(
+    [string]$Path,
+    [int]$Attempts = 12,
+    [int]$DelayMilliseconds = 500
+) {
+    if (-not (Test-Path $Path)) {
+        return
+    }
+
+    for ($attempt = 1; $attempt -le $Attempts; $attempt++) {
+        try {
+            Remove-Item $Path -Recurse -Force -ErrorAction Stop
+            return
+        }
+        catch {
+            if ($attempt -eq $Attempts) {
+                throw "Could not clean '$Path' after $Attempts attempts. Close Visual Studio and retry."
+            }
+
+            Write-Host "Build output is temporarily locked; retrying ($attempt/$Attempts): $Path" -ForegroundColor Yellow
+            Start-Sleep -Milliseconds $DelayMilliseconds
+        }
+    }
+}
 
 function Find-MSBuild {
     # ClickOnce publishing requires Visual Studio MSBuild.
@@ -270,10 +294,18 @@ $bullets
     Run "dotnet" @("build", "src\PartsPortal.Contracts\PartsPortal.Contracts.csproj", "-c", "Release")
     Run "dotnet" @("build", "src\PartsPortal.Api\PartsPortal.Api.csproj", "-c", "Release")
 
+    Step "Cleaning client build output"
+
+    # Removed manifests can survive in stale obj/bin output, so ClickOnce must start clean.
+    & dotnet build-server shutdown | Out-Null
+
+    $clientBin = Join-Path $Repo "src\PartsPortal.Client\bin"
+    $clientObj = Join-Path $Repo "src\PartsPortal.Client\obj"
+
+    Remove-PathWithRetry $clientBin
+    Remove-PathWithRetry $clientObj
+
     Step "Publishing ClickOnce client"
-    if (Test-Path $ClickOnceOutput) {
-        Remove-Item $ClickOnceOutput -Recurse -Force
-    }
 
     $msbuild = Find-MSBuild
     Write-Host "Using MSBuild: $msbuild" -ForegroundColor DarkGray
@@ -298,6 +330,23 @@ $bullets
     if (-not (Test-Path $appFiles)) {
         throw "ClickOnce publish did not create the Application Files directory."
     }
+
+    Step "Validating generated ClickOnce manifest"
+
+    $generatedAppManifest = Get-ChildItem $ClickOnceOutput -Recurse -Filter "PartsPortal.exe.manifest" -File -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+
+    if (-not $generatedAppManifest) {
+        throw "ClickOnce publish did not create PartsPortal.exe.manifest."
+    }
+
+    $generatedManifestText = Get-Content $generatedAppManifest.FullName -Raw
+    $requestedPrivilegesCount = [regex]::Matches($generatedManifestText, "<requestedPrivileges\b", [System.Text.RegularExpressions.RegexOptions]::IgnoreCase).Count
+
+    if ($requestedPrivilegesCount -ne 1) {
+        throw "Generated ClickOnce manifest is invalid: expected exactly 1 requestedPrivileges element, found $requestedPrivilegesCount. Deployment was stopped before upload."
+    }
+
+    Write-Host "Manifest validated: exactly one requestedPrivileges element." -ForegroundColor Green
 
     if ($SkipDeploy) {
         $keepChanges = $true
