@@ -5,10 +5,10 @@
     <TargetFramework>net8.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Version>3.2.8</Version>
-    <AssemblyVersion>3.2.8</AssemblyVersion>
-    <FileVersion>3.2.8</FileVersion>
-    <InformationalVersion>3.2.8 (Released)</InformationalVersion>
+    <Version>3.2.9</Version>
+    <AssemblyVersion>3.2.9</AssemblyVersion>
+    <FileVersion>3.2.9</FileVersion>
+    <InformationalVersion>3.2.9 (Released)</InformationalVersion>
     <UseWPF>true</UseWPF>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Assets\PartsPortalIcon.ico</ApplicationIcon>
@@ -49,4 +49,5 @@
   </ItemGroup>
 
 </Project>
+
 

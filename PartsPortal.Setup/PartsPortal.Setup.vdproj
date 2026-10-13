@@ -57,7 +57,7 @@
         "DisplayName" = "8:Release"
         "IsDebugOnly" = "11:FALSE"
         "IsReleaseOnly" = "11:TRUE"
-        "OutputFilename" = "8:Release\\PartsPortal-Setup-3.2.8.msi"
+        "OutputFilename" = "8:Release\\PartsPortal-Setup-3.2.9.msi"
         "PackageFilesAs" = "3:2"
         "PackageFileSize" = "3:-2147483648"
         "CabType" = "3:1"
@@ -212,15 +212,15 @@
         {
         "Name" = "8:Microsoft Visual Studio"
         "ProductName" = "8:PartsPortal"
-        "ProductCode" = "8:{4566F29E-A0D1-4CC1-8AFE-1357B049E677}"
-        "PackageCode" = "8:{7C145350-B028-43C0-A337-8B894C8DF33A}"
+        "ProductCode" = "8:{F4F9207F-EADC-4F3A-9C78-A56159103EA8}"
+        "PackageCode" = "8:{4D2C0BC9-0B2F-4C82-BB8C-A558CED62AD4}"
         "UpgradeCode" = "8:{7E8E1151-E15D-4976-829E-DE9F848649F2}"
         "AspNetVersion" = "8:2.0.50727.0"
         "RestartWWWService" = "11:FALSE"
         "RemovePreviousVersions" = "11:TRUE"
         "DetectNewerInstalledVersion" = "11:TRUE"
         "InstallAllUsers" = "11:TRUE"
-        "ProductVersion" = "8:3.2.8"
+        "ProductVersion" = "8:3.2.9"
         "Manufacturer" = "8:Radio Shop"
         "ARPHELPTELEPHONE" = "8:"
         "ARPHELPLINK" = "8:"
@@ -793,4 +793,5 @@
         }
     }
 }
+
 
