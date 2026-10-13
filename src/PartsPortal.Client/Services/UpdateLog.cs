@@ -1,3 +1,5 @@
+using System.IO;
+
 namespace PartsPortal.Services;
 
 public static class UpdateLog
