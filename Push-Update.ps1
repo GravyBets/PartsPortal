@@ -65,16 +65,21 @@ function Write-Utf8NoBom([string]$Path, [string]$Content) {
 }
 
 function Find-MSBuild {
-    $cmd = Get-Command "msbuild.exe" -ErrorAction SilentlyContinue
-    if ($cmd -and (Test-Path $cmd.Source)) {
-        return $cmd.Source
-    }
+    # ClickOnce publishing requires Visual Studio MSBuild.
+    # Ignore SQL Server Management Studio MSBuild because it cannot resolve Microsoft.NET.Sdk.
 
-    $vswhere = Join-Path ([Environment]::GetFolderPath("ProgramFilesX86")) "Microsoft Visual Studio\Installer\vswhere.exe"
-    if (Test-Path $vswhere) {
-        $found = & $vswhere -latest -prerelease -products * -find "MSBuild\Current\Bin\MSBuild.exe" 2>$null |
-            Select-Object -First 1
+    $vswhereCandidates = @(
+        (Join-Path ([Environment]::GetFolderPath("ProgramFilesX86")) "Microsoft Visual Studio\Installer\vswhere.exe"),
+        (Join-Path ([Environment]::GetFolderPath("ProgramFiles")) "Microsoft Visual Studio\Installer\vswhere.exe")
+    ) | Select-Object -Unique
+
+    foreach ($vswhere in $vswhereCandidates) {
+        if (-not (Test-Path $vswhere)) { continue }
+
+        $found = & $vswhere -latest -prerelease -products * -requires Microsoft.Component.MSBuild -find "MSBuild\Current\Bin\MSBuild.exe" 2>$null | Select-Object -First 1
+
         if ($found -and (Test-Path $found)) {
+            Write-Host "Using Visual Studio MSBuild: $found" -ForegroundColor DarkGray
             return $found
         }
     }
@@ -88,15 +93,25 @@ function Find-MSBuild {
         if (-not (Test-Path $root)) { continue }
 
         $found = Get-ChildItem $root -Filter "MSBuild.exe" -File -Recurse -ErrorAction SilentlyContinue |
-            Where-Object { $_.FullName -match "MSBuild\\Current\\Bin\\MSBuild\.exe$" } |
+            Where-Object {
+                $_.FullName -match "Microsoft Visual Studio" -and
+                $_.FullName -match "MSBuild\\Current\\Bin\\MSBuild\.exe$"
+            } |
             Select-Object -First 1
 
         if ($found) {
+            Write-Host "Using Visual Studio MSBuild: $($found.FullName)" -ForegroundColor DarkGray
             return $found.FullName
         }
     }
 
-    throw "MSBuild.exe was not found."
+    $cmd = Get-Command "msbuild.exe" -ErrorAction SilentlyContinue
+    if ($cmd -and (Test-Path $cmd.Source) -and $cmd.Source -match "Microsoft Visual Studio") {
+        Write-Host "Using Visual Studio MSBuild: $($cmd.Source)" -ForegroundColor DarkGray
+        return $cmd.Source
+    }
+
+    throw "Visual Studio MSBuild.exe was not found. SQL Server Management Studio MSBuild is intentionally ignored."
 }
 
 Set-Location $Repo
