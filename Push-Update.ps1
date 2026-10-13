@@ -357,7 +357,7 @@ sleep 3
 
 curl -fsS http://127.0.0.1:5085/api/system/client-version |
     grep -Fq "\"latestVersion\":\"$VERSION\""
-curl -fsSI http://127.0.1/partsportal/install/PartsPortal.application >/dev/null
+curl -fsSI http://127.0.0.1/partsportal/install/PartsPortal.application >/dev/null
 
 trap - ERR
 echo
