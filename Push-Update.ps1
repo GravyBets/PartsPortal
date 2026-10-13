@@ -64,6 +64,31 @@ function Write-Utf8NoBom([string]$Path, [string]$Content) {
     [System.IO.File]::WriteAllText($Path, $Content, $encoding)
 }
 
+
+function Write-TextWithRetry(
+    [string]$Path,
+    [string]$Content,
+    [int]$Attempts = 12,
+    [int]$DelayMilliseconds = 500
+) {
+    $encoding = New-Object System.Text.UTF8Encoding($true)
+
+    for ($attempt = 1; $attempt -le $Attempts; $attempt++) {
+        try {
+            [System.IO.File]::WriteAllText($Path, $Content, $encoding)
+            return
+        }
+        catch [System.IO.IOException] {
+            if ($attempt -eq $Attempts) {
+                throw "Could not update '$Path' after $Attempts attempts because another process still has it locked."
+            }
+
+            Write-Host "File is temporarily locked; retrying ($attempt/$Attempts): $Path" -ForegroundColor Yellow
+            Start-Sleep -Milliseconds $DelayMilliseconds
+        }
+    }
+}
+
 function Find-MSBuild {
     # ClickOnce publishing requires Visual Studio MSBuild.
     # Ignore SQL Server Management Studio MSBuild because it cannot resolve Microsoft.NET.Sdk.
@@ -185,7 +210,7 @@ try {
     $clientText = [regex]::Replace($clientText, "<AssemblyVersion>.*?</AssemblyVersion>", "<AssemblyVersion>$Version</AssemblyVersion>", 1)
     $clientText = [regex]::Replace($clientText, "<FileVersion>.*?</FileVersion>", "<FileVersion>$Version</FileVersion>", 1)
     $clientText = [regex]::Replace($clientText, "<InformationalVersion>.*?</InformationalVersion>", "<InformationalVersion>$Version (Released)</InformationalVersion>", 1)
-    Set-Content $ClientProject $clientText -Encoding UTF8
+    Write-TextWithRetry $ClientProject $clientText
 
     $profileText = $originalProfile
     $profileText = [regex]::Replace(
@@ -193,7 +218,7 @@ try {
         "<ApplicationVersion>.*?</ApplicationVersion>",
         "<ApplicationVersion>$applicationVersion</ApplicationVersion>",
         1)
-    Set-Content $ClickOnceProfile $profileText -Encoding UTF8
+    Write-TextWithRetry $ClickOnceProfile $profileText
 
     Step "Updating release metadata"
 
@@ -202,7 +227,8 @@ try {
     $settings.ClientVersion.MinimumSupportedVersion = $Version
     $settings.ClientVersion.DownloadUrl = $deploymentUrl
     $settings.ClientVersion.ReleaseNotes = @($ReleaseNotes)
-    $settings | ConvertTo-Json -Depth 10 | Set-Content $ApiSettings -Encoding UTF8
+    $settingsJson = $settings | ConvertTo-Json -Depth 10
+    Write-TextWithRetry $ApiSettings $settingsJson
 
     $bullets = ($ReleaseNotes | ForEach-Object {
         "  <li>$(Html $_)</li>"
@@ -238,7 +264,7 @@ $bullets
 </body>
 </html>
 "@
-    Set-Content $InstallPage $page -Encoding UTF8
+    Write-TextWithRetry $InstallPage $page
 
     Step "Building Contracts and API"
     Run "dotnet" @("build", "src\PartsPortal.Contracts\PartsPortal.Contracts.csproj", "-c", "Release")
@@ -431,10 +457,10 @@ catch {
         Write-Host ""
         Write-Host "Release failed. Restoring local release files..." -ForegroundColor Yellow
 
-        Set-Content $ClientProject $originalClient -Encoding UTF8
-        Set-Content $ApiSettings $originalApiSettings -Encoding UTF8
-        Set-Content $ClickOnceProfile $originalProfile -Encoding UTF8
-        Set-Content $InstallPage $originalIndex -Encoding UTF8
+        Write-TextWithRetry $ClientProject $originalClient
+        Write-TextWithRetry $ApiSettings $originalApiSettings
+        Write-TextWithRetry $ClickOnceProfile $originalProfile
+        Write-TextWithRetry $InstallPage $originalIndex
     }
 
     Write-Host ""
