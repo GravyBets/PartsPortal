@@ -279,11 +279,7 @@ $bullets
         Write-Host "ClickOnce publish completed. Deployment skipped." -ForegroundColor Yellow
     }
     else {
-        Step "Creating ClickOnce release ZIP"
-
-        $artifactDir = Join-Path $Repo "artifacts"
-        $zipPath = Join-Path $artifactDir "PartsPortal-ClickOnce-$Version.zip"
-        New-Item -ItemType Directory -Path $artifactDir -Force | Out-Null
+        Step "Preparing ClickOnce deployment"
 
         Copy-Item $InstallPage (Join-Path $ClickOnceOutput "index.html") -Force
 
@@ -298,45 +294,103 @@ $bullets
 
         Write-Utf8NoBom (Join-Path $ClickOnceOutput "policy.env") ($policy -join "`n")
 
-        if (Test-Path $zipPath) {
-            Remove-Item $zipPath -Force
+        $remoteStage = "/home/$VmUser/partsportal-clickonce-$Version"
+        $remoteScript = "/home/$VmUser/partsportal-clickonce-deploy-$PID.sh"
+        $localScript = Join-Path $env:TEMP "partsportal-clickonce-deploy-$PID.sh"
+
+        $deployScript = @'
+#!/bin/bash
+set -euo pipefail
+
+VERSION="$1"
+STAGE_DIR="$2"
+INSTALL_DIR="/var/www/partsportal/install"
+ENV_FILE="/etc/partsportal/partsportal-api.env"
+STAMP="$(date +%Y%m%d-%H%M%S)"
+ENV_BACKUP="$ENV_FILE.bak-clickonce-$STAMP"
+BACKUP_DIR="/var/www/partsportal/install-backup"
+
+test -f "$STAGE_DIR/PartsPortal.application"
+test -d "$STAGE_DIR/Application Files"
+test -f "$STAGE_DIR/index.html"
+test -f "$STAGE_DIR/policy.env"
+
+cp "$ENV_FILE" "$ENV_BACKUP"
+rm -rf "$BACKUP_DIR"
+mkdir -p "$BACKUP_DIR"
+if [ -d "$INSTALL_DIR" ]; then
+    cp -a "$INSTALL_DIR/." "$BACKUP_DIR/"
+fi
+
+rollback() {
+    trap - ERR
+    echo "ClickOnce deployment failed. Restoring previous server files."
+    cp "$ENV_BACKUP" "$ENV_FILE"
+    rm -rf "$INSTALL_DIR"
+    mkdir -p "$INSTALL_DIR"
+    if [ -d "$BACKUP_DIR" ]; then
+        cp -a "$BACKUP_DIR/." "$INSTALL_DIR/"
+    fi
+    chown root:partsportal "$ENV_FILE"
+    chmod 0640 "$ENV_FILE"
+    service partsportal-api restart || true
+}
+
+trap rollback ERR
+
+mkdir -p "$INSTALL_DIR"
+rm -rf "$INSTALL_DIR/Application Files"
+cp -a "$STAGE_DIR/." "$INSTALL_DIR/"
+
+grep -v '^export ClientVersion__' "$ENV_FILE" > "$ENV_FILE.new"
+cat "$INSTALL_DIR/policy.env" >> "$ENV_FILE.new"
+chown root:partsportal "$ENV_FILE.new"
+chmod 0640 "$ENV_FILE.new"
+mv "$ENV_FILE.new" "$ENV_FILE"
+rm -f "$INSTALL_DIR/policy.env"
+
+chown -R root:root "$INSTALL_DIR"
+chmod -R a+rX "$INSTALL_DIR"
+
+service partsportal-api restart
+sleep 3
+
+curl -fsS http://127.0.0.1:5085/api/system/client-version |
+    grep -Fq "\"latestVersion\":\"$VERSION\""
+curl -fsSI http://127.0.1/partsportal/install/PartsPortal.application >/dev/null
+
+trap - ERR
+echo
+echo "PartsPortal $VERSION ClickOnce deployment completed successfully."
+'@
+
+        Write-Utf8NoBom $localScript $deployScript
+
+        try {
+            Step "Preparing VM staging folder"
+            Run "ssh" @("$VmUser@$Vm", "rm -rf $remoteStage && mkdir -p $remoteStage")
+
+            Step "Uploading ClickOnce release"
+            foreach ($item in Get-ChildItem $ClickOnceOutput) {
+                $target = "{0}@{1}:{2}/" -f $VmUser, $Vm, $remoteStage
+
+                if ($item.PSIsContainer) {
+                    Run "scp" @("-r", $item.FullName, $target)
+                }
+                else {
+                    Run "scp" @($item.FullName, $target)
+                }
+            }
+
+            Run "scp" @($localScript, ("{0}@{1}:{2}" -f $VmUser, $Vm, $remoteScript))
+
+            Step "Deploying ClickOnce release on VM"
+            $deployCommand = "sudo bash $remoteScript '$Version' '$remoteStage' && rm -rf $remoteStage $remoteScript"
+            Run "ssh" @("-t", "$VmUser@$Vm", $deployCommand)
         }
-
-        Compress-Archive -Path (Join-Path $ClickOnceOutput "*") -DestinationPath $zipPath -Force
-
-        Step "Uploading ClickOnce release"
-        $remoteZip = "{0}@{1}:~/PartsPortal-ClickOnce-{2}.zip" -f $VmUser, $Vm, $Version
-        Run "scp" @($zipPath, $remoteZip)
-
-        Step "Deploying ClickOnce release on VM"
-
-        $remote = @"
-set -e
-rm -rf ~/partsportal-clickonce-$Version
-mkdir -p ~/partsportal-clickonce-$Version
-unzip -q -o ~/PartsPortal-ClickOnce-$Version.zip -d ~/partsportal-clickonce-$Version
-
-sudo mkdir -p /var/www/partsportal/install
-sudo cp /etc/partsportal/partsportal-api.env /etc/partsportal/partsportal-api.env.bak-clickonce
-sudo rm -rf /var/www/partsportal/install/Application\ Files
-sudo cp -R ~/partsportal-clickonce-$Version/. /var/www/partsportal/install/
-
-sudo sh -c "grep -v '^export ClientVersion__' /etc/partsportal/partsportal-api.env > /etc/partsportal/partsportal-api.env.new"
-sudo sh -c "cat /var/www/partsportal/install/policy.env >> /etc/partsportal/partsportal-api.env.new"
-sudo chown root:partsportal /etc/partsportal/partsportal-api.env.new
-sudo chmod 640 /etc/partsportal/partsportal-api.env.new
-sudo mv /etc/partsportal/partsportal-api.env.new /etc/partsportal/partsportal-api.env
-sudo rm -f /var/www/partsportal/install/policy.env
-sudo chown -R root:root /var/www/partsportal/install
-sudo find /var/www/partsportal/install -type d -exec chmod 755 {} \;
-sudo find /var/www/partsportal/install -type f -exec chmod 644 {} \;
-
-sudo service partsportal-api restart
-
-rm -rf ~/partsportal-clickonce-$Version ~/PartsPortal-ClickOnce-$Version.zip
-"@
-
-        Run "ssh" @("-t", "$VmUser@$Vm", $remote)
+        finally {
+            Remove-Item $localScript -Force -ErrorAction SilentlyContinue
+        }
 
         Step "Verifying ClickOnce deployment"
         Start-Sleep -Seconds 3
