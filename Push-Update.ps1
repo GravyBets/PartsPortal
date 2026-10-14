@@ -509,9 +509,12 @@ $bullets
 
         Write-Utf8NoBom (Join-Path $ClickOnceOutput "policy.env") ($policy -join "`n")
 
-        $remoteStage = "/home/$VmUser/partsportal-clickonce-$Version"
-        $remoteScript = "/home/$VmUser/partsportal-clickonce-deploy-$PID.sh"
+        $remoteStage = "/home/$VmUser/partsportal-clickonce-$Version-$PID"
+        $remoteBundle = "/home/$VmUser/partsportal-clickonce-$Version-$PID.tar.gz"
         $localScript = Join-Path $env:TEMP "partsportal-clickonce-deploy-$PID.sh"
+        $bundleRoot = Join-Path $env:TEMP "partsportal-clickonce-bundle-$PID"
+        $bundleRelease = Join-Path $bundleRoot "release"
+        $localBundle = Join-Path $env:TEMP "partsportal-clickonce-$Version-$PID.tar.gz"
 
         $deployScript = @'
 #!/bin/bash
@@ -582,29 +585,28 @@ echo "PartsPortal $VERSION ClickOnce deployment completed successfully."
         Write-Utf8NoBom $localScript $deployScript
 
         try {
-            Step "Preparing VM staging folder"
-            Run "ssh" @("$VmUser@$Vm", "rm -rf $remoteStage && mkdir -p $remoteStage")
+            Step "Packaging ClickOnce release for upload"
 
-            Step "Uploading ClickOnce release"
-            foreach ($item in Get-ChildItem $ClickOnceOutput) {
-                $target = "{0}@{1}:{2}/" -f $VmUser, $Vm, $remoteStage
+            Remove-Item $bundleRoot -Recurse -Force -ErrorAction SilentlyContinue
+            Remove-Item $localBundle -Force -ErrorAction SilentlyContinue
 
-                if ($item.PSIsContainer) {
-                    Run "scp" @("-r", $item.FullName, $target)
-                }
-                else {
-                    Run "scp" @($item.FullName, $target)
-                }
-            }
+            New-Item -ItemType Directory -Force -Path $bundleRelease | Out-Null
+            Copy-Item (Join-Path $ClickOnceOutput "*") $bundleRelease -Recurse -Force
+            Copy-Item $localScript (Join-Path $bundleRoot "deploy.sh") -Force
 
-            Run "scp" @($localScript, ("{0}@{1}:{2}" -f $VmUser, $Vm, $remoteScript))
+            Run "tar" @("-czf", $localBundle, "-C", $bundleRoot, ".")
+
+            Step "Uploading ClickOnce release (single archive)"
+            Run "scp" @($localBundle, ("{0}@{1}:{2}" -f $VmUser, $Vm, $remoteBundle))
 
             Step "Deploying ClickOnce release on VM"
-            $deployCommand = "sudo bash $remoteScript '$Version' '$remoteStage' && rm -rf $remoteStage $remoteScript"
+            $deployCommand = "rm -rf '$remoteStage' && mkdir -p '$remoteStage' && tar -xzf '$remoteBundle' -C '$remoteStage' && sudo bash '$remoteStage/deploy.sh' '$Version' '$remoteStage/release'; rc=`$?; rm -rf '$remoteStage' '$remoteBundle'; exit `$rc"
             Run "ssh" @("-t", "$VmUser@$Vm", $deployCommand)
         }
         finally {
             Remove-Item $localScript -Force -ErrorAction SilentlyContinue
+            Remove-Item $localBundle -Force -ErrorAction SilentlyContinue
+            Remove-Item $bundleRoot -Recurse -Force -ErrorAction SilentlyContinue
         }
 
         Step "Verifying ClickOnce deployment"
