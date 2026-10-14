@@ -20,4 +20,20 @@
     </windowsSettings>
   </application>
 
+  <trustInfo xmlns="urn:schemas-microsoft-com:asm.v2">
+    <security>
+      <applicationRequestMinimum>
+        <PermissionSet ID="Custom"
+                       SameSite="site"
+                       Unrestricted="true" />
+        <defaultAssemblyRequest permissionSetReference="Custom" />
+      </applicationRequestMinimum>
+
+      <requestedPrivileges xmlns="urn:schemas-microsoft-com:asm.v3">
+        <requestedExecutionLevel level="asInvoker"
+                                 uiAccess="false" />
+      </requestedPrivileges>
+    </security>
+  </trustInfo>
+
 </assembly>
