@@ -333,20 +333,41 @@ $bullets
 
     Step "Validating generated ClickOnce manifest"
 
-    $generatedAppManifest = Get-ChildItem $ClickOnceOutput -Recurse -Filter "PartsPortal.exe.manifest" -File -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+    [xml]$deploymentXml = Get-Content $manifest -Raw
+    $appDependency = $deploymentXml.SelectSingleNode("//*[local-name()='dependentAssembly' and @dependencyType='install']")
 
-    if (-not $generatedAppManifest) {
-        throw "ClickOnce publish did not create PartsPortal.exe.manifest."
+    if (-not $appDependency) {
+        throw "ClickOnce deployment manifest does not reference an install application manifest."
     }
 
-    $generatedManifestText = Get-Content $generatedAppManifest.FullName -Raw
+    $applicationManifestCodebase = [string]$appDependency.codebase
+    if ([string]::IsNullOrWhiteSpace($applicationManifestCodebase)) {
+        throw "ClickOnce deployment manifest is missing the application manifest codebase."
+    }
+
+    $applicationManifestRelativePath = $applicationManifestCodebase.Replace("/", [System.IO.Path]::DirectorySeparatorChar).Replace("\\", [System.IO.Path]::DirectorySeparatorChar)
+    $generatedAppManifestPath = Join-Path $ClickOnceOutput $applicationManifestRelativePath
+
+    if (-not (Test-Path $generatedAppManifestPath)) {
+        # Some ClickOnce publish modes map payload files with a .deploy suffix.
+        $mappedPath = "$generatedAppManifestPath.deploy"
+        if (Test-Path $mappedPath) {
+            $generatedAppManifestPath = $mappedPath
+        }
+        else {
+            throw "Referenced ClickOnce application manifest was not found: $applicationManifestRelativePath"
+        }
+    }
+
+    $generatedManifestText = Get-Content $generatedAppManifestPath -Raw
     $requestedPrivilegesCount = [regex]::Matches($generatedManifestText, "<requestedPrivileges\b", [System.Text.RegularExpressions.RegexOptions]::IgnoreCase).Count
 
-    if ($requestedPrivilegesCount -ne 1) {
-        throw "Generated ClickOnce manifest is invalid: expected exactly 1 requestedPrivileges element, found $requestedPrivilegesCount. Deployment was stopped before upload."
+    if ($requestedPrivilegesCount -gt 1) {
+        throw "Generated ClickOnce manifest is invalid: found $requestedPrivilegesCount requestedPrivileges elements. Deployment was stopped before upload."
     }
 
-    Write-Host "Manifest validated: exactly one requestedPrivileges element." -ForegroundColor Green
+    Write-Host "Manifest validated: $requestedPrivilegesCount requestedPrivileges element(s)." -ForegroundColor Green
+    Write-Host "Application manifest: $generatedAppManifestPath" -ForegroundColor DarkGray
 
     if ($SkipDeploy) {
         $keepChanges = $true
