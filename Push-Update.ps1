@@ -318,6 +318,7 @@ $bullets
         "/p:ApplicationVersion=$applicationVersion",
         "/p:RuntimeIdentifier=win-x64",
         "/p:SelfContained=true",
+        "/p:LauncherBasedDeployment=true",
         "/restore"
     )
 
@@ -379,6 +380,10 @@ $bullets
     $entryPointFile = [string]$commandLineNode.file
     if ([string]::IsNullOrWhiteSpace($entryPointFile)) {
         throw "Generated ClickOnce application manifest has an empty commandLine file. Deployment was stopped before upload."
+    }
+
+    if (-not $entryPointFile.Equals("PartsPortal.exe", [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw "Generated ClickOnce entry point is '$entryPointFile' instead of 'PartsPortal.exe'. Deployment was stopped before upload."
     }
 
     $applicationManifestDirectory = Split-Path $generatedAppManifestPath -Parent
