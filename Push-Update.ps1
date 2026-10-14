@@ -448,6 +448,38 @@ $bullets
         Write-Host "Generated ClickOnce entry point: $([string]$commandLineNode.file)" -ForegroundColor DarkGray
     }
 
+    $permissionSetNode = $applicationManifestXml.SelectSingleNode("//*[local-name()='trustInfo']//*[local-name()='applicationRequestMinimum']/*[local-name()='PermissionSet']")
+    $executionLevelNode = $applicationManifestXml.SelectSingleNode("//*[local-name()='requestedExecutionLevel']")
+
+    $isUnrestricted = $false
+    if ($permissionSetNode -and $permissionSetNode.Attributes["Unrestricted"]) {
+        $isUnrestricted = [string]$permissionSetNode.Attributes["Unrestricted"].Value -eq "true"
+    }
+
+    $executionLevel = if ($executionLevelNode -and $executionLevelNode.Attributes["level"]) {
+        [string]$executionLevelNode.Attributes["level"].Value
+    }
+    else {
+        ""
+    }
+
+    if (-not $isUnrestricted) {
+        $permissionName = if ($permissionSetNode -and $permissionSetNode.Attributes["Name"]) {
+            [string]$permissionSetNode.Attributes["Name"].Value
+        }
+        else {
+            "<unnamed>"
+        }
+
+        throw "ClickOnce manifest is not Full Trust. PermissionSet='$permissionName', Unrestricted='$isUnrestricted'. Deployment was stopped before upload."
+    }
+
+    if ($executionLevel -ne "asInvoker") {
+        throw "ClickOnce manifest requestedExecutionLevel is '$executionLevel' instead of 'asInvoker'. Deployment was stopped before upload."
+    }
+
+    Write-Host "ClickOnce trust: Full Trust (Unrestricted=true), executionLevel=asInvoker" -ForegroundColor Green
+
 
 
 
