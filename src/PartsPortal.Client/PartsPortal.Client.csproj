@@ -5,10 +5,10 @@
     <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Version>3.2.16</Version>
-    <AssemblyVersion>3.2.16</AssemblyVersion>
-    <FileVersion>3.2.16</FileVersion>
-    <InformationalVersion>3.2.16 (Released)</InformationalVersion>
+    <Version>3.2.17</Version>
+    <AssemblyVersion>3.2.17</AssemblyVersion>
+    <FileVersion>3.2.17</FileVersion>
+    <InformationalVersion>3.2.17 (Released)</InformationalVersion>
     <UseWPF>true</UseWPF>
     <SupportedOSPlatformVersion>10.0.19041.0</SupportedOSPlatformVersion>
     <ApplicationIcon>Assets\PartsPortalIcon.ico</ApplicationIcon>
