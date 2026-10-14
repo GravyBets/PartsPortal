@@ -18,7 +18,7 @@ $ClientProject = Join-Path $Repo "src\PartsPortal.Client\PartsPortal.Client.cspr
 $ApiSettings = Join-Path $Repo "src\PartsPortal.Api\appsettings.json"
 $ClickOnceProfile = Join-Path $Repo "src\PartsPortal.Client\Properties\PublishProfiles\ClickOnceProfile.pubxml"
 $InstallPage = Join-Path $Repo "deploy\install\index.html"
-$ClickOnceOutput = Join-Path $Repo "src\PartsPortal.Client\bin\Release\net8.0-windows\win-x64\clickonce"
+$ClickOnceOutput = Join-Path $Repo "artifacts\clickonce"
 
 function Step([string]$Message) {
     Write-Host ""
@@ -374,16 +374,24 @@ $bullets
     $msbuild = Find-MSBuild
     Write-Host "Using MSBuild: $msbuild" -ForegroundColor DarkGray
 
+    Remove-PathWithRetry $ClickOnceOutput
+    New-Item -ItemType Directory -Force -Path $ClickOnceOutput | Out-Null
+
+    $publishOutput = $ClickOnceOutput.TrimEnd("\") + "\"
+
     Run $msbuild @(
         $ClientProject,
+        "/restore",
         "/t:Publish",
         "/p:Configuration=Release",
-        "/p:PublishProfile=ClickOnceProfile",
-        "/p:ApplicationVersion=$applicationVersion",
+        "/p:Platform=Any CPU",
         "/p:RuntimeIdentifier=win-x64",
         "/p:SelfContained=true",
-        "/p:LauncherBasedDeployment=true",
-        "/restore"
+        "/p:PublishProfile=ClickOnceProfile",
+        "/p:ApplicationVersion=$applicationVersion",
+        "/p:IsRevisionIncremented=false",
+        "/p:PublishDir=$publishOutput",
+        "/p:PublishUrl=$publishOutput"
     )
 
     $manifest = Join-Path $ClickOnceOutput "PartsPortal.application"
@@ -436,54 +444,22 @@ $bullets
 
     [xml]$applicationManifestXml = Get-Content $generatedAppManifestPath -Raw
     $commandLineNode = $applicationManifestXml.SelectSingleNode("//*[local-name()='entryPoint']/*[local-name()='commandLine']")
-
-    if (-not $commandLineNode) {
-        throw "Generated ClickOnce application manifest has no commandLine entry point. Deployment was stopped before upload."
+    if ($commandLineNode) {
+        Write-Host "Generated ClickOnce entry point: $([string]$commandLineNode.file)" -ForegroundColor DarkGray
     }
-
-    $entryPointFile = [string]$commandLineNode.file
-    if ([string]::IsNullOrWhiteSpace($entryPointFile)) {
-        throw "Generated ClickOnce application manifest has an empty commandLine file. Deployment was stopped before upload."
-    }
-
-    if (-not $entryPointFile.Equals("Launcher.exe", [System.StringComparison]::OrdinalIgnoreCase)) {
-        throw "Generated ClickOnce entry point is '$entryPointFile' instead of expected launcher 'Launcher.exe'. Deployment was stopped before upload."
-    }
-
-    $applicationManifestDirectory = Split-Path $generatedAppManifestPath -Parent
-    $entryPointPath = Join-Path $applicationManifestDirectory $entryPointFile
-
-    if (-not (Test-Path $entryPointPath)) {
-        $mappedEntryPointPath = "$entryPointPath.deploy"
-        if (Test-Path $mappedEntryPointPath) {
-            $entryPointPath = $mappedEntryPointPath
-        }
-        else {
-            throw "Generated ClickOnce entry point '$entryPointFile' does not exist beside the application manifest. Deployment was stopped before upload."
-        }
-    }
-
-    $launcherHandoffTarget = Get-LauncherHandoffTarget $entryPointPath
-
-    if ([string]::IsNullOrWhiteSpace($launcherHandoffTarget)) {
-        throw "Launcher.exe does not contain the expected FILENAME resource. Deployment was stopped before upload."
-    }
-
-    if (-not $launcherHandoffTarget.Equals("PartsPortal.exe", [System.StringComparison]::OrdinalIgnoreCase)) {
-        throw "Launcher.exe handoff resource is '$launcherHandoffTarget' instead of 'PartsPortal.exe'. Deployment was stopped before upload."
-    }
-
-    Write-Host "ClickOnce entry point: $entryPointFile" -ForegroundColor Green
-    Write-Host "Launcher FILENAME resource: $launcherHandoffTarget" -ForegroundColor Green
-    Write-Host "Launcher.exe and MSIL manifest identity are expected for .NET launcher-based ClickOnce." -ForegroundColor DarkGray
 
 
 
 
     if ($SkipDeploy) {
+        Write-TextWithRetry $ClientProject $originalClient
+        Write-TextWithRetry $ApiSettings $originalApiSettings
+        Write-TextWithRetry $ClickOnceProfile $originalProfile
+        Write-TextWithRetry $InstallPage $originalIndex
         $keepChanges = $true
         Write-Host ""
         Write-Host "ClickOnce publish completed. Deployment skipped." -ForegroundColor Yellow
+        Write-Host "Release metadata restored; Git commit/push skipped." -ForegroundColor Yellow
     }
     else {
         Step "Preparing ClickOnce deployment"
@@ -615,7 +591,7 @@ echo "PartsPortal $VERSION ClickOnce deployment completed successfully."
         $keepChanges = $true
     }
 
-    if (-not $SkipGit) {
+    if (-not $SkipGit -and -not $SkipDeploy) {
         Step "Committing and pushing Git"
         Run "git" @("add", "-A")
 

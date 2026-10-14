@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0-windows</TargetFramework>
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <Version>3.2.16</Version>
@@ -10,8 +10,9 @@
     <FileVersion>3.2.16</FileVersion>
     <InformationalVersion>3.2.16 (Released)</InformationalVersion>
     <UseWPF>true</UseWPF>
-    <NoWin32Manifest>true</NoWin32Manifest>
+    <SupportedOSPlatformVersion>10.0.19041.0</SupportedOSPlatformVersion>
     <ApplicationIcon>Assets\PartsPortalIcon.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
     <AssemblyName>PartsPortal</AssemblyName>
     <RootNamespace>PartsPortal</RootNamespace>
   </PropertyGroup>
@@ -47,30 +48,6 @@
     </Resource>
     <Resource Include="Assets\PartsPortalIcon.ico" />
   </ItemGroup>
-  <!--
-    VS/MSBuild ClickOnce generates Launcher.exe for .NET applications.
-    Regenerate it immediately after the stock launcher target with an explicit
-    PartsPortal.exe handoff name. GenerateApplicationManifest runs afterwards,
-    so ClickOnce hashes/manifests the corrected launcher.
-  -->
-  <Target Name="_PartsPortalRegenerateClickOnceLauncher"
-          AfterTargets="_DeploymentGenerateLauncher"
-          Condition="'$(GenerateClickOnceManifests)' == 'true' and '$(_DeploymentLauncherBased)' == 'true'">
-    <ItemGroup>
-      <_PartsPortalLauncherTarget Include="$(IntermediateOutputPath)PartsPortal.exe" />
-    </ItemGroup>
-
-    <GenerateLauncher AssemblyName="PartsPortal.exe"
-                      EntryPoint="@(_PartsPortalLauncherTarget)"
-                      OutputPath="$(IntermediateOutputPath)"
-                      VisualStudioVersion="$(VisualStudioVersion)">
-      <Output TaskParameter="OutputEntryPoint" ItemName="_PartsPortalRegeneratedLauncher" />
-    </GenerateLauncher>
-
-    <Message Importance="high"
-             Text="PartsPortal: regenerated ClickOnce Launcher.exe with handoff target PartsPortal.exe." />
-  </Target>
-
 </Project>
 
 
