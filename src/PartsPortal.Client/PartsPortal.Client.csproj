@@ -10,8 +10,6 @@
     <FileVersion>3.2.13</FileVersion>
     <InformationalVersion>3.2.13 (Released)</InformationalVersion>
     <UseWPF>true</UseWPF>
-    <PlatformTarget>x64</PlatformTarget>
-    <Prefer32Bit>false</Prefer32Bit>
     <NoWin32Manifest>true</NoWin32Manifest>
     <ApplicationIcon>Assets\PartsPortalIcon.ico</ApplicationIcon>
     <AssemblyName>PartsPortal</AssemblyName>

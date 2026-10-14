@@ -317,7 +317,6 @@ $bullets
         "/p:PublishProfile=ClickOnceProfile",
         "/p:ApplicationVersion=$applicationVersion",
         "/p:RuntimeIdentifier=win-x64",
-        "/p:PlatformTarget=x64",
         "/p:SelfContained=true",
         "/restore"
     )
@@ -371,17 +370,34 @@ $bullets
     Write-Host "Application manifest: $generatedAppManifestPath" -ForegroundColor DarkGray
 
     [xml]$applicationManifestXml = Get-Content $generatedAppManifestPath -Raw
-    $rootIdentity = $applicationManifestXml.SelectSingleNode("/*[local-name()='assembly']/*[local-name()='assemblyIdentity']")
-    $entryIdentity = $applicationManifestXml.SelectSingleNode("//*[local-name()='entryPoint']/*[local-name()='assemblyIdentity']")
+    $commandLineNode = $applicationManifestXml.SelectSingleNode("//*[local-name()='entryPoint']/*[local-name()='commandLine']")
 
-    $rootArchitecture = if ($rootIdentity) { [string]$rootIdentity.processorArchitecture } else { "" }
-    $entryArchitecture = if ($entryIdentity) { [string]$entryIdentity.processorArchitecture } else { "" }
-
-    Write-Host "ClickOnce architecture: root=$rootArchitecture entryPoint=$entryArchitecture" -ForegroundColor DarkGray
-
-    if ($rootArchitecture -eq "msil" -or $entryArchitecture -eq "msil") {
-        throw "ClickOnce architecture mismatch: win-x64 publish generated an MSIL application identity. Deployment was stopped before upload."
+    if (-not $commandLineNode) {
+        throw "Generated ClickOnce application manifest has no commandLine entry point. Deployment was stopped before upload."
     }
+
+    $entryPointFile = [string]$commandLineNode.file
+    if ([string]::IsNullOrWhiteSpace($entryPointFile)) {
+        throw "Generated ClickOnce application manifest has an empty commandLine file. Deployment was stopped before upload."
+    }
+
+    $applicationManifestDirectory = Split-Path $generatedAppManifestPath -Parent
+    $entryPointPath = Join-Path $applicationManifestDirectory $entryPointFile
+
+    if (-not (Test-Path $entryPointPath)) {
+        $mappedEntryPointPath = "$entryPointPath.deploy"
+        if (Test-Path $mappedEntryPointPath) {
+            $entryPointPath = $mappedEntryPointPath
+        }
+        else {
+            throw "Generated ClickOnce entry point '$entryPointFile' does not exist beside the application manifest. Deployment was stopped before upload."
+        }
+    }
+
+    Write-Host "ClickOnce entry point: $entryPointFile" -ForegroundColor Green
+    Write-Host "MSIL manifest identity is expected for .NET launcher-based ClickOnce." -ForegroundColor DarkGray
+
+
 
 
     if ($SkipDeploy) {
