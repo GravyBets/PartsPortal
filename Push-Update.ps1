@@ -382,8 +382,8 @@ $bullets
         throw "Generated ClickOnce application manifest has an empty commandLine file. Deployment was stopped before upload."
     }
 
-    if (-not $entryPointFile.Equals("PartsPortal.exe", [System.StringComparison]::OrdinalIgnoreCase)) {
-        throw "Generated ClickOnce entry point is '$entryPointFile' instead of 'PartsPortal.exe'. Deployment was stopped before upload."
+    if (-not $entryPointFile.Equals("Launcher.exe", [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw "Generated ClickOnce entry point is '$entryPointFile' instead of expected launcher 'Launcher.exe'. Deployment was stopped before upload."
     }
 
     $applicationManifestDirectory = Split-Path $generatedAppManifestPath -Parent
@@ -400,7 +400,7 @@ $bullets
     }
 
     Write-Host "ClickOnce entry point: $entryPointFile" -ForegroundColor Green
-    Write-Host "MSIL manifest identity is expected for .NET launcher-based ClickOnce." -ForegroundColor DarkGray
+    Write-Host "Launcher.exe and MSIL manifest identity are expected for .NET launcher-based ClickOnce." -ForegroundColor DarkGray
 
 
 
