@@ -48,6 +48,12 @@
     <Resource Include="Assets\PartsPortalIcon.ico" />
   </ItemGroup>
 
+  <ItemDefinitionGroup>
+    <EntryPointForLauncher>
+      <TargetPath>$(AssemblyName).exe</TargetPath>
+    </EntryPointForLauncher>
+  </ItemDefinitionGroup>
+
 </Project>
 
 
