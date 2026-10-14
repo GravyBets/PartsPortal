@@ -64,12 +64,68 @@ function Write-Utf8NoBom([string]$Path, [string]$Content) {
     [System.IO.File]::WriteAllText($Path, $Content, $encoding)
 }
 
-function Binary-ContainsText([string]$Path, [string]$Text) {
-    $bytes = [System.IO.File]::ReadAllBytes($Path)
-    $ascii = [System.Text.Encoding]::ASCII.GetString($bytes)
-    if ($ascii.IndexOf($Text, [System.StringComparison]::OrdinalIgnoreCase) -ge 0) { return $true }
-    $unicode = [System.Text.Encoding]::Unicode.GetString($bytes)
-    return $unicode.IndexOf($Text, [System.StringComparison]::OrdinalIgnoreCase) -ge 0
+function Get-LauncherHandoffTarget([string]$Path) {
+    if (-not ("PartsPortalLauncherResourceReader" -as [type])) {
+        Add-Type -TypeDefinition @'
+using System;
+using System.Runtime.InteropServices;
+
+public static class PartsPortalLauncherResourceReader
+{
+    private const uint LOAD_LIBRARY_AS_DATAFILE = 0x00000002;
+
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern IntPtr LoadLibraryEx(string lpFileName, IntPtr hFile, uint dwFlags);
+
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern IntPtr FindResource(IntPtr hModule, string lpName, IntPtr lpType);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern IntPtr LoadResource(IntPtr hModule, IntPtr hResInfo);
+
+    [DllImport("kernel32.dll")]
+    private static extern IntPtr LockResource(IntPtr hResData);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern uint SizeofResource(IntPtr hModule, IntPtr hResInfo);
+
+    [DllImport("kernel32.dll")]
+    private static extern bool FreeLibrary(IntPtr hModule);
+
+    public static string ReadFilename(string path)
+    {
+        IntPtr module = LoadLibraryEx(path, IntPtr.Zero, LOAD_LIBRARY_AS_DATAFILE);
+        if (module == IntPtr.Zero)
+            throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
+
+        try
+        {
+            IntPtr resourceInfo = FindResource(module, "FILENAME", (IntPtr)50);
+            if (resourceInfo == IntPtr.Zero)
+                return null;
+
+            uint size = SizeofResource(module, resourceInfo);
+            IntPtr resourceData = LoadResource(module, resourceInfo);
+            if (resourceData == IntPtr.Zero)
+                return null;
+
+            IntPtr pointer = LockResource(resourceData);
+            if (pointer == IntPtr.Zero)
+                return null;
+
+            string value = Marshal.PtrToStringUni(pointer, checked((int)size / 2));
+            return value == null ? null : value.TrimEnd('\0');
+        }
+        finally
+        {
+            FreeLibrary(module);
+        }
+    }
+}
+'@
+    }
+
+    return [PartsPortalLauncherResourceReader]::ReadFilename($Path)
 }
 
 
@@ -407,15 +463,18 @@ $bullets
         }
     }
 
-    if (-not (Binary-ContainsText $entryPointPath "PartsPortal.exe")) {
-        if (Binary-ContainsText $entryPointPath "apphost.exe") {
-            throw "Launcher.exe is wired to apphost.exe instead of PartsPortal.exe. Deployment was stopped before upload."
-        }
-        throw "Could not verify Launcher.exe handoff target PartsPortal.exe. Deployment was stopped before upload."
+    $launcherHandoffTarget = Get-LauncherHandoffTarget $entryPointPath
+
+    if ([string]::IsNullOrWhiteSpace($launcherHandoffTarget)) {
+        throw "Launcher.exe does not contain the expected FILENAME resource. Deployment was stopped before upload."
+    }
+
+    if (-not $launcherHandoffTarget.Equals("PartsPortal.exe", [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw "Launcher.exe handoff resource is '$launcherHandoffTarget' instead of 'PartsPortal.exe'. Deployment was stopped before upload."
     }
 
     Write-Host "ClickOnce entry point: $entryPointFile" -ForegroundColor Green
-    Write-Host "Launcher handoff target: PartsPortal.exe" -ForegroundColor Green
+    Write-Host "Launcher FILENAME resource: $launcherHandoffTarget" -ForegroundColor Green
     Write-Host "Launcher.exe and MSIL manifest identity are expected for .NET launcher-based ClickOnce." -ForegroundColor DarkGray
 
 
