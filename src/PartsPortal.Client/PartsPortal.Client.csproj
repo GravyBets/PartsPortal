@@ -47,12 +47,29 @@
     </Resource>
     <Resource Include="Assets\PartsPortalIcon.ico" />
   </ItemGroup>
+  <!--
+    VS/MSBuild ClickOnce generates Launcher.exe for .NET applications.
+    Regenerate it immediately after the stock launcher target with an explicit
+    PartsPortal.exe handoff name. GenerateApplicationManifest runs afterwards,
+    so ClickOnce hashes/manifests the corrected launcher.
+  -->
+  <Target Name="_PartsPortalRegenerateClickOnceLauncher"
+          AfterTargets="_DeploymentGenerateLauncher"
+          Condition="'$(GenerateClickOnceManifests)' == 'true' and '$(_DeploymentLauncherBased)' == 'true'">
+    <ItemGroup>
+      <_PartsPortalLauncherTarget Include="$(IntermediateOutputPath)PartsPortal.exe" />
+    </ItemGroup>
 
-  <ItemDefinitionGroup>
-    <EntryPointForLauncher>
-      <TargetPath>$(AssemblyName).exe</TargetPath>
-    </EntryPointForLauncher>
-  </ItemDefinitionGroup>
+    <GenerateLauncher AssemblyName="PartsPortal.exe"
+                      EntryPoint="@(_PartsPortalLauncherTarget)"
+                      OutputPath="$(IntermediateOutputPath)"
+                      VisualStudioVersion="$(VisualStudioVersion)">
+      <Output TaskParameter="OutputEntryPoint" ItemName="_PartsPortalRegeneratedLauncher" />
+    </GenerateLauncher>
+
+    <Message Importance="high"
+             Text="PartsPortal: regenerated ClickOnce Launcher.exe with handoff target PartsPortal.exe." />
+  </Target>
 
 </Project>
 
