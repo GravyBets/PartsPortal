@@ -64,6 +64,14 @@ function Write-Utf8NoBom([string]$Path, [string]$Content) {
     [System.IO.File]::WriteAllText($Path, $Content, $encoding)
 }
 
+function Binary-ContainsText([string]$Path, [string]$Text) {
+    $bytes = [System.IO.File]::ReadAllBytes($Path)
+    $ascii = [System.Text.Encoding]::ASCII.GetString($bytes)
+    if ($ascii.IndexOf($Text, [System.StringComparison]::OrdinalIgnoreCase) -ge 0) { return $true }
+    $unicode = [System.Text.Encoding]::Unicode.GetString($bytes)
+    return $unicode.IndexOf($Text, [System.StringComparison]::OrdinalIgnoreCase) -ge 0
+}
+
 
 function Write-TextWithRetry(
     [string]$Path,
@@ -399,7 +407,15 @@ $bullets
         }
     }
 
+    if (-not (Binary-ContainsText $entryPointPath "PartsPortal.exe")) {
+        if (Binary-ContainsText $entryPointPath "apphost.exe") {
+            throw "Launcher.exe is wired to apphost.exe instead of PartsPortal.exe. Deployment was stopped before upload."
+        }
+        throw "Could not verify Launcher.exe handoff target PartsPortal.exe. Deployment was stopped before upload."
+    }
+
     Write-Host "ClickOnce entry point: $entryPointFile" -ForegroundColor Green
+    Write-Host "Launcher handoff target: PartsPortal.exe" -ForegroundColor Green
     Write-Host "Launcher.exe and MSIL manifest identity are expected for .NET launcher-based ClickOnce." -ForegroundColor DarkGray
 
 
