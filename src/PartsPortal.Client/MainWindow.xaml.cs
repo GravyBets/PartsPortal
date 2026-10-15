@@ -41,7 +41,7 @@ namespace PartsPortal
         private UserSettings _settings = new();
         private readonly PartsCatalogService _partsService = new();
         private List<Part> _allParts = new();
-        private bool _csvWarningShown = false;
+        private bool _catalogWarningShown = false;
         private string _currentWarehouse = "Building D"; // temporary default
         private readonly Dictionary<TabItem, ObservableCollection<SelectedPartLine>> _selectedPartsByTab = new();
         private readonly Dictionary<TabItem, StackPanel> _movementPanelByTab = new();
@@ -880,13 +880,13 @@ namespace PartsPortal
 
         private async Task TryLoadPartsAsync()
         {
-            var result = await _partsService.LoadBestAvailableAsync(GetPartsCsvPath());
+            var result = await _partsService.LoadBestAvailableAsync();
 
             _allParts = result.Parts.ToList();
 
             if (string.Equals(result.Source, "API", StringComparison.OrdinalIgnoreCase))
             {
-                _csvWarningShown = false;
+                _catalogWarningShown = false;
                 SetStatus($"Loaded {_allParts.Count} warehouse part records from central catalog.");
                 return;
             }
@@ -896,9 +896,9 @@ namespace PartsPortal
                 SetStatus(result.Warning);
             }
 
-            if (_allParts.Count == 0 && !_csvWarningShown)
+            if (_allParts.Count == 0 && !_catalogWarningShown)
             {
-                _csvWarningShown = true;
+                _catalogWarningShown = true;
 
                 MessageBox.Show(
                     result.Warning ??
@@ -1937,7 +1937,6 @@ namespace PartsPortal
             target.EmployeeId = source.EmployeeId ?? "";
             target.TruckNumber = source.TruckNumber ?? "";
             target.PdfOutputFolder = source.PdfOutputFolder ?? "";
-            target.CsvPath = source.CsvPath ?? "";
 
             target.EmailTo = source.EmailTo ?? "";
             target.EmailCc = source.EmailCc ?? "";
@@ -1951,11 +1950,6 @@ namespace PartsPortal
             target.EmailDirectory = new ObservableCollection<EmailDirectoryEntry>(
                 source.EmailDirectory ?? new ObservableCollection<EmailDirectoryEntry>()
             );
-        }
-
-        private string GetPartsCsvPath()
-        {
-            return (_settings?.CsvPath ?? "").Trim();
         }
 
         private void SetStatus(string message)
