@@ -401,9 +401,17 @@
 
         <!-- Footer buttons -->
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center">
-            <Button Style="{StaticResource FooterButton}"
+            <Button x:Name="ManagePartsButton"
+                    Style="{StaticResource FooterButton}"
                     Content="Manage Parts"
                     Click="ManageParts_Click"
+                    Visibility="Collapsed"
+                    Margin="0,0,18,0"/>
+            <Button x:Name="UserAccessButton"
+                    Style="{StaticResource FooterButton}"
+                    Content="User Access"
+                    Click="UserAccess_Click"
+                    Visibility="Collapsed"
                     Margin="0,0,18,0"/>
             <Button Style="{StaticResource FooterButton}"
                     Content="About App"
