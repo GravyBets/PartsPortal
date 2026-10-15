@@ -10,42 +10,6 @@ namespace PartsPortal.Services
     {
         private const string AppFolderName = "PartsPortal";
 
-        private static string? TryResolveTeamsPartsCsvPath()
-        {
-            // OneDrive for Business first (Teams shortcut/sync lands here)
-            string? oneDrive = Environment.GetEnvironmentVariable("OneDriveCommercial")
-                           ?? Environment.GetEnvironmentVariable("OneDrive");
-
-            if (string.IsNullOrWhiteSpace(oneDrive))
-                return null;
-
-            // Common folder shapes depending on "Sync" vs "Add shortcut"
-            string[] candidates =
-            {
-        Path.Combine(oneDrive, "Warehouse Parts", "PartsList.csv"),
-        Path.Combine(oneDrive, "Smart Grid Communications", "Warehouse Parts", "PartsList.csv"),
-        Path.Combine(oneDrive, "Radio Communications", "Smart Grid Communications", "Warehouse Parts", "PartsList.csv"),
-        Path.Combine(oneDrive, "Radio Communications", "Warehouse Parts", "PartsList.csv"),
-    };
-
-            foreach (var c in candidates)
-                if (File.Exists(c))
-                    return c;
-
-            // Last resort: search by filename (can be slower on huge OneDrive folders)
-            try
-            {
-                var found = Directory.EnumerateFiles(oneDrive, "PartsList.csv", SearchOption.AllDirectories)
-                    .FirstOrDefault(p => p.Contains("Warehouse Parts", StringComparison.OrdinalIgnoreCase));
-
-                if (!string.IsNullOrWhiteSpace(found) && File.Exists(found))
-                    return found;
-            }
-            catch { }
-
-            return null;
-        }
-
 
         public string GetSettingsPath()
         {
@@ -157,15 +121,6 @@ namespace PartsPortal.Services
                 s.EmailDirectorySeeded = true;
             }
 
-            // ✅ Optional: auto-resolve Teams CSV path if current is missing/invalid
-            if (string.IsNullOrWhiteSpace(s.CsvPath) ||
-                s.CsvPath.EndsWith(".csv.url", StringComparison.OrdinalIgnoreCase) ||
-                !File.Exists(s.CsvPath))
-            {
-                var resolved = TryResolveTeamsPartsCsvPath();
-                if (!string.IsNullOrWhiteSpace(resolved))
-                    s.CsvPath = resolved;
-            }
             // ✅ Default PDF output folder (never Program Files)
             if (string.IsNullOrWhiteSpace(s.PdfOutputFolder))
             {
