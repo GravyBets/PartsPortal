@@ -78,6 +78,7 @@ public sealed class AccessRepository
 
             return new CurrentUserAccessDto(
                 employeeId,
+                null,
                 roles.Distinct(StringComparer.OrdinalIgnoreCase)
                      .OrderBy(x => x)
                      .ToList(),
