@@ -40,7 +40,6 @@ namespace PartsPortal
                 EmployeeId = s.EmployeeId ?? "",
                 TruckNumber = s.TruckNumber ?? "",
                 PdfOutputFolder = s.PdfOutputFolder ?? "",
-                CsvPath = s.CsvPath ?? "",
 
                 EmailTo = s.EmailTo ?? "",
                 EmailCc = s.EmailCc ?? "",
@@ -74,18 +73,6 @@ namespace PartsPortal
                 if (!string.IsNullOrWhiteSpace(folder))
                     Settings.PdfOutputFolder = folder;   // ✅ updates bound TextBox automatically
             }
-        }
-
-        private void BrowseCsv_Click(object sender, RoutedEventArgs e)
-        {
-            var dlg = new OpenFileDialog
-            {
-                Filter = "CSV files (*.csv)|*.csv",
-                Title = "Select parts CSV file"
-            };
-
-            if (dlg.ShowDialog() == true)
-                Settings.CsvPath = dlg.FileName;         // ✅ updates bound TextBox automatically
         }
 
         private void Save_Click(object sender, RoutedEventArgs e)
