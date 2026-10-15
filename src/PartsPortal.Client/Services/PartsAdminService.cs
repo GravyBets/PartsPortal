@@ -16,6 +16,10 @@ public sealed class PartsAdminService
             BaseAddress = AppConfiguration.ApiBaseUri,
             Timeout = AppConfiguration.ApiTimeout
         };
+
+        _client.DefaultRequestHeaders.Add(
+            "X-PartsPortal-User",
+            Environment.UserName);
     }
 
     public async Task<IReadOnlyList<PartDto>> GetPartsAsync(
