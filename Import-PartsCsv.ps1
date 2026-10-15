@@ -93,7 +93,7 @@ function Get-Delimiter {
 function Normalize-WarehouseName {
     param([string]$Value)
 
-    $name = ($Value ?? "").Trim()
+    $name = if ($null -eq $Value) { "" } else { ([string]$Value).Trim() }
 
     switch -Regex ($name) {
         '^Warehouse\s*-\s*Building\s+D$' { return "Warehouse - Building D" }
