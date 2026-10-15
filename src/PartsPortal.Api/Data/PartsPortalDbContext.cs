@@ -143,6 +143,11 @@ public sealed class PartsPortalDbContext : DbContext
             entity.Property(x => x.Id)
                 .HasColumnName("id");
 
+            entity.Property(x => x.OwnerEmployeeId)
+                .HasColumnName("owner_employee_id")
+                .HasMaxLength(64)
+                .IsRequired();
+
             entity.Property(x => x.Name)
                 .HasColumnName("name")
                 .HasMaxLength(100)
@@ -174,12 +179,23 @@ public sealed class PartsPortalDbContext : DbContext
                 .HasForeignKey(x => x.WarehouseId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            entity.HasIndex(x => new { x.WarehouseId, x.Name })
+            entity.HasIndex(x => new
+                {
+                    x.OwnerEmployeeId,
+                    x.WarehouseId,
+                    x.Name
+                })
                 .IsUnique()
-                .HasDatabaseName("ux_templates_warehouse_name");
+                .HasDatabaseName("ux_templates_owner_warehouse_name");
 
-            entity.HasIndex(x => new { x.WarehouseId, x.IsActive, x.Name })
-                .HasDatabaseName("ix_templates_warehouse_active_name");
+            entity.HasIndex(x => new
+                {
+                    x.OwnerEmployeeId,
+                    x.WarehouseId,
+                    x.IsActive,
+                    x.Name
+                })
+                .HasDatabaseName("ix_templates_owner_warehouse_active_name");
         });
 
         modelBuilder.Entity<CatalogTemplateLine>(entity =>
