@@ -135,7 +135,7 @@ try {
         "rm -rf '$remoteStage' && " +
         "mkdir -p '$remoteStage' && " +
         "tar -xzf '$remoteBundle' -C '$remoteStage' && " +
-        "sed -i 's/$//' '$remoteStage/deploy.sh' && " +
+        "sed -i 's/\\r$//' '$remoteStage/deploy.sh' && " +
         "sudo bash '$remoteStage/deploy.sh' '$remoteStage/api'; " +
         "rc=`$?; " +
         "rm -rf '$remoteStage' '$remoteBundle'; " +
