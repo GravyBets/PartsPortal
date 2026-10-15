@@ -2,9 +2,7 @@
 using PartsPortal.Models;
 using PartsPortal.Services;
 using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.IO;
 using System.Linq;
 using System.Windows;
 
@@ -112,7 +110,7 @@ namespace PartsPortal
             _settings = _settingsService.Load();
 
             var partsService = new PartsCatalogService();
-            var result = await partsService.LoadBestAvailableAsync(GetCsvPathFromSettings());
+            var result = await partsService.LoadBestAvailableAsync();
             var allParts = result.Parts.ToList();
 
             if (allParts.Count == 0)
@@ -144,29 +142,6 @@ namespace PartsPortal
                 Activate();
             }
         }
-
-        private string GetCsvPathFromSettings()
-        {
-            if (_settings == null) return "";
-
-            var t = _settings.GetType();
-
-            // Works no matter what you named the property
-            return (t.GetProperty("PartsCsvPath")?.GetValue(_settings) as string)
-                ?? (t.GetProperty("LastCsvPath")?.GetValue(_settings) as string)
-                ?? (t.GetProperty("CsvPath")?.GetValue(_settings) as string)
-                ?? "";
-        }
-
-        private List<Part> LoadPartsFromCsv(string path)
-        {
-            // Single source of truth for parsing (handles CSV + TSV, quotes, commas)
-            var svc = new PartsCatalogService();
-            return svc.LoadFromCsv(path);
-        }
-
-
-
 
         private void ThemeToggle_Checked(object sender, RoutedEventArgs e)
         {
