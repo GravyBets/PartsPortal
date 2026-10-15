@@ -13,14 +13,10 @@ namespace PartsPortal.Api.Controllers;
 public sealed class TemplatesController : ControllerBase
 {
     private readonly PartsPortalDbContext _db;
-    private readonly AccessRepository _access;
 
-    public TemplatesController(
-        PartsPortalDbContext db,
-        AccessRepository access)
+    public TemplatesController(PartsPortalDbContext db)
     {
         _db = db;
-        _access = access;
     }
 
     [HttpGet]
@@ -29,7 +25,13 @@ public sealed class TemplatesController : ControllerBase
         [FromQuery] bool includeInactive = false,
         CancellationToken cancellationToken = default)
     {
-        var query = TemplateQuery();
+        var owner = GetCurrentEmployeeId();
+
+        if (owner is null)
+            return BadRequest("Windows user identity header is missing.");
+
+        var query = TemplateQuery()
+            .Where(x => x.OwnerEmployeeId == owner);
 
         if (!includeInactive)
             query = query.Where(x => x.IsActive);
@@ -56,8 +58,16 @@ public sealed class TemplatesController : ControllerBase
         int id,
         CancellationToken cancellationToken = default)
     {
+        var owner = GetCurrentEmployeeId();
+
+        if (owner is null)
+            return BadRequest("Windows user identity header is missing.");
+
         var template = await TemplateQuery()
-            .SingleOrDefaultAsync(x => x.Id == id, cancellationToken);
+            .SingleOrDefaultAsync(
+                x => x.Id == id &&
+                     x.OwnerEmployeeId == owner,
+                cancellationToken);
 
         return template is null
             ? NotFound()
@@ -69,14 +79,10 @@ public sealed class TemplatesController : ControllerBase
         SaveTemplateRequest request,
         CancellationToken cancellationToken = default)
     {
-        var actor = await RequireTemplateManagerAsync(cancellationToken);
+        var owner = GetCurrentEmployeeId();
 
-        if (actor is null)
-        {
-            return StatusCode(
-                StatusCodes.Status403Forbidden,
-                "Template management permission is required.");
-        }
+        if (owner is null)
+            return BadRequest("Windows user identity header is missing.");
 
         var validation = ValidateRequest(request);
         if (validation is not null)
@@ -94,14 +100,15 @@ public sealed class TemplatesController : ControllerBase
 
         var duplicate = await _db.Templates
             .AnyAsync(
-                x => x.WarehouseId == request.WarehouseId &&
+                x => x.OwnerEmployeeId == owner &&
+                     x.WarehouseId == request.WarehouseId &&
                      x.Name == name,
                 cancellationToken);
 
         if (duplicate)
         {
             return Conflict(
-                $"A template named '{name}' already exists for {warehouse.Name}.");
+                $"You already have a template named '{name}' for {warehouse.Name}.");
         }
 
         var resolved = await ResolvePartsAsync(
@@ -116,12 +123,13 @@ public sealed class TemplatesController : ControllerBase
 
         var template = new CatalogTemplate
         {
+            OwnerEmployeeId = owner,
             Name = name,
             WarehouseId = warehouse.Id,
             IsActive = true,
             CreatedAtUtc = now,
             UpdatedAtUtc = now,
-            UpdatedBy = actor
+            UpdatedBy = owner
         };
 
         foreach (var line in resolved.Lines!)
@@ -138,7 +146,10 @@ public sealed class TemplatesController : ControllerBase
         await _db.SaveChangesAsync(cancellationToken);
 
         var created = await TemplateQuery()
-            .SingleAsync(x => x.Id == template.Id, cancellationToken);
+            .SingleAsync(
+                x => x.Id == template.Id &&
+                     x.OwnerEmployeeId == owner,
+                cancellationToken);
 
         return CreatedAtAction(
             nameof(GetById),
@@ -152,14 +163,10 @@ public sealed class TemplatesController : ControllerBase
         SaveTemplateRequest request,
         CancellationToken cancellationToken = default)
     {
-        var actor = await RequireTemplateManagerAsync(cancellationToken);
+        var owner = GetCurrentEmployeeId();
 
-        if (actor is null)
-        {
-            return StatusCode(
-                StatusCodes.Status403Forbidden,
-                "Template management permission is required.");
-        }
+        if (owner is null)
+            return BadRequest("Windows user identity header is missing.");
 
         var validation = ValidateRequest(request);
         if (validation is not null)
@@ -167,7 +174,10 @@ public sealed class TemplatesController : ControllerBase
 
         var template = await _db.Templates
             .Include(x => x.Lines)
-            .SingleOrDefaultAsync(x => x.Id == id, cancellationToken);
+            .SingleOrDefaultAsync(
+                x => x.Id == id &&
+                     x.OwnerEmployeeId == owner,
+                cancellationToken);
 
         if (template is null)
             return NotFound();
@@ -185,6 +195,7 @@ public sealed class TemplatesController : ControllerBase
         var duplicate = await _db.Templates
             .AnyAsync(
                 x => x.Id != id &&
+                     x.OwnerEmployeeId == owner &&
                      x.WarehouseId == request.WarehouseId &&
                      x.Name == name,
                 cancellationToken);
@@ -192,7 +203,7 @@ public sealed class TemplatesController : ControllerBase
         if (duplicate)
         {
             return Conflict(
-                $"A template named '{name}' already exists for {warehouse.Name}.");
+                $"You already have a template named '{name}' for {warehouse.Name}.");
         }
 
         var resolved = await ResolvePartsAsync(
@@ -206,7 +217,7 @@ public sealed class TemplatesController : ControllerBase
         template.Name = name;
         template.WarehouseId = request.WarehouseId;
         template.UpdatedAtUtc = DateTime.UtcNow;
-        template.UpdatedBy = actor;
+        template.UpdatedBy = owner;
 
         _db.TemplateLines.RemoveRange(template.Lines);
         template.Lines.Clear();
@@ -225,7 +236,10 @@ public sealed class TemplatesController : ControllerBase
         await _db.SaveChangesAsync(cancellationToken);
 
         var updated = await TemplateQuery()
-            .SingleAsync(x => x.Id == id, cancellationToken);
+            .SingleAsync(
+                x => x.Id == id &&
+                     x.OwnerEmployeeId == owner,
+                cancellationToken);
 
         return Ok(ToDto(updated));
     }
@@ -235,17 +249,16 @@ public sealed class TemplatesController : ControllerBase
         int id,
         CancellationToken cancellationToken = default)
     {
-        var actor = await RequireTemplateManagerAsync(cancellationToken);
+        var owner = GetCurrentEmployeeId();
 
-        if (actor is null)
-        {
-            return StatusCode(
-                StatusCodes.Status403Forbidden,
-                "Template management permission is required.");
-        }
+        if (owner is null)
+            return BadRequest("Windows user identity header is missing.");
 
         var template = await _db.Templates
-            .SingleOrDefaultAsync(x => x.Id == id, cancellationToken);
+            .SingleOrDefaultAsync(
+                x => x.Id == id &&
+                     x.OwnerEmployeeId == owner,
+                cancellationToken);
 
         if (template is null)
             return NotFound();
@@ -254,7 +267,7 @@ public sealed class TemplatesController : ControllerBase
         {
             template.IsActive = false;
             template.UpdatedAtUtc = DateTime.UtcNow;
-            template.UpdatedBy = actor;
+            template.UpdatedBy = owner;
 
             await _db.SaveChangesAsync(cancellationToken);
         }
@@ -267,17 +280,16 @@ public sealed class TemplatesController : ControllerBase
         int id,
         CancellationToken cancellationToken = default)
     {
-        var actor = await RequireTemplateManagerAsync(cancellationToken);
+        var owner = GetCurrentEmployeeId();
 
-        if (actor is null)
-        {
-            return StatusCode(
-                StatusCodes.Status403Forbidden,
-                "Template management permission is required.");
-        }
+        if (owner is null)
+            return BadRequest("Windows user identity header is missing.");
 
         var template = await _db.Templates
-            .SingleOrDefaultAsync(x => x.Id == id, cancellationToken);
+            .SingleOrDefaultAsync(
+                x => x.Id == id &&
+                     x.OwnerEmployeeId == owner,
+                cancellationToken);
 
         if (template is null)
             return NotFound();
@@ -286,19 +298,21 @@ public sealed class TemplatesController : ControllerBase
         {
             template.IsActive = true;
             template.UpdatedAtUtc = DateTime.UtcNow;
-            template.UpdatedBy = actor;
+            template.UpdatedBy = owner;
 
             await _db.SaveChangesAsync(cancellationToken);
         }
 
         var reactivated = await TemplateQuery()
-            .SingleAsync(x => x.Id == id, cancellationToken);
+            .SingleAsync(
+                x => x.Id == id &&
+                     x.OwnerEmployeeId == owner,
+                cancellationToken);
 
         return Ok(ToDto(reactivated));
     }
 
-    private async Task<string?> RequireTemplateManagerAsync(
-        CancellationToken cancellationToken)
+    private string? GetCurrentEmployeeId()
     {
         var employeeId =
             Request.Headers[AccessRepository.UserHeaderName]
@@ -308,11 +322,9 @@ public sealed class TemplatesController : ControllerBase
         if (string.IsNullOrWhiteSpace(employeeId))
             return null;
 
-        return await _access.CanManagePartsAsync(
-            employeeId,
-            cancellationToken)
+        return employeeId.Length <= 64
             ? employeeId
-            : null;
+            : employeeId[..64];
     }
 
     private IQueryable<CatalogTemplate> TemplateQuery()
