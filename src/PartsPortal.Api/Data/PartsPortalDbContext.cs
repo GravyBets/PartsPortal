@@ -16,6 +16,10 @@ public sealed class PartsPortalDbContext : DbContext
 
     public DbSet<PartWarehouse> PartWarehouses => Set<PartWarehouse>();
 
+    public DbSet<CatalogTemplate> Templates => Set<CatalogTemplate>();
+
+    public DbSet<CatalogTemplateLine> TemplateLines => Set<CatalogTemplateLine>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -128,6 +132,95 @@ public sealed class PartsPortalDbContext : DbContext
                     IsActive = true,
                     SortOrder = 30
                 });
+        });
+
+        modelBuilder.Entity<CatalogTemplate>(entity =>
+        {
+            entity.ToTable("templates");
+
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.Id)
+                .HasColumnName("id");
+
+            entity.Property(x => x.Name)
+                .HasColumnName("name")
+                .HasMaxLength(100)
+                .IsRequired();
+
+            entity.Property(x => x.WarehouseId)
+                .HasColumnName("warehouse_id");
+
+            entity.Property(x => x.IsActive)
+                .HasColumnName("is_active")
+                .IsRequired();
+
+            entity.Property(x => x.CreatedAtUtc)
+                .HasColumnName("created_at_utc")
+                .HasColumnType("datetime(6)")
+                .IsRequired();
+
+            entity.Property(x => x.UpdatedAtUtc)
+                .HasColumnName("updated_at_utc")
+                .HasColumnType("datetime(6)")
+                .IsRequired();
+
+            entity.Property(x => x.UpdatedBy)
+                .HasColumnName("updated_by")
+                .HasMaxLength(128);
+
+            entity.HasOne(x => x.Warehouse)
+                .WithMany()
+                .HasForeignKey(x => x.WarehouseId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(x => new { x.WarehouseId, x.Name })
+                .IsUnique()
+                .HasDatabaseName("ux_templates_warehouse_name");
+
+            entity.HasIndex(x => new { x.WarehouseId, x.IsActive, x.Name })
+                .HasDatabaseName("ix_templates_warehouse_active_name");
+        });
+
+        modelBuilder.Entity<CatalogTemplateLine>(entity =>
+        {
+            entity.ToTable("template_lines");
+
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.Id)
+                .HasColumnName("id");
+
+            entity.Property(x => x.TemplateId)
+                .HasColumnName("template_id");
+
+            entity.Property(x => x.PartId)
+                .HasColumnName("part_id");
+
+            entity.Property(x => x.SortOrder)
+                .HasColumnName("sort_order")
+                .IsRequired();
+
+            entity.Property(x => x.Quantity)
+                .HasColumnName("quantity")
+                .IsRequired();
+
+            entity.HasOne(x => x.Template)
+                .WithMany(x => x.Lines)
+                .HasForeignKey(x => x.TemplateId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(x => x.Part)
+                .WithMany()
+                .HasForeignKey(x => x.PartId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(x => new { x.TemplateId, x.SortOrder })
+                .HasDatabaseName("ix_template_lines_template_sort");
+
+            entity.HasIndex(x => new { x.TemplateId, x.PartId })
+                .IsUnique()
+                .HasDatabaseName("ux_template_lines_template_part");
         });
 
         modelBuilder.Entity<PartWarehouse>(entity =>
