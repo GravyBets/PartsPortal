@@ -8,11 +8,11 @@ public sealed class CatalogTemplateLine
 
     public CatalogTemplate Template { get; set; } = null!;
 
+    public int PartId { get; set; }
+
+    public CatalogPart Part { get; set; } = null!;
+
     public int SortOrder { get; set; }
-
-    public string MaterialNumber { get; set; } = "";
-
-    public string Description { get; set; } = "";
 
     public int Quantity { get; set; }
 }
