@@ -51,8 +51,9 @@ namespace PartsPortal
         private readonly Dictionary<TabItem, string> _workOrderByTab = new();
         private readonly Services.FavoritesService _favoritesService = new();
         private HashSet<string> _favoriteMaterials = new(StringComparer.OrdinalIgnoreCase);
-        private readonly TemplatesService _templatesService = new();
+        private readonly PersonalTemplatesService _templatesService = new();
         private List<PartTemplate> _templates = new();
+        private bool _templateWarningShown = false;
         private readonly List<ListBox> _templateLists = new();
         private readonly List<(ListBox Names, DataGrid Lines)> _templateUIs = new();
         private readonly Dictionary<TabItem, TextBox> _detailsBoxByTab = new();
@@ -190,11 +191,9 @@ namespace PartsPortal
             // Load Favorites
             _favoriteMaterials = _favoritesService.Load();
 
-            //Templates
+            // Templates are loaded from the personal API after the UI is ready.
             if (string.IsNullOrWhiteSpace(_currentWarehouse))
-                _currentWarehouse = SelectedWarehouse; // or whatever your fallback should be
-
-            _templates = _templatesService.Load(GetWarehouseKey());
+                _currentWarehouse = SelectedWarehouse;
 
             // 3) After UI is ready
             Loaded += async (_, __) =>
@@ -229,11 +228,13 @@ namespace PartsPortal
                     };
                 }
 
-                // Load the central catalog without blocking the window constructor.
+                // Load central catalog + this user's personal templates.
                 await TryLoadPartsAsync();
+                await TryLoadTemplatesAsync();
 
-                // Now that PartsListBox exists, populate it.
+                // Now that the tab views exist, populate them.
                 RefreshPartsListForSelectedTab();
+                RefreshAllTemplatesUI();
 
 
                 // OPTIONAL: keep only if you still want the template existence check.
@@ -587,12 +588,13 @@ namespace PartsPortal
                 _favoritesService.Save(_favoriteMaterials);
                 RefreshPartsList(ownerTab);
             };
-            deleteTemplateBtn.Click += (_, __) =>
+            deleteTemplateBtn.Click += async (_, __) =>
             {
-                if (templatesList.SelectedItem is not PartTemplate t) return;
+                if (templatesList.SelectedItem is not PartTemplate t)
+                    return;
 
                 var result = MessageBox.Show(
-                    $"Delete template '{t.Name}'?\n\nThis cannot be undone.",
+                    $"Delete template '{t.Name}'?",
                     "Delete Template",
                     MessageBoxButton.YesNo,
                     MessageBoxImage.Warning);
@@ -600,13 +602,24 @@ namespace PartsPortal
                 if (result != MessageBoxResult.Yes)
                     return;
 
-                _templatesService.Delete(_templates, t.Name);
-                _templatesService.Save(GetWarehouseKey(), _templates);
+                try
+                {
+                    await _templatesService.DeleteAsync(
+                        GetWarehouseCode(),
+                        t.Id);
 
-                RefreshTemplatesUI(ownerTab);
-                SetStatus($"Template deleted: {t.Name}");
-
-
+                    await TryLoadTemplatesAsync();
+                    RefreshAllTemplatesUI();
+                    SetStatus($"Template deleted: {t.Name}");
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(
+                        "Could not delete the template.\n\n" + ex.Message,
+                        "Templates",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Error);
+                }
             };
 
             // Initial state + fill
@@ -722,7 +735,8 @@ namespace PartsPortal
                 ClearTabStatus(ownerTab);
             };
 
-            view.SaveToTemplatesButton.Click += (_, __) => SaveSelectedPartsToTemplate(ownerTab);
+            view.SaveToTemplatesButton.Click += async (_, __) =>
+                await SaveSelectedPartsToTemplateAsync(ownerTab);
 
             view.SelectedPartsGrid.PreviewKeyDown += (_, e) =>
             {
@@ -738,31 +752,55 @@ namespace PartsPortal
             };
         }
 
-        private void SaveSelectedPartsToTemplate(TabItem ownerTab)
+        private async Task SaveSelectedPartsToTemplateAsync(TabItem ownerTab)
         {
             var lines = GetSelectedParts(ownerTab);
+
             if (lines.Count == 0)
             {
-                MessageBox.Show("No selected parts to save.", "Templates",
-                    MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(
+                    "No selected parts to save.",
+                    "Templates",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
                 return;
             }
 
             string suggested = GetTabReason(ownerTab).Trim();
+
             if (string.IsNullOrWhiteSpace(suggested))
                 suggested = GetTabTitle(ownerTab).Trim();
 
-            if (Regex.IsMatch(suggested, @"^Blank(\s*\(\d+\))?$", RegexOptions.IgnoreCase))
+            if (Regex.IsMatch(
+                    suggested,
+                    @"^Blank(\s*\(\d+\))?$",
+                    RegexOptions.IgnoreCase))
+            {
                 suggested = "";
+            }
 
-            var dlg = new TemplateNameWindow(suggested) { Owner = this };
-            if (dlg.ShowDialog() != true) return;
+            var dlg = new TemplateNameWindow(suggested)
+            {
+                Owner = this
+            };
+
+            if (dlg.ShowDialog() != true)
+                return;
 
             string name = dlg.TemplateName;
 
+            var existing = _templates.FirstOrDefault(x =>
+                string.Equals(
+                    x.Name,
+                    name,
+                    StringComparison.OrdinalIgnoreCase));
+
             var template = new PartTemplate
             {
+                Id = existing?.Id ?? 0,
                 Name = name,
+                IsActive = true,
+                WarehouseId = existing?.WarehouseId ?? 0,
                 Lines = lines.Select(x => new TemplateLine
                 {
                     Material = x.Material,
@@ -771,11 +809,24 @@ namespace PartsPortal
                 }).ToList()
             };
 
-            _templatesService.Upsert(_templates, template);
-            _templatesService.Save(GetWarehouseKey(), _templates);
+            try
+            {
+                await _templatesService.SaveAsync(
+                    GetWarehouseCode(),
+                    template);
 
-            RefreshTemplatesUI(ownerTab, name);
-            SetStatus($"Template saved: {name}");
+                await TryLoadTemplatesAsync();
+                RefreshAllTemplatesUI(name);
+                SetStatus($"Template saved: {name}");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    "Could not save the template.\n\n" + ex.Message,
+                    "Templates",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
         }
 
         private void AddTemplateToOrder(TabItem ownerTab, PartTemplate t)
@@ -830,6 +881,45 @@ namespace PartsPortal
 
             // If your DataGrid uses ElementName binding to SelectedItem.Lines,
             // DO NOT set TemplateLinesGrid.ItemsSource here.
+        }
+
+        private void RefreshAllTemplatesUI(string? selectName = null)
+        {
+            foreach (var tab in _partsViewByTab.Keys.ToList())
+                RefreshTemplatesUI(tab, selectName);
+        }
+
+        private async Task TryLoadTemplatesAsync()
+        {
+            var result = await _templatesService.LoadBestAvailableAsync(
+                GetWarehouseCode());
+
+            _templates = result.Templates.ToList();
+
+            if (string.Equals(
+                    result.Source,
+                    "API",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                _templateWarningShown = false;
+                return;
+            }
+
+            if (!string.IsNullOrWhiteSpace(result.Warning))
+                SetStatus(result.Warning);
+
+            if (_templates.Count == 0 &&
+                !_templateWarningShown)
+            {
+                _templateWarningShown = true;
+
+                MessageBox.Show(
+                    result.Warning ??
+                    "Your personal templates are unavailable.",
+                    "Templates",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
         }
 
         private void RefreshPartsListForSelectedTab()
@@ -1148,12 +1238,17 @@ namespace PartsPortal
         }
     }
 
-        private string GetWarehouseKey()
+        private string GetWarehouseCode()
         {
-            // ex: "Building D" -> "building_d"
-            var s = (_currentWarehouse ?? "").Trim().ToLowerInvariant();
-            s = s.Replace(" ", "_");
-            return string.IsNullOrWhiteSpace(s) ? "unknown" : s;
+            return NormalizeWarehouse(_currentWarehouse) switch
+            {
+                "Building D" => "BUILDING_D",
+                "Building A" => "BUILDING_A",
+                "Building B" => "BUILDING_B",
+                var value => value
+                    .Replace(" ", "_", StringComparison.Ordinal)
+                    .ToUpperInvariant()
+            };
         }
 
         private void Home_Click(object sender, RoutedEventArgs e)
