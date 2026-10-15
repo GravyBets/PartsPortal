@@ -49,13 +49,6 @@ namespace PartsPortal.Models
             set => SetField(ref _pdfOutputFolder, value ?? "");
         }
 
-        private string _csvPath = "";
-        public string CsvPath
-        {
-            get => _csvPath;
-            set => SetField(ref _csvPath, value ?? "");
-        }
-
         private string _emailTo = "";
         public string EmailTo
         {
