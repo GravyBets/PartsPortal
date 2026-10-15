@@ -49,6 +49,14 @@ namespace PartsPortal.Views
             }
         }
 
+        private void QtyTextBox_LostKeyboardFocus(
+            object sender,
+            KeyboardFocusChangedEventArgs e)
+        {
+            if (sender is TextBox box)
+                CommitQuantity(box);
+        }
+
         private void QtyTextBox_PreviewKeyDown(
             object sender,
             KeyEventArgs e)
