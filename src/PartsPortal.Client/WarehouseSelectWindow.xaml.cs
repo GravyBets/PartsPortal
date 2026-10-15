@@ -72,29 +72,24 @@ namespace PartsPortal
         }
 
 
-        private void OpenBackorders()
+        private async void OpenBackorders()
         {
             _settings = _settingsService.Load();
-            string csvPath = GetCsvPathFromSettings();
-            if (string.IsNullOrWhiteSpace(csvPath) || !File.Exists(csvPath))
+
+            var partsService = new PartsCatalogService();
+            var result = await partsService.LoadBestAvailableAsync(GetCsvPathFromSettings());
+            var allParts = result.Parts.ToList();
+
+            if (allParts.Count == 0)
             {
                 MessageBox.Show(
-                    "CSV path is not set (or file not found). Go to Settings and set the parts CSV path.",
-                    "Missing CSV",
+                    result.Warning ??
+                    "The parts catalog is unavailable. Check network connectivity and try again.",
+                    "Parts Catalog",
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
                 return;
             }
-
-            var allParts = LoadPartsFromCsv(csvPath);
-
-            // Deduplicate by Material so it’s a clean “full list”
-            var unique = allParts
-                .Where(p => !string.IsNullOrWhiteSpace(p.Material))
-                .GroupBy(p => p.Material.Trim(), StringComparer.OrdinalIgnoreCase)
-                .Select(g => g.First())
-                .OrderBy(p => p.Description)
-                .ToList();
 
             var dlg = new BackordersWindow(allParts, _settings)
             {
@@ -102,15 +97,16 @@ namespace PartsPortal
                 WindowStartupLocation = WindowStartupLocation.CenterOwner
             };
 
-            this.Hide();
+            Hide();
+
             try
             {
-                dlg.ShowDialog();   // still: NO dlg.Show()
+                dlg.ShowDialog();
             }
             finally
             {
-                this.Show();
-                this.Activate();
+                Show();
+                Activate();
             }
         }
 

@@ -182,9 +182,8 @@ namespace PartsPortal
             Title = $"Material Requisition - {SelectedWarehouse}";
             HeaderText.Text = $"Material Requisition - {SelectedWarehouse}";
 
-            // 2) Load settings + parts
+            // 2) Load settings. Parts are loaded asynchronously when the window is ready.
             _settings = _settingsService.Load();
-            TryLoadParts();
             
 
 
@@ -198,7 +197,7 @@ namespace PartsPortal
             _templates = _templatesService.Load(GetWarehouseKey());
 
             // 3) After UI is ready
-            Loaded += (_, __) =>
+            Loaded += async (_, __) =>
             {
                 // Grab the templated SiteName box
                 SiteNameBox = (TextBox?)SiteTabs.Template.FindName("PART_SiteNameBox", SiteTabs);
@@ -230,7 +229,10 @@ namespace PartsPortal
                     };
                 }
 
-                // Now that PartsListBox exists, populate it
+                // Load the central catalog without blocking the window constructor.
+                await TryLoadPartsAsync();
+
+                // Now that PartsListBox exists, populate it.
                 RefreshPartsListForSelectedTab();
 
 
@@ -854,7 +856,7 @@ namespace PartsPortal
         }
 
 
-        private void OpenSettings_Click(object sender, RoutedEventArgs e)
+        private async void OpenSettings_Click(object sender, RoutedEventArgs e)
         {
             var win = new SettingsWindow(_settings)
             {
@@ -871,47 +873,39 @@ namespace PartsPortal
                 MessageBox.Show("Settings saved!", "Settings",
                     MessageBoxButton.OK, MessageBoxImage.Information);
 
-                TryLoadParts();
+                await TryLoadPartsAsync();
                 RefreshPartsListForSelectedTab();
             }
         }
 
-        private void TryLoadParts()
+        private async Task TryLoadPartsAsync()
         {
-            try
+            var result = await _partsService.LoadBestAvailableAsync(GetPartsCsvPath());
+
+            _allParts = result.Parts.ToList();
+
+            if (string.Equals(result.Source, "API", StringComparison.OrdinalIgnoreCase))
             {
-                string csvPath = GetPartsCsvPath();
-
-                // Missing/invalid path
-                if (string.IsNullOrWhiteSpace(csvPath) || !File.Exists(csvPath))
-                {
-                    _allParts = new List<Part>();
-
-                    if (!_csvWarningShown)
-                    {
-                        _csvWarningShown = true;
-
-                        MessageBox.Show(
-                            "Parts list not found.\n\n" +
-                            "Fix:\n" +
-                            "1) In Teams → Files, click 'Add shortcut to OneDrive' (or Sync)\n" +
-                            "2) Then in Settings, select PartsList.csv (NOT a .csv.url shortcut)\n\n" +
-                            $"Current path:\n{(string.IsNullOrWhiteSpace(csvPath) ? "(blank)" : csvPath)}",
-                            "Parts CSV",
-                            MessageBoxButton.OK,
-                            MessageBoxImage.Warning);
-                    }
-
-                    return;
-                }
-
-                // Load parts
-                _allParts = _partsService.LoadFromCsv(csvPath);
+                _csvWarningShown = false;
+                SetStatus($"Loaded {_allParts.Count} warehouse part records from central catalog.");
+                return;
             }
-            catch
+
+            if (!string.IsNullOrWhiteSpace(result.Warning))
             {
-                _allParts = new List<Part>();
-                // Optional: show error once here too if you want
+                SetStatus(result.Warning);
+            }
+
+            if (_allParts.Count == 0 && !_csvWarningShown)
+            {
+                _csvWarningShown = true;
+
+                MessageBox.Show(
+                    result.Warning ??
+                    "The parts catalog is unavailable. Check network connectivity and try again.",
+                    "Parts Catalog",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
             }
         }
 
