@@ -141,7 +141,7 @@ $delimiter = Get-Delimiter $resolvedCsv
 
 Write-Host ""
 Write-Host "PartsPortal CSV catalog import" -ForegroundColor Cyan
-Write-Host "Importer version: 2026.10.15.2" -ForegroundColor DarkGray
+Write-Host "Importer version: 2026.10.15.3" -ForegroundColor DarkGray
 Write-Host "CSV : $resolvedCsv"
 Write-Host "API : $ApiBaseUrl"
 Write-Host "Mode: $(if ($Apply) { 'APPLY' } else { 'PREVIEW ONLY' })"
@@ -161,7 +161,18 @@ foreach ($required in @("Description", "Material", "Warehouse")) {
     }
 }
 
-$warehouses = @(Invoke-RestMethod "$ApiBaseUrl/warehouses?includeInactive=true" -TimeoutSec 30)
+$warehouseResponse = Invoke-RestMethod "$ApiBaseUrl/warehouses?includeInactive=true" -TimeoutSec 30
+
+# Windows PowerShell can preserve a JSON array as one collection object.
+# Flatten it explicitly so every warehouse becomes its own object.
+$warehouses = New-Object System.Collections.Generic.List[object]
+foreach ($candidate in @($warehouseResponse)) {
+    foreach ($warehouse in @($candidate)) {
+        if ($null -ne $warehouse -and -not [string]::IsNullOrWhiteSpace([string]$warehouse.code)) {
+            $warehouses.Add($warehouse)
+        }
+    }
+}
 
 if ($warehouses.Count -eq 0) {
     throw "The API returned no warehouses."
@@ -175,10 +186,12 @@ foreach ($warehouse in $warehouses) {
 
 Write-Host ""
 Write-Host "API warehouse map:" -ForegroundColor DarkGray
-foreach ($warehouse in $warehouses | Sort-Object sortOrder) {
+foreach ($warehouse in ($warehouses | Sort-Object sortOrder)) {
     $apiCode = ([string]$warehouse.code).Trim().ToUpperInvariant()
     Write-Host ("  {0,-12} -> {1}" -f $apiCode, [string]$warehouse.name) -ForegroundColor DarkGray
 }
+
+Write-Host "API warehouse keys: $($warehouseByCode.Keys -join ', ')" -ForegroundColor DarkGray
 
 $groups = @{}
 $skippedRows = 0
