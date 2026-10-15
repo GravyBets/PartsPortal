@@ -1,4 +1,5 @@
-﻿using PartsPortal.Models;
+﻿using PartsPortal.Contracts.Access;
+using PartsPortal.Models;
 using PartsPortal.Services;
 using System;
 using System.Collections.Generic;
@@ -12,7 +13,9 @@ namespace PartsPortal
     public partial class WarehouseSelectWindow : Window
     {
         private readonly SettingsService _settingsService = new();
+        private readonly AccessApiService _accessService = new();
         private UserSettings _settings = new();
+        private CurrentUserAccessDto? _currentAccess;
         private bool _isShuttingDown;
 
         private bool _suppressThemeToggle;
@@ -34,6 +37,38 @@ namespace PartsPortal
             _suppressThemeToggle = false;
 
             Closing += WarehouseSelectWindow_Closing;
+            Loaded += WarehouseSelectWindow_Loaded;
+        }
+
+        private async void WarehouseSelectWindow_Loaded(
+            object sender,
+            RoutedEventArgs e)
+        {
+            await RefreshAccessAsync();
+        }
+
+        private async Task RefreshAccessAsync()
+        {
+            try
+            {
+                _currentAccess = await _accessService.GetCurrentAsync();
+
+                ManagePartsButton.Visibility =
+                    _currentAccess?.CanManageParts == true
+                        ? Visibility.Visible
+                        : Visibility.Collapsed;
+
+                UserAccessButton.Visibility =
+                    _currentAccess?.CanManageUsers == true
+                        ? Visibility.Visible
+                        : Visibility.Collapsed;
+            }
+            catch
+            {
+                _currentAccess = null;
+                ManagePartsButton.Visibility = Visibility.Collapsed;
+                UserAccessButton.Visibility = Visibility.Collapsed;
+            }
         }
 
         private void WarehouseSelectWindow_Closing(object? sender, CancelEventArgs e)
@@ -153,6 +188,16 @@ namespace PartsPortal
 
         private void ManageParts_Click(object sender, RoutedEventArgs e)
         {
+            if (_currentAccess?.CanManageParts != true)
+            {
+                MessageBox.Show(
+                    "You do not have permission to manage parts.",
+                    "Parts Management",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                return;
+            }
+
             var window = new PartsManagementWindow
             {
                 Owner = this,
@@ -160,6 +205,28 @@ namespace PartsPortal
             };
 
             window.ShowDialog();
+        }
+
+        private async void UserAccess_Click(object sender, RoutedEventArgs e)
+        {
+            if (_currentAccess?.CanManageUsers != true)
+            {
+                MessageBox.Show(
+                    "Administrator access is required.",
+                    "User Access",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                return;
+            }
+
+            var window = new UserAccessWindow
+            {
+                Owner = this,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            };
+
+            window.ShowDialog();
+            await RefreshAccessAsync();
         }
 
         private void About_Click(object sender, RoutedEventArgs e)
