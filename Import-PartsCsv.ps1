@@ -141,7 +141,7 @@ $delimiter = Get-Delimiter $resolvedCsv
 
 Write-Host ""
 Write-Host "PartsPortal CSV catalog import" -ForegroundColor Cyan
-Write-Host "Importer version: 2026.10.15.3" -ForegroundColor DarkGray
+Write-Host "Importer version: 2026.10.15.4" -ForegroundColor DarkGray
 Write-Host "CSV : $resolvedCsv"
 Write-Host "API : $ApiBaseUrl"
 Write-Host "Mode: $(if ($Apply) { 'APPLY' } else { 'PREVIEW ONLY' })"
@@ -277,11 +277,24 @@ foreach ($warehouse in $warehouses | Sort-Object sortOrder) {
     Write-Host ("{0,-24} {1,6} parts" -f $warehouse.name, $count)
 }
 
-$existing = @(Invoke-RestMethod "$ApiBaseUrl/parts?includeInactive=true" -TimeoutSec 30)
+$existingResponse = Invoke-RestMethod "$ApiBaseUrl/parts?includeInactive=true" -TimeoutSec 30
+$existing = New-Object System.Collections.Generic.List[object]
+
+if ($null -ne $existingResponse) {
+    foreach ($candidate in @($existingResponse)) {
+        foreach ($part in @($candidate)) {
+            if ($null -ne $part -and -not [string]::IsNullOrWhiteSpace([string]$part.materialNumber)) {
+                $existing.Add($part)
+            }
+        }
+    }
+}
+
 $existingByMaterial = @{}
 
 foreach ($part in $existing) {
-    $existingByMaterial[[string]$part.materialNumber.ToUpperInvariant()] = $part
+    $materialKey = ([string]$part.materialNumber).Trim().ToUpperInvariant()
+    $existingByMaterial[$materialKey] = $part
 }
 
 $creates = 0
@@ -371,5 +384,17 @@ Write-Host "IMPORT COMPLETE" -ForegroundColor Green
 Write-Host "Created : $createdCount" -ForegroundColor Green
 Write-Host "Updated : $updatedCount" -ForegroundColor Green
 
-$final = @(Invoke-RestMethod "$ApiBaseUrl/parts" -TimeoutSec 30)
-Write-Host "Active parts now in database: $($final.Count)" -ForegroundColor Green
+$finalResponse = Invoke-RestMethod "$ApiBaseUrl/parts" -TimeoutSec 30
+$finalCount = 0
+
+if ($null -ne $finalResponse) {
+    foreach ($candidate in @($finalResponse)) {
+        foreach ($part in @($candidate)) {
+            if ($null -ne $part -and -not [string]::IsNullOrWhiteSpace([string]$part.materialNumber)) {
+                $finalCount++
+            }
+        }
+    }
+}
+
+Write-Host "Active parts now in database: $finalCount" -ForegroundColor Green
