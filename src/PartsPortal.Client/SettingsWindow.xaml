@@ -45,7 +45,7 @@
                            FontSize="22"
                            FontWeight="Bold"
                            Foreground="{DynamicResource TextPrimary}"/>
-                <TextBlock Text="Update your info, paths, and email recipients."
+                <TextBlock Text="Update your info, PDF output, and email recipients."
                            Margin="0,4,0,0"
                            Foreground="{DynamicResource TextSecondary}"/>
             </StackPanel>
@@ -70,7 +70,6 @@
                     <RowDefinition Height="Auto"/> <!-- EmployeeId -->
                     <RowDefinition Height="Auto"/> <!-- Truck -->
                     <RowDefinition Height="Auto"/> <!-- Pdf Output -->
-                    <RowDefinition Height="Auto"/> <!-- Csv -->
                     <RowDefinition Height="Auto"/> <!-- Divider -->
                     <RowDefinition Height="Auto"/> <!-- Email To -->
                     <RowDefinition Height="Auto"/> <!-- Email CC -->
@@ -116,32 +115,19 @@
                         Style="{StaticResource SecondaryButtonStyle}"
                         Click="BrowsePdfFolder_Click"/>
 
-                <!-- Parts CSV Path -->
-                <TextBlock Grid.Row="4" Grid.Column="0" Text="Parts CSV Path:" Style="{StaticResource FormLabelStyle}"/>
-                <TextBox Grid.Row="4" Grid.Column="1"
-                         Style="{StaticResource ModernTextBox}"
-                         Margin="0,0,10,12"
-                         Text="{Binding CsvPath, UpdateSourceTrigger=PropertyChanged}"/>
-                <Button Grid.Row="4" Grid.Column="2"
-                        Content="Browse..."
-                        Height="34"
-                        VerticalAlignment="Top"
-                        Style="{StaticResource SecondaryButtonStyle}"
-                        Click="BrowseCsv_Click"/>
-
                 <!-- Divider -->
-                <Border Grid.Row="5" Grid.ColumnSpan="3"
+                <Border Grid.Row="4" Grid.ColumnSpan="3"
                         Height="1"
                         Background="{DynamicResource CardBorder}"
                         Opacity="0.7"
                         Margin="0,6,0,16"/>
 
                 <!-- Email To -->
-                <TextBlock Grid.Row="6" 
+                <TextBlock Grid.Row="5" 
                            Grid.Column="0" 
                            Text="Email To:" 
                            Style="{StaticResource FormLabelStyle}"/>
-                <TextBox Grid.Row="6" 
+                <TextBox Grid.Row="5" 
                          Grid.Column="1" 
                          Grid.ColumnSpan="2"
                          Style="{StaticResource ModernTextBox}"
@@ -157,11 +143,11 @@
                          Text="{Binding EmailTo, UpdateSourceTrigger=PropertyChanged}"/>
 
                 <!-- Email CC -->
-                <TextBlock Grid.Row="7" 
+                <TextBlock Grid.Row="6" 
                            Grid.Column="0" 
                            Text="Email CC:" 
                            Style="{StaticResource FormLabelStyle}"/>
-                <TextBox Grid.Row="7" 
+                <TextBox Grid.Row="6" 
                          Grid.Column="1" 
                          Grid.ColumnSpan="2"
                          Style="{StaticResource ModernTextBox}"
@@ -177,7 +163,7 @@
                          Text="{Binding EmailCc, UpdateSourceTrigger=PropertyChanged}"/> 
 
                     <!-- Email Directory Label -->
-                    <TextBlock Grid.Row="8"
+                    <TextBlock Grid.Row="7"
                                Grid.Column="0"
                                Text="Email Directory:"
                                Style="{StaticResource FormLabelStyle}"
@@ -185,7 +171,7 @@
                                Margin="0,12,0,0"/>
 
                     <!-- Email Directory Controls -->
-                    <Grid Grid.Row="8"
+                    <Grid Grid.Row="7"
                           Grid.Column="1"
                           Grid.ColumnSpan="2"
                           Margin="0,0,0,0">
