@@ -729,6 +729,11 @@ namespace PartsPortal
 
             view.SelectedPartsGrid.PreviewKeyDown += (_, e) =>
             {
+                // When the user is typing in the Qty textbox, Delete belongs
+                // to the textbox and must not trigger the row shortcut.
+                if (e.OriginalSource is TextBox)
+                    return;
+
                 if (e.Key == System.Windows.Input.Key.Delete &&
                     view.SelectedPartsGrid.SelectedItem is SelectedPartLine line)
                 {
