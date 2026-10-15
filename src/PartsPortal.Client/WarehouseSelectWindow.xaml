@@ -401,8 +401,17 @@
 
         <!-- Footer buttons -->
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center">
-            <Button Style="{StaticResource FooterButton}" Content="About App" Click="About_Click" Margin="0,0,18,0"/>
-            <Button Style="{StaticResource FooterButton}" Content="Bug / Feature Request" Click="BugFeature_Click"/>
+            <Button Style="{StaticResource FooterButton}"
+                    Content="Manage Parts"
+                    Click="ManageParts_Click"
+                    Margin="0,0,18,0"/>
+            <Button Style="{StaticResource FooterButton}"
+                    Content="About App"
+                    Click="About_Click"
+                    Margin="0,0,18,0"/>
+            <Button Style="{StaticResource FooterButton}"
+                    Content="Bug / Feature Request"
+                    Click="BugFeature_Click"/>
         </StackPanel>
     </Grid>
 </Window>

@@ -151,6 +151,17 @@ namespace PartsPortal
             ThemeService.Apply(false);
         }
 
+        private void ManageParts_Click(object sender, RoutedEventArgs e)
+        {
+            var window = new PartsManagementWindow
+            {
+                Owner = this,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            };
+
+            window.ShowDialog();
+        }
+
         private void About_Click(object sender, RoutedEventArgs e)
         {
             var w = new AboutWindow { Owner = this };
