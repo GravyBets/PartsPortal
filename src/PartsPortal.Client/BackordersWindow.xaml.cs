@@ -1000,7 +1000,6 @@ namespace PartsPortal
             target.EmployeeId = source.EmployeeId ?? "";
             target.TruckNumber = source.TruckNumber ?? "";
             target.PdfOutputFolder = source.PdfOutputFolder ?? "";
-            target.CsvPath = source.CsvPath ?? "";
             target.EmailTo = source.EmailTo ?? "";
             target.EmailCc = source.EmailCc ?? "";
             target.EmailSubjectTemplate = source.EmailSubjectTemplate ?? "";
