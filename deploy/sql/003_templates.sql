@@ -1,11 +1,13 @@
--- PartsPortal central templates
--- Safe to run repeatedly.
+-- PartsPortal personal templates
+-- Each Windows user owns an independent template library.
+-- Safe to run repeatedly on a database where this script has not been run before.
 
 USE partsportal;
 
 CREATE TABLE IF NOT EXISTS templates
 (
     id INT NOT NULL AUTO_INCREMENT,
+    owner_employee_id VARCHAR(64) NOT NULL,
     name VARCHAR(100) NOT NULL,
     warehouse_id INT NOT NULL,
     is_active TINYINT(1) NOT NULL DEFAULT 1,
@@ -13,8 +15,10 @@ CREATE TABLE IF NOT EXISTS templates
     updated_at_utc DATETIME(6) NOT NULL,
     updated_by VARCHAR(128) NULL,
     PRIMARY KEY (id),
-    UNIQUE KEY ux_templates_warehouse_name (warehouse_id, name),
-    KEY ix_templates_warehouse_active_name (warehouse_id, is_active, name),
+    UNIQUE KEY ux_templates_owner_warehouse_name
+        (owner_employee_id, warehouse_id, name),
+    KEY ix_templates_owner_warehouse_active_name
+        (owner_employee_id, warehouse_id, is_active, name),
     CONSTRAINT fk_templates_warehouse
         FOREIGN KEY (warehouse_id)
         REFERENCES warehouses (id)
