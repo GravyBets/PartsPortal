@@ -90,25 +90,25 @@ function Get-Delimiter {
     return ","
 }
 
-function Normalize-WarehouseName {
+function Normalize-WarehouseCode {
     param([string]$Value)
 
     $name = if ($null -eq $Value) { "" } else { ([string]$Value).Trim() }
 
     switch -Regex ($name) {
-        '^Warehouse\s*-\s*Building\s+D$' { return "Warehouse - Building D" }
-        '^Building\s+D$'                   { return "Warehouse - Building D" }
-        '^Meter\s+Lab$'                    { return "Warehouse - Building D" }
+        '^Warehouse\s*-\s*Building\s+D$' { return "BUILDING_D" }
+        '^Building\s+D$'                   { return "BUILDING_D" }
+        '^Meter\s+Lab$'                    { return "BUILDING_D" }
 
-        '^Warehouse\s*-\s*Building\s+A$' { return "Warehouse - Building A" }
-        '^Building\s+A$'                   { return "Warehouse - Building A" }
-        '^Central$'                         { return "Warehouse - Building A" }
+        '^Warehouse\s*-\s*Building\s+A$' { return "BUILDING_A" }
+        '^Building\s+A$'                   { return "BUILDING_A" }
+        '^Central$'                         { return "BUILDING_A" }
 
-        '^Warehouse\s*-\s*Building\s+B$' { return "Warehouse - Building B" }
-        '^Building\s+B$'                   { return "Warehouse - Building B" }
-        '^Substation$'                      { return "Warehouse - Building B" }
+        '^Warehouse\s*-\s*Building\s+B$' { return "BUILDING_B" }
+        '^Building\s+B$'                   { return "BUILDING_B" }
+        '^Substation$'                      { return "BUILDING_B" }
 
-        default                             { return $name }
+        default                             { return $name.ToUpperInvariant().Replace(" ", "_") }
     }
 }
 
@@ -163,9 +163,9 @@ if ($warehouses.Count -eq 0) {
     throw "The API returned no warehouses."
 }
 
-$warehouseByName = @{}
+$warehouseByCode = @{}
 foreach ($warehouse in $warehouses) {
-    $warehouseByName[[string]$warehouse.name] = $warehouse
+    $warehouseByCode[[string]$warehouse.code] = $warehouse
 }
 
 $groups = @{}
@@ -175,7 +175,7 @@ $unknownWarehouses = New-Object System.Collections.Generic.HashSet[string] ([Sys
 foreach ($row in $rows) {
     $material = ([string]$row.Material).Trim()
     $description = ([string]$row.Description).Trim()
-    $warehouseName = Normalize-WarehouseName ([string]$row.Warehouse)
+    $warehouseCode = Normalize-WarehouseCode ([string]$row.Warehouse)
 
     if ([string]::IsNullOrWhiteSpace($material) -and [string]::IsNullOrWhiteSpace($description)) {
         $skippedRows++
@@ -194,8 +194,8 @@ foreach ($row in $rows) {
         continue
     }
 
-    if (-not $warehouseByName.ContainsKey($warehouseName)) {
-        [void]$unknownWarehouses.Add($warehouseName)
+    if (-not $warehouseByCode.ContainsKey($warehouseCode)) {
+        [void]$unknownWarehouses.Add(([string]$row.Warehouse).Trim())
         continue
     }
 
@@ -216,7 +216,7 @@ foreach ($row in $rows) {
         Write-Warning "Material '$material' has multiple descriptions. Keeping '$($group.Description)' and ignoring '$description'."
     }
 
-    $warehouse = $warehouseByName[$warehouseName]
+    $warehouse = $warehouseByCode[$warehouseCode]
     [void]$group.WarehouseIds.Add([int]$warehouse.id)
     [void]$group.WarehouseNames.Add([string]$warehouse.name)
 }
