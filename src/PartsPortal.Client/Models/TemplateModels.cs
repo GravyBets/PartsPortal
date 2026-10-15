@@ -4,7 +4,14 @@ namespace PartsPortal.Models
 {
     public class PartTemplate
     {
+        public int Id { get; set; }
+
         public string Name { get; set; } = "";
+
+        public bool IsActive { get; set; } = true;
+
+        public int WarehouseId { get; set; }
+
         public List<TemplateLine> Lines { get; set; } = new();
     }
 
