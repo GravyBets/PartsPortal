@@ -4,6 +4,8 @@ public sealed class CatalogTemplate
 {
     public int Id { get; set; }
 
+    public string OwnerEmployeeId { get; set; } = "";
+
     public string Name { get; set; } = "";
 
     public int WarehouseId { get; set; }
