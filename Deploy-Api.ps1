@@ -31,7 +31,11 @@ function Run([string]$exe, [string[]]$arguments) {
 
 function Write-Utf8NoBom([string]$path, [string]$content) {
     $encoding = New-Object System.Text.UTF8Encoding($false)
-    [System.IO.File]::WriteAllText($path, $content, $encoding)
+
+    # This file is executed by bash on Linux. Force Unix LF line endings.
+    $normalized = $content.Replace("`r`n", "`n").Replace("`r", "`n")
+
+    [System.IO.File]::WriteAllText($path, $normalized, $encoding)
 }
 
 if (-not (Test-Path $ApiProject)) {
@@ -131,6 +135,7 @@ try {
         "rm -rf '$remoteStage' && " +
         "mkdir -p '$remoteStage' && " +
         "tar -xzf '$remoteBundle' -C '$remoteStage' && " +
+        "sed -i 's/$//' '$remoteStage/deploy.sh' && " +
         "sudo bash '$remoteStage/deploy.sh' '$remoteStage/api'; " +
         "rc=`$?; " +
         "rm -rf '$remoteStage' '$remoteBundle'; " +
