@@ -58,7 +58,7 @@ namespace PartsPortal
         private readonly List<(ListBox Names, DataGrid Lines)> _templateUIs = new();
         private readonly Dictionary<TabItem, TextBox> _detailsBoxByTab = new();
         private bool _suppressDetailsTextChanged = false;
-        private const int MaxLineItemsPerTab = 12;
+        private const int PdfLineItemsPerPage = 12;
         private readonly Dictionary<TabItem, TextBlock> _selectedStatusByTab = new();
         private readonly Dictionary<TabItem, Views.PartsBrowserView> _partsViewByTab = new();
         private readonly Dictionary<TabItem, Views.SelectedPartsView> _selectedViewByTab = new();
@@ -446,19 +446,8 @@ namespace PartsPortal
             }
         }
 
-        private const int MaxSiteTabs = 6;
-
         private void AddNewSiteTab()
         {
-            int currentSiteTabCount = SiteTabs.Items.Count - 1; // excluding +
-
-            if (currentSiteTabCount >= MaxSiteTabs)
-            {
-                MessageBox.Show("Max of 6 site tabs.");
-                SiteTabs.SelectedIndex = SiteTabs.Items.Count - 2;
-                return;
-            }
-
             string header = GetNextDefaultBlankTitle();
 
             var newTab = CreateSiteTab(header); //content is already wired here
@@ -1074,13 +1063,6 @@ namespace PartsPortal
                 return;
             }
 
-            // New line item would exceed max
-            if (list.Count >= MaxLineItemsPerTab)
-            {
-                SetTabStatus(tab, $"Max {MaxLineItemsPerTab} line items per site/tab.");
-                return;
-            }
-
             var newLine = new SelectedPartLine(part) { Qty = qtyToAdd };
             list.Add(newLine);
 
@@ -1509,7 +1491,9 @@ namespace PartsPortal
         return candidateTabs;
     }
 
-        private (string OutFile, int Pages) GenerateMergedPdf(List<TabItem> candidateTabs, string outDir)
+        private (string OutFile, int Pages) GenerateMergedPdf(
+            List<TabItem> candidateTabs,
+            string outDir)
         {
             using var outDoc = new PdfDocument();
             var printedTabs = new List<TabItem>();
@@ -1520,78 +1504,166 @@ namespace PartsPortal
 
                 bool isReturn = GetIsReturnForTab(tab);
                 string templatePath = GetTemplatePath(isReturn);
+
                 if (!File.Exists(templatePath))
                     continue;
 
-                // MovementType code
+                // Movement type code.
                 string mtFull = GetMovementType(tab) ?? "";
                 string mtCode = ExtractMovementCode(mtFull);
+
                 if (string.IsNullOrWhiteSpace(mtCode))
                     mtCode = isReturn ? "262" : "261";
 
-                // Single ref field
+                // Resolve the one applicable assignment/reference field.
                 string costCenter = "";
                 string wbs = "";
                 string workOrder = "";
                 string workOrderUsed = "";
 
                 if (mtCode == "201" || mtCode == "202")
+                {
                     costCenter = (GetCostCenter(tab) ?? "").Trim();
+                }
                 else if (mtCode == "221" || mtCode == "222")
+                {
                     wbs = (GetWbs(tab) ?? "").Trim();
+                }
+                else if (isReturn && mtCode == "962")
+                {
+                    workOrderUsed = (GetWorkOrder(tab) ?? "").Trim();
+                }
                 else
                 {
-                    if (isReturn && mtCode == "962")
-                        workOrderUsed = (GetWorkOrder(tab) ?? "").Trim();
-                    else
-                        workOrder = (GetWorkOrder(tab) ?? "").Trim();
+                    workOrder = (GetWorkOrder(tab) ?? "").Trim();
                 }
 
-                using var loaded = new PdfLoadedDocument(templatePath);
+                // A tab with zero parts but a document header still gets one page.
+                int pdfPagesForTab = Math.Max(
+                    1,
+                    (lines.Count + PdfLineItemsPerPage - 1) /
+                    PdfLineItemsPerPage);
 
-                // Header
-                SetPdfTextField(loaded, "Name", GetPdfName());
-                SetPdfTextField(loaded, "Date", DateTime.Now.ToString("MM/dd/yyyy"));
-                SetPdfTextField(loaded, "DocHeader", GetDocHeaderForPdf(tab)); // <- important
-
-                // Assignment
-                SetPdfTextField(loaded, "CostCenter", costCenter);
-                SetPdfTextField(loaded, "Wbs", wbs);
-                SetPdfTextField(loaded, "WorkOrder", workOrder);
-                SetPdfTextField(loaded, "WorkOrderUsed", workOrderUsed);
-
-                // Lines 1..12
-                for (int i = 1; i <= 12; i++)
+                for (int pageIndex = 0;
+                     pageIndex < pdfPagesForTab;
+                     pageIndex++)
                 {
-                    var line = (i - 1 < lines.Count) ? lines[i - 1] : null;
+                    int lineOffset =
+                        pageIndex * PdfLineItemsPerPage;
 
-                    SetPdfTextField(loaded, $"DESCRIPTION{i}", line?.Description ?? "");
-                    SetPdfTextField(loaded, $"MATERIAL{i}", line?.Material ?? "");
-                    SetPdfTextField(loaded, $"QUANTITY{i}", line != null ? line.Qty.ToString() : "");
+                    using var loaded =
+                        new PdfLoadedDocument(templatePath);
+
+                    // Repeat the same identifying information on every page
+                    // generated for this site/tab.
+                    SetPdfTextField(
+                        loaded,
+                        "Name",
+                        GetPdfName());
+
+                    SetPdfTextField(
+                        loaded,
+                        "Date",
+                        DateTime.Now.ToString("MM/dd/yyyy"));
+
+                    SetPdfTextField(
+                        loaded,
+                        "DocHeader",
+                        GetDocHeaderForPdf(tab));
+
+                    SetPdfTextField(
+                        loaded,
+                        "CostCenter",
+                        costCenter);
+
+                    SetPdfTextField(
+                        loaded,
+                        "Wbs",
+                        wbs);
+
+                    SetPdfTextField(
+                        loaded,
+                        "WorkOrder",
+                        workOrder);
+
+                    SetPdfTextField(
+                        loaded,
+                        "WorkOrderUsed",
+                        workOrderUsed);
+
+                    // Each physical requisition page supports 12 lines.
+                    // Additional selected lines automatically continue on
+                    // another copy of the same PDF form.
+                    for (int pdfLine = 1;
+                         pdfLine <= PdfLineItemsPerPage;
+                         pdfLine++)
+                    {
+                        int sourceIndex =
+                            lineOffset + pdfLine - 1;
+
+                        var line =
+                            sourceIndex < lines.Count
+                                ? lines[sourceIndex]
+                                : null;
+
+                        SetPdfTextField(
+                            loaded,
+                            $"DESCRIPTION{pdfLine}",
+                            line?.Description ?? "");
+
+                        SetPdfTextField(
+                            loaded,
+                            $"MATERIAL{pdfLine}",
+                            line?.Material ?? "");
+
+                        SetPdfTextField(
+                            loaded,
+                            $"QUANTITY{pdfLine}",
+                            line != null
+                                ? line.Qty.ToString()
+                                : "");
+                    }
+
+                    SetMovementTypeRadio(
+                        loaded,
+                        mtCode);
+
+                    if (loaded.Form != null)
+                    {
+                        loaded.Form.SetDefaultAppearance(false);
+                        loaded.Form.FlattenFields();
+                    }
+
+                    outDoc.ImportPageRange(
+                        loaded,
+                        0,
+                        loaded.Pages.Count - 1);
                 }
 
-                SetMovementTypeRadio(loaded, mtCode);
-
-                // Flatten
-                if (loaded.Form != null)
-                {
-                    loaded.Form.SetDefaultAppearance(false);
-                    loaded.Form.FlattenFields();
-                }
-
-                // Merge
-                outDoc.ImportPageRange(loaded, 0, loaded.Pages.Count - 1);
+                // Keep each site/tab only once in the output filename even
+                // when that tab produced several PDF pages.
                 printedTabs.Add(tab);
             }
 
-            if (printedTabs.Count == 0 || outDoc.Pages.Count == 0)
-                throw new InvalidOperationException("No pages were added to the PDF.");
+            if (printedTabs.Count == 0 ||
+                outDoc.Pages.Count == 0)
+            {
+                throw new InvalidOperationException(
+                    "No pages were added to the PDF.");
+            }
 
-            string outFile = Path.Combine(outDir, BuildPdfFileName(printedTabs, outDoc.Pages.Count));
+            string outFile = Path.Combine(
+                outDir,
+                BuildPdfFileName(
+                    printedTabs,
+                    outDoc.Pages.Count));
+
             using var fs = File.Create(outFile);
             outDoc.Save(fs);
 
-            return (outFile, outDoc.Pages.Count); ;
+            return (
+                outFile,
+                outDoc.Pages.Count);
         }
 
         private bool SendPdfEmailOutlook(string pdfPath, List<PrintTabSummary>? rows, int pages, bool openDraft)
