@@ -1,12 +1,14 @@
 using Microsoft.EntityFrameworkCore;
 using PartsPortal.Api.Data;
 using PartsPortal.Api.Options;
+using PartsPortal.Api.Security;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddScoped<AccessRepository>();
 
 builder.Services.Configure<ClientVersionOptions>(
     builder.Configuration.GetSection(ClientVersionOptions.SectionName));
