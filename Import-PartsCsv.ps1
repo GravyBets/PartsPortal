@@ -94,21 +94,24 @@ function Normalize-WarehouseCode {
     param([string]$Value)
 
     $name = if ($null -eq $Value) { "" } else { ([string]$Value).Trim() }
+    $token = ($name -replace '[^A-Za-z0-9]', '').ToUpperInvariant()
 
-    switch -Regex ($name) {
-        '^Warehouse\s*-\s*Building\s+D$' { return "BUILDING_D" }
-        '^Building\s+D$'                   { return "BUILDING_D" }
-        '^Meter\s+Lab$'                    { return "BUILDING_D" }
+    switch ($token) {
+        'WAREHOUSEBUILDINGD' { return "BUILDING_D" }
+        'BUILDINGD'          { return "BUILDING_D" }
+        'METERLAB'           { return "BUILDING_D" }
 
-        '^Warehouse\s*-\s*Building\s+A$' { return "BUILDING_A" }
-        '^Building\s+A$'                   { return "BUILDING_A" }
-        '^Central$'                         { return "BUILDING_A" }
+        'WAREHOUSEBUILDINGA' { return "BUILDING_A" }
+        'BUILDINGA'          { return "BUILDING_A" }
+        'CENTRAL'            { return "BUILDING_A" }
 
-        '^Warehouse\s*-\s*Building\s+B$' { return "BUILDING_B" }
-        '^Building\s+B$'                   { return "BUILDING_B" }
-        '^Substation$'                      { return "BUILDING_B" }
+        'WAREHOUSEBUILDINGB' { return "BUILDING_B" }
+        'BUILDINGB'          { return "BUILDING_B" }
+        'SUBSTATION'         { return "BUILDING_B" }
 
-        default                             { return $name.ToUpperInvariant().Replace(" ", "_") }
+        default {
+            return (($name.Trim().ToUpperInvariant()) -replace '[^A-Z0-9]+', '_').Trim('_')
+        }
     }
 }
 
@@ -138,6 +141,7 @@ $delimiter = Get-Delimiter $resolvedCsv
 
 Write-Host ""
 Write-Host "PartsPortal CSV catalog import" -ForegroundColor Cyan
+Write-Host "Importer version: 2026.10.15.2" -ForegroundColor DarkGray
 Write-Host "CSV : $resolvedCsv"
 Write-Host "API : $ApiBaseUrl"
 Write-Host "Mode: $(if ($Apply) { 'APPLY' } else { 'PREVIEW ONLY' })"
@@ -165,17 +169,36 @@ if ($warehouses.Count -eq 0) {
 
 $warehouseByCode = @{}
 foreach ($warehouse in $warehouses) {
-    $warehouseByCode[[string]$warehouse.code] = $warehouse
+    $apiCode = ([string]$warehouse.code).Trim().ToUpperInvariant()
+    $warehouseByCode[$apiCode] = $warehouse
+}
+
+Write-Host ""
+Write-Host "API warehouse map:" -ForegroundColor DarkGray
+foreach ($warehouse in $warehouses | Sort-Object sortOrder) {
+    $apiCode = ([string]$warehouse.code).Trim().ToUpperInvariant()
+    Write-Host ("  {0,-12} -> {1}" -f $apiCode, [string]$warehouse.name) -ForegroundColor DarkGray
 }
 
 $groups = @{}
 $skippedRows = 0
 $unknownWarehouses = New-Object System.Collections.Generic.HashSet[string] ([System.StringComparer]::OrdinalIgnoreCase)
 
+Write-Host ""
+Write-Host "CSV warehouse mappings:" -ForegroundColor DarkGray
+$rows |
+    ForEach-Object { ([string]$_.Warehouse).Trim() } |
+    Where-Object { -not [string]::IsNullOrWhiteSpace($_) } |
+    Sort-Object -Unique |
+    ForEach-Object {
+        $mappedCode = (Normalize-WarehouseCode $_).Trim().ToUpperInvariant()
+        Write-Host ("  '{0}' -> {1}" -f $_, $mappedCode) -ForegroundColor DarkGray
+    }
+
 foreach ($row in $rows) {
     $material = ([string]$row.Material).Trim()
     $description = ([string]$row.Description).Trim()
-    $warehouseCode = Normalize-WarehouseCode ([string]$row.Warehouse)
+    $warehouseCode = (Normalize-WarehouseCode ([string]$row.Warehouse)).Trim().ToUpperInvariant()
 
     if ([string]::IsNullOrWhiteSpace($material) -and [string]::IsNullOrWhiteSpace($description)) {
         $skippedRows++
