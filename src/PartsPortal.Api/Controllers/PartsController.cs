@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PartsPortal.Api.Data;
 using PartsPortal.Api.Data.Entities;
+using PartsPortal.Api.Security;
 using PartsPortal.Contracts.Catalog;
 
 namespace PartsPortal.Api.Controllers;
@@ -11,10 +12,14 @@ namespace PartsPortal.Api.Controllers;
 public sealed class PartsController : ControllerBase
 {
     private readonly PartsPortalDbContext _db;
+    private readonly AccessRepository _access;
 
-    public PartsController(PartsPortalDbContext db)
+    public PartsController(
+        PartsPortalDbContext db,
+        AccessRepository access)
     {
         _db = db;
+        _access = access;
     }
 
     [HttpGet]
@@ -82,6 +87,13 @@ public sealed class PartsController : ControllerBase
         CreatePartRequest request,
         CancellationToken cancellationToken = default)
     {
+        var actor = await RequirePartsManagerAsync(cancellationToken);
+
+        if (actor is null)
+            return StatusCode(
+                StatusCodes.Status403Forbidden,
+                "Parts management permission is required.");
+
         var validation = ValidateRequest(
             request.MaterialNumber,
             request.Description,
@@ -125,7 +137,7 @@ public sealed class PartsController : ControllerBase
             IsActive = true,
             CreatedAtUtc = now,
             UpdatedAtUtc = now,
-            UpdatedBy = CleanChangedBy(request.ChangedBy)
+            UpdatedBy = actor
         };
 
         foreach (var warehouseItem in warehouses)
@@ -159,6 +171,13 @@ public sealed class PartsController : ControllerBase
         UpdatePartRequest request,
         CancellationToken cancellationToken = default)
     {
+        var actor = await RequirePartsManagerAsync(cancellationToken);
+
+        if (actor is null)
+            return StatusCode(
+                StatusCodes.Status403Forbidden,
+                "Parts management permission is required.");
+
         var validation = ValidateRequest(
             request.MaterialNumber,
             request.Description,
@@ -207,7 +226,7 @@ public sealed class PartsController : ControllerBase
         part.MaterialNumber = material;
         part.Description = description;
         part.UpdatedAtUtc = DateTime.UtcNow;
-        part.UpdatedBy = CleanChangedBy(request.ChangedBy);
+        part.UpdatedBy = actor;
 
         var requestedWarehouseIds = warehouseIds.ToHashSet();
 
@@ -248,6 +267,13 @@ public sealed class PartsController : ControllerBase
         [FromQuery] string? changedBy = null,
         CancellationToken cancellationToken = default)
     {
+        var actor = await RequirePartsManagerAsync(cancellationToken);
+
+        if (actor is null)
+            return StatusCode(
+                StatusCodes.Status403Forbidden,
+                "Parts management permission is required.");
+
         var part = await _db.Parts
             .SingleOrDefaultAsync(x => x.Id == id, cancellationToken);
 
@@ -260,7 +286,7 @@ public sealed class PartsController : ControllerBase
         {
             part.IsActive = false;
             part.UpdatedAtUtc = DateTime.UtcNow;
-            part.UpdatedBy = CleanChangedBy(changedBy);
+            part.UpdatedBy = actor;
             await _db.SaveChangesAsync(cancellationToken);
         }
 
@@ -275,6 +301,13 @@ public sealed class PartsController : ControllerBase
         [FromQuery] string? changedBy = null,
         CancellationToken cancellationToken = default)
     {
+        var actor = await RequirePartsManagerAsync(cancellationToken);
+
+        if (actor is null)
+            return StatusCode(
+                StatusCodes.Status403Forbidden,
+                "Parts management permission is required.");
+
         var part = await _db.Parts
             .SingleOrDefaultAsync(x => x.Id == id, cancellationToken);
 
@@ -287,7 +320,7 @@ public sealed class PartsController : ControllerBase
         {
             part.IsActive = true;
             part.UpdatedAtUtc = DateTime.UtcNow;
-            part.UpdatedBy = CleanChangedBy(changedBy);
+            part.UpdatedBy = actor;
             await _db.SaveChangesAsync(cancellationToken);
         }
 
@@ -295,6 +328,24 @@ public sealed class PartsController : ControllerBase
             .SingleAsync(x => x.Id == id, cancellationToken);
 
         return Ok(ToDto(reactivated));
+    }
+
+    private async Task<string?> RequirePartsManagerAsync(
+        CancellationToken cancellationToken)
+    {
+        var employeeId =
+            Request.Headers[AccessRepository.UserHeaderName]
+                .FirstOrDefault()?
+                .Trim();
+
+        if (string.IsNullOrWhiteSpace(employeeId))
+            return null;
+
+        return await _access.CanManagePartsAsync(
+            employeeId,
+            cancellationToken)
+            ? employeeId
+            : null;
     }
 
     private IQueryable<CatalogPart> CatalogQuery()
