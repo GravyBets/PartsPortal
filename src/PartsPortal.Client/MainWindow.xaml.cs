@@ -1113,28 +1113,30 @@ namespace PartsPortal
 
             string q = (view.PartsSearchBox.Text ?? "").Trim();
 
-            // Normalize the current warehouse once
+            // Both lists are warehouse-specific, but only All Parts uses search.
             string currentWh = NormalizeWarehouse(_currentWarehouse);
+            var warehouseParts = parts
+                .Where(p => string.Equals(
+                    NormalizeWarehouse(p.Warehouse),
+                    currentWh,
+                    StringComparison.OrdinalIgnoreCase))
+                .ToList();
 
-            IEnumerable<Part> queryable = parts;
-
-            // ✅ Normalize each part’s warehouse before comparing
-            queryable = queryable.Where(p =>
-                string.Equals(NormalizeWarehouse(p.Warehouse), currentWh, StringComparison.OrdinalIgnoreCase));
+            IEnumerable<Part> allParts = warehouseParts;
 
             if (!string.IsNullOrWhiteSpace(q))
             {
-                queryable = queryable.Where(p =>
+                allParts = allParts.Where(p =>
                     (p.Description?.Contains(q, StringComparison.OrdinalIgnoreCase) ?? false) ||
                     (p.Material?.Contains(q, StringComparison.OrdinalIgnoreCase) ?? false));
             }
 
-            // Materialize once
-            var list = queryable.Take(500).ToList();
+            // Retain the existing 500-result cap only for All Parts.
+            view.AllPartsListBox.ItemsSource = allParts.Take(500).ToList();
 
-            view.AllPartsListBox.ItemsSource = list;
-
-            view.FavPartsListBox.ItemsSource = list
+            // Favorites must always show the entire saved list for this warehouse.
+            // It is unaffected by search text and the All Parts result cap.
+            view.FavPartsListBox.ItemsSource = warehouseParts
                 .Where(p => !string.IsNullOrWhiteSpace(p.Material) && favSet.Contains(p.Material))
                 .ToList();
         }

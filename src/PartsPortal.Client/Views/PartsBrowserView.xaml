@@ -61,44 +61,16 @@
     <!-- Equivalent of partsPanel Grid -->
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <!-- search -->
             <RowDefinition Height="*"/>
             <!-- tabs -->
             <RowDefinition Height="Auto"/>
             <!-- button row -->
         </Grid.RowDefinitions>
 
-        <!-- Clear search without leaving the selected tab. -->
-        <Grid Grid.Row="0" Margin="0,0,0,10">
-            <TextBox x:Name="PartsSearchBox"
-                     x:FieldModifier="public"
-                     MaxLength="128"
-                     Height="34"
-                     Padding="12,0,42,0"
-                     Tag="Search parts..."
-                     Style="{StaticResource ModernWatermarkTextBox}"
-                     TextChanged="PartsSearchBox_TextChanged"/>
-
-            <Button x:Name="ClearPartsSearchButton"
-                    HorizontalAlignment="Right"
-                    VerticalAlignment="Center"
-                    Margin="0,0,6,0"
-                    Style="{StaticResource ClearPartsSearchButtonStyle}"
-                    Visibility="Collapsed"
-                    ToolTip="Clear search"
-                    Click="ClearPartsSearchButton_Click">
-                <TextBlock Text="&#xE8BB;"
-                           FontFamily="Segoe MDL2 Assets"
-                           FontSize="12"
-                           Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
-            </Button>
-        </Grid>
-
         <!-- Inner tabs -->
         <TabControl x:Name="PartsTabs"
             x:FieldModifier="public"
-            Grid.Row="1"
+            Grid.Row="0"
             Style="{StaticResource PartsInnerTabControlStyle}"
             ItemContainerStyle="{StaticResource PartsInnerTabItemStyle}"
             Margin="0"
@@ -110,7 +82,40 @@
 
             <!-- ALL PARTS -->
             <TabItem Header="All Parts">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+            <!-- Clear search without leaving the selected tab. -->
+            <Grid Grid.Row="0" Margin="0,0,0,10">
+                <TextBox x:Name="PartsSearchBox"
+                         x:FieldModifier="public"
+                         MaxLength="128"
+                         Height="34"
+                         Padding="12,0,42,0"
+                         Tag="Search parts..."
+                         Style="{StaticResource ModernWatermarkTextBox}"
+                         TextChanged="PartsSearchBox_TextChanged"/>
+    
+                <Button x:Name="ClearPartsSearchButton"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Center"
+                        Margin="0,0,6,0"
+                        Style="{StaticResource ClearPartsSearchButtonStyle}"
+                        Visibility="Collapsed"
+                        ToolTip="Clear search"
+                        Click="ClearPartsSearchButton_Click">
+                    <TextBlock Text="&#xE8BB;"
+                               FontFamily="Segoe MDL2 Assets"
+                               FontSize="12"
+                               Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
+                </Button>
+            </Grid>
+
                 <ListBox x:Name="AllPartsListBox"
+                         Grid.Row="1"
                          x:FieldModifier="public"
                          Style="{StaticResource ThemedListBoxInTabsStyle}"
                          ItemContainerStyle="{StaticResource ThemedListBoxItemStyle}"
@@ -126,6 +131,7 @@
                         </ContextMenu>
                     </ListBox.ContextMenu>
                 </ListBox>
+                </Grid>
             </TabItem>
 
             <!-- FAVORITES -->
@@ -211,7 +217,7 @@
         </TabControl>
 
         <!-- Button row -->
-        <StackPanel Grid.Row="2"
+        <StackPanel Grid.Row="1"
             Orientation="Horizontal"
             HorizontalAlignment="Left"
             Margin="0,10,0,0">
