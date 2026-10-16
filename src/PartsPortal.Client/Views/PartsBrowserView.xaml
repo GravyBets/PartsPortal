@@ -89,11 +89,12 @@
                     </Grid.RowDefinitions>
 
             <!-- Clear search without leaving the selected tab. -->
-            <Grid Grid.Row="0" Margin="0,0,0,10">
+            <Grid Grid.Row="0" Margin="0,0,0,0">
                 <TextBox x:Name="PartsSearchBox"
                          x:FieldModifier="public"
                          MaxLength="128"
                          Height="34"
+                         Margin="4,8,4,0"
                          Padding="12,0,42,0"
                          Tag="Search parts..."
                          Style="{StaticResource ModernWatermarkTextBox}"
