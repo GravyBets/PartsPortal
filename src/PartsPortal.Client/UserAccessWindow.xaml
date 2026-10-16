@@ -98,9 +98,20 @@
                 </Grid>
             </Border>
 
-            <Border Grid.Column="2"
-                    Style="{StaticResource Card}">
-                <StackPanel>
+            <!-- Keep the card shadow behind the content to avoid bitmap-blurred text. -->
+            <Grid Grid.Column="2"
+                  SnapsToDevicePixels="True"
+                  UseLayoutRounding="True">
+                <Border Style="{StaticResource Card}"
+                        IsHitTestVisible="False"/>
+
+                <Border Style="{StaticResource Card}"
+                        Effect="{x:Null}"
+                        SnapsToDevicePixels="True"
+                        UseLayoutRounding="True"
+                        TextOptions.TextFormattingMode="Display"
+                        TextOptions.TextRenderingMode="ClearType">
+                    <StackPanel>
                     <TextBlock x:Name="EditorTitle"
                                Text="Select a user"
                                FontSize="18"
@@ -109,43 +120,55 @@
                                Foreground="{DynamicResource TextPrimary}"/>
 
                     <TextBlock Text="Employee ID"
+                               FontSize="14"
                                FontWeight="SemiBold"
                                Margin="0,0,0,6"
                                Foreground="{DynamicResource TextPrimary}"/>
                     <TextBox x:Name="EmployeeIdBox"
+                             Style="{StaticResource ModernTextBox}"
+                             Height="36"
+                             FontSize="14"
                              MaxLength="64"
                              Margin="0,0,0,14"/>
 
                     <TextBlock Text="Display Name"
+                               FontSize="14"
                                FontWeight="SemiBold"
                                Margin="0,0,0,6"
                                Foreground="{DynamicResource TextPrimary}"/>
                     <TextBox x:Name="DisplayNameBox"
+                             Style="{StaticResource ModernTextBox}"
+                             Height="36"
+                             FontSize="14"
                              MaxLength="128"
                              Margin="0,0,0,18"/>
 
                     <CheckBox x:Name="ActiveCheckBox"
+                              FontSize="14"
                               Content="Active user"
                               IsChecked="True"
                               Margin="0,0,0,14"
                               Foreground="{DynamicResource TextPrimary}"/>
 
                     <TextBlock Text="Roles"
+                               FontSize="14"
                                FontWeight="SemiBold"
                                Margin="0,0,0,8"
                                Foreground="{DynamicResource TextPrimary}"/>
 
                     <CheckBox x:Name="AdminCheckBox"
+                              FontSize="14"
                               Content="Administrator"
                               Margin="0,0,0,8"
                               Foreground="{DynamicResource TextPrimary}"/>
 
                     <TextBlock Text="Can manage users and parts."
                                Margin="24,-4,0,12"
-                               FontSize="12"
+                               FontSize="13"
                                Foreground="{DynamicResource TextSecondary}"/>
 
                     <CheckBox x:Name="PartsManagerCheckBox"
+                              FontSize="14"
                               Content="Parts Manager"
                               Margin="0,0,0,8"
                               Foreground="{DynamicResource TextPrimary}"/>
@@ -153,7 +176,7 @@
                     <TextBlock Text="Can add, edit, deactivate, reactivate, and assign parts."
                                Margin="24,-4,0,18"
                                TextWrapping="Wrap"
-                               FontSize="12"
+                               FontSize="13"
                                Foreground="{DynamicResource TextSecondary}"/>
 
                     <Button x:Name="SaveButton"
@@ -162,8 +185,9 @@
                             Style="{StaticResource PrimaryButtonStyle}"
                             IsEnabled="False"
                             Click="Save_Click"/>
-                </StackPanel>
-            </Border>
+                    </StackPanel>
+                </Border>
+            </Grid>
         </Grid>
 
         <Grid Grid.Row="2" Margin="0,14,0,0">
