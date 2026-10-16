@@ -5,7 +5,7 @@
     <!-- =========================
          LIGHT THEME
          ========================= -->
-    
+
     <!-- App + cards -->
     <SolidColorBrush x:Key="AppBackground" Color="#F3F5F8"/>
     <SolidColorBrush x:Key="CardBackground" Color="#FFFFFF"/>
@@ -27,6 +27,26 @@
     <!-- Surfaces used inside cards -->
     <SolidColorBrush x:Key="SurfaceBg" Color="#FAFBFC"/>
     <SolidColorBrush x:Key="SurfaceBorder" Color="#D7DCE3"/>
+
+    <!-- Semantic control colors.
+     These match the current Light theme values so Light does not visually change. -->
+
+    <!-- Inputs: TextBox / ComboBox / DatePicker -->
+    <SolidColorBrush x:Key="ControlInputBg" Color="#FAFBFC"/>
+    <SolidColorBrush x:Key="ControlInputText" Color="#0F172A"/>
+    <SolidColorBrush x:Key="ControlInputCaret" Color="#0F172A"/>
+    <SolidColorBrush x:Key="ControlInputBorder" Color="#D7DCE3"/>
+    <SolidColorBrush x:Key="ControlInputHoverBg" Color="#E4EAF3"/>
+    <SolidColorBrush x:Key="ControlInputHoverBorder" Color="#94A3B8"/>
+    <SolidColorBrush x:Key="ControlInputFocusBorder" Color="#2563EB"/>
+
+    <!-- Secondary buttons -->
+    <SolidColorBrush x:Key="ControlSecondaryBg" Color="#EEF2F7"/>
+    <SolidColorBrush x:Key="ControlSecondaryText" Color="#0F172A"/>
+    <SolidColorBrush x:Key="ControlSecondaryBorder" Color="#D7DCE3"/>
+    <SolidColorBrush x:Key="ControlSecondaryHoverBg" Color="#E4EAF3"/>
+    <SolidColorBrush x:Key="ControlSecondaryHoverBorder" Color="#94A3B8"/>
+    <SolidColorBrush x:Key="ControlSecondaryPressedBg" Color="#D8E1EE"/>
 
     <!-- Text -->
     <SolidColorBrush x:Key="TextPrimary" Color="#0F172A"/>
@@ -52,7 +72,7 @@
 
     <!-- Tabs (light theme) -->
     <SolidColorBrush x:Key="TabBg" Color="#E7EDF6"/>
-    <SolidColorBrush x:Key="TabBgSelected" Color="#FAFBFC"/>    
+    <SolidColorBrush x:Key="TabBgSelected" Color="#FAFBFC"/>
     <SolidColorBrush x:Key="TabBgHover" Color="#DDE6F4"/>
 
     <!-- List surfaces (light) -->
@@ -66,8 +86,8 @@
     <SolidColorBrush x:Key="TabPillSelectedBg" Color="#E9EEF6"/>
 
     <!-- Inner Tabs -->
-    <SolidColorBrush x:Key="InnerTabBg" Color="#DEE6F2"/>    
-    <SolidColorBrush x:Key="InnerTabSelectedBg" Color="#EEF2F7"/>    
+    <SolidColorBrush x:Key="InnerTabBg" Color="#DEE6F2"/>
+    <SolidColorBrush x:Key="InnerTabSelectedBg" Color="#EEF2F7"/>
     <SolidColorBrush x:Key="InnerTabHoverBg" Color="#FAFBFC"/>
 
     <!-- Compat keys (some styles still reference these names) -->
@@ -75,29 +95,59 @@
     <SolidColorBrush x:Key="TilePressedBg" Color="#DEE6F2"/>
 
     <!-- Summary / validation highlight -->
-    <SolidColorBrush x:Key="MissingRefBg" Color="#FEE2E2"/> <!-- soft red fill -->
-    <SolidColorBrush x:Key="MissingRefBgHover" Color="#FECACA"/> <!-- slightly stronger on hover -->
-    <SolidColorBrush x:Key="MissingRefBorder" Color="#EF4444"/> <!-- red outline -->
+    <SolidColorBrush x:Key="MissingRefBg" Color="#FEE2E2"/>
+    <!-- soft red fill -->
+    <SolidColorBrush x:Key="MissingRefBgHover" Color="#FECACA"/>
+    <!-- slightly stronger on hover -->
+    <SolidColorBrush x:Key="MissingRefBorder" Color="#EF4444"/>
+    <!-- red outline -->
 
     <!-- Issue/Return Toggle Pill -->
     <SolidColorBrush x:Key="DangerText" Color="#FCA5A5"/>
     <SolidColorBrush x:Key="DangerBorder" Color="#F87171"/>
     <SolidColorBrush x:Key="DangerBg" Color="#3A1B1B"/>
     <SolidColorBrush x:Key="DangerBgHover" Color="#4A2020"/>
-    
+
     <!-- Issue/Return "Return Text"-->
     <SolidColorBrush x:Key="ReturnText" Color="#ECEFF4"/>
 
+    <!-- Network diagnostic status -->
+    <SolidColorBrush x:Key="NetworkPingSuccessBg"
+                 Color="#E8F5E9"/>
 
+    <SolidColorBrush x:Key="NetworkPingSuccessBorder"
+                 Color="#4CAF50"/>
+
+    <SolidColorBrush x:Key="NetworkPingSuccessText"
+                 Color="#12381E"/>
+
+    <SolidColorBrush x:Key="NetworkPingFailureBg"
+                 Color="#FDECEA"/>
+
+    <SolidColorBrush x:Key="NetworkPingFailureBorder"
+                 Color="#DC5050"/>
+
+    <SolidColorBrush x:Key="NetworkPingFailureText"
+                 Color="#5A1717"/>
+
+    <SolidColorBrush x:Key="NetworkPingOutputText"
+                 Color="#0F172A"/>
 
     <!-- Overlays / Misc -->
     <SolidColorBrush x:Key="HoverOverlay" Color="#14000000"/>
     <SolidColorBrush x:Key="PressedOverlay" Color="#22000000"/>
     <SolidColorBrush x:Key="BorderHover" Color="#94A3B8"/>
 
-    <!-- CenterPoint logo for LIGHT mode (dark text logo) -->
+    <!-- Fluent Ribbon -->
+    <SolidColorBrush x:Key="Fluent.Ribbon.Brushes.RibbonBackgroundBrush" Color="#F3F5F8"/>
+    <SolidColorBrush x:Key="Fluent.Ribbon.Brushes.RibbonBorderBrush" Color="#D7DCE3"/>
+    <SolidColorBrush x:Key="Fluent.Ribbon.Brushes.RibbonTabItemForegroundBrush" Color="#0F172A"/>
+    <SolidColorBrush x:Key="Fluent.Ribbon.Brushes.RibbonTabItemSelectedForegroundBrush" Color="#0F172A"/>
+
+
+
+    <!-- PartsPortal company logo -->
     <media:BitmapImage x:Key="CpeLogo"
                        UriSource="pack://application:,,,/Assets/CenterPointLogo_DarkText.png"/>
-
 
 </ResourceDictionary>
