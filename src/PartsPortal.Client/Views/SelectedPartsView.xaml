@@ -6,7 +6,8 @@
 
         <!-- Direct-entry Qty editor -->
         <Style x:Key="QtyEditorStyle"
-               TargetType="TextBox">
+               TargetType="TextBox"
+               BasedOn="{StaticResource ModernTextBox}">
             <Setter Property="Height" Value="30"/>
             <Setter Property="MinWidth" Value="48"/>
             <Setter Property="Padding" Value="4,0"/>
