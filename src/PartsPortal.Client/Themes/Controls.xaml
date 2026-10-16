@@ -190,7 +190,7 @@
     <!-- Primary button (Save, etc.) -->
     <Style x:Key="PrimaryButtonStyle"
        TargetType="Button"
-       BasedOn="{StaticResource SecondaryButtonStyle}">        
+       BasedOn="{StaticResource SecondaryButtonStyle}">
         <Setter Property="Foreground" Value="White"/>
         <Setter Property="Background" Value="{DynamicResource PrimaryBg}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBorder}"/>
@@ -215,15 +215,14 @@
                         <!-- Match PrimaryTile hover: background becomes PrimaryBorder -->
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter TargetName="Bd"
-                                Property="Background"
-                                Value="{DynamicResource PrimaryBorder}"/>
+                                    Property="Background"
+                                    Value="{DynamicResource PrimaryBgHover}"/>
                         </Trigger>
 
-                        <!-- Match PrimaryTile pressed: darker blue -->
                         <Trigger Property="IsPressed" Value="True">
                             <Setter TargetName="Bd"
-                                Property="Background"
-                                Value="#1E40AF"/>
+                                    Property="Background"
+                                    Value="{DynamicResource PrimaryBgPressed}"/>
                         </Trigger>
 
                         <Trigger Property="IsEnabled" Value="False">
