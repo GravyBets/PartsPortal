@@ -145,4 +145,10 @@
     <SolidColorBrush x:Key="Fluent.Ribbon.Brushes.RibbonTabItemSelectedForegroundBrush" Color="#0F172A"/>
 
 
+
+
+    <!-- PartsPortal About-window logo -->
+    <media:BitmapImage x:Key="CpeLogo"
+                       UriSource="pack://application:,,,/Assets/CenterPointLogo_DarkText.png"/>
+
 </ResourceDictionary>
