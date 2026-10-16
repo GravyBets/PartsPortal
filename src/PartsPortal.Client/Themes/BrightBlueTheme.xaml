@@ -1,4 +1,4 @@
-﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:media="clr-namespace:System.Windows.Media.Imaging;assembly=PresentationCore">
 
@@ -148,11 +148,11 @@
     <SolidColorBrush x:Key="Fluent.Ribbon.Brushes.RibbonTabItemForegroundBrush" Color="#102331"/>
     <SolidColorBrush x:Key="Fluent.Ribbon.Brushes.RibbonTabItemSelectedForegroundBrush" Color="#102331"/>
 
+
     <!-- PartsPortal compatibility resources -->
     <SolidColorBrush x:Key="ListItemSelectedBg" Color="#D3DEE8"/>
     <SolidColorBrush x:Key="PartsTabsBarBg" Color="#CDD8E2"/>
     <SolidColorBrush x:Key="PartsTabsBarBorder" Color="#5F7890"/>
-    <!-- PartsPortal company logo -->
     <media:BitmapImage x:Key="CpeLogo"
                        UriSource="pack://application:,,,/Assets/CenterPointLogo_DarkText.png"/>
 
