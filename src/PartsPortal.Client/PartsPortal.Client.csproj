@@ -31,6 +31,14 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Every ClickOnce user receives the same audio without a file picker. -->
+    <Content Include="Assets\shake.mp3">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>Always</CopyToPublishDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
     <!-- Embedded release history, also included in ClickOnce published builds. -->
     <Resource Include="Assets\Data\ChangeLog.json" />
   </ItemGroup>

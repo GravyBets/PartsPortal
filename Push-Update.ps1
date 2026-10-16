@@ -15,6 +15,7 @@ $InstallBase = "http://$Vm/partsportal/install"
 $VersionApi = "http://$Vm/partsportal/api/system/client-version"
 
 $ClientProject = Join-Path $Repo "src\PartsPortal.Client\PartsPortal.Client.csproj"
+$ShakeAudio = Join-Path $Repo "src\PartsPortal.Client\Assets\shake.mp3"
 $ChangeLogPath = Join-Path $Repo "src\PartsPortal.Client\Assets\Data\ChangeLog.json"
 $ApiSettings = Join-Path $Repo "src\PartsPortal.Api\appsettings.json"
 $ClickOnceProfile = Join-Path $Repo "src\PartsPortal.Client\Properties\PublishProfiles\ClickOnceProfile.pubxml"
@@ -230,6 +231,10 @@ function Find-MSBuild {
 
 Set-Location $Repo
 
+if (-not (Test-Path $ShakeAudio -PathType Leaf)) {
+    throw "Bundled Easter-egg audio not found: $ShakeAudio"
+}
+
 $dirty = & git status --porcelain
 if ($LASTEXITCODE -ne 0) {
     throw "This folder is not a Git repository."
@@ -422,6 +427,15 @@ $bullets
     $appFiles = Join-Path $ClickOnceOutput "Application Files"
     if (-not (Test-Path $appFiles)) {
         throw "ClickOnce publish did not create the Application Files directory."
+    }
+
+    # Ensure the MP3 really makes it into the signed ClickOnce payload.
+    $shakePayload = Get-ChildItem $appFiles -Recurse -File |
+        Where-Object { $_.Name -eq "shake.mp3" -or $_.Name -eq "shake.mp3.deploy" } |
+        Select-Object -First 1
+
+    if (-not $shakePayload) {
+        throw "ClickOnce publish is missing Assets\shake.mp3. Deployment stopped."
     }
 
     Step "Validating generated ClickOnce manifest"
