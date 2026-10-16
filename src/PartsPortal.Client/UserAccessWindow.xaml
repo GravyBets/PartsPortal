@@ -80,7 +80,7 @@
                             <DataGridTextColumn Header="Employee ID"
                                                 Binding="{Binding EmployeeId}"
                                                 ElementStyle="{StaticResource AdminDataGridTextStyle}"
-                                        Width="130"/>
+                                        Width="116"/>
                             <DataGridTextColumn Header="Name"
                                                 Binding="{Binding DisplayName}"
                                                 ElementStyle="{StaticResource AdminDataGridTextStyle}"

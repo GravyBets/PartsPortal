@@ -82,7 +82,7 @@
                     <DataGridTextColumn Header="Material"
                                         Binding="{Binding MaterialNumber}"
                                         ElementStyle="{StaticResource AdminDataGridTextStyle}"
-                                        Width="150"/>
+                                        Width="124"/>
                     <DataGridTextColumn Header="Description"
                                         Binding="{Binding Description}"
                                         ElementStyle="{StaticResource AdminDataGridTextStyle}"
