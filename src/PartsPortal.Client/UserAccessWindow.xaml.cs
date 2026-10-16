@@ -15,6 +15,7 @@ public partial class UserAccessWindow : Window
     private readonly ObservableCollection<UserRow> _rows = new();
     private ICollectionView? _view;
     private bool _isNewUser;
+    private bool _isBusy;
 
     public UserAccessWindow()
     {
@@ -114,7 +115,21 @@ public partial class UserAccessWindow : Window
         SelectionChangedEventArgs e)
     {
         if (UsersGrid.SelectedItem is not UserRow row)
+        {
+            if (!_isNewUser)
+            {
+                EditorTitle.Text = "Select a user";
+                EmployeeIdBox.Text = "";
+                EmployeeIdBox.IsReadOnly = false;
+                DisplayNameBox.Text = "";
+                ActiveCheckBox.IsChecked = false;
+                AdminCheckBox.IsChecked = false;
+                PartsManagerCheckBox.IsChecked = false;
+            }
+
+            UpdateEditorState();
             return;
+        }
 
         _isNewUser = false;
 
@@ -134,7 +149,7 @@ public partial class UserAccessWindow : Window
                 "PARTS_MANAGER",
                 StringComparer.OrdinalIgnoreCase);
 
-        SaveButton.IsEnabled = true;
+        UpdateEditorState();
     }
 
     private void NewUser_Click(
@@ -151,7 +166,7 @@ public partial class UserAccessWindow : Window
         ActiveCheckBox.IsChecked = true;
         AdminCheckBox.IsChecked = false;
         PartsManagerCheckBox.IsChecked = false;
-        SaveButton.IsEnabled = true;
+        UpdateEditorState();
 
         EmployeeIdBox.Focus();
     }
@@ -224,16 +239,24 @@ public partial class UserAccessWindow : Window
 
     private void SetBusy(bool busy, string? message = null)
     {
+        _isBusy = busy;
         Mouse.OverrideCursor = busy ? Cursors.Wait : null;
 
         UsersGrid.IsEnabled = !busy;
         SearchBox.IsEnabled = !busy;
-        SaveButton.IsEnabled =
-            !busy &&
-            (_isNewUser || UsersGrid.SelectedItem is UserRow);
+        UpdateEditorState();
 
         if (!string.IsNullOrWhiteSpace(message))
             StatusText.Text = message;
+    }
+
+    private void UpdateEditorState()
+    {
+        bool canEdit = !_isBusy &&
+                       (_isNewUser || UsersGrid.SelectedItem is UserRow);
+
+        EditorFields.IsEnabled = canEdit;
+        SaveButton.IsEnabled = canEdit;
     }
 
     private void Close_Click(

@@ -119,6 +119,9 @@
                                Margin="0,0,0,16"
                                Foreground="{DynamicResource TextPrimary}"/>
 
+                    <!-- No editing until an existing user is selected or New User is clicked. -->
+                    <StackPanel x:Name="EditorFields"
+                                IsEnabled="False">
                     <TextBlock Text="Employee ID"
                                FontSize="14"
                                FontWeight="SemiBold"
@@ -185,6 +188,7 @@
                             Style="{StaticResource PrimaryButtonStyle}"
                             IsEnabled="False"
                             Click="Save_Click"/>
+                    </StackPanel>
                     </StackPanel>
                 </Border>
             </Grid>
