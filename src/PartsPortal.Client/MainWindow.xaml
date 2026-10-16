@@ -49,16 +49,17 @@
                                       IsItemsHost="True"
                                       Margin="10,0,0,-1"/>
 
-                            <!-- Site name bar (under headers) -->
-                            <Border Grid.Row="1"
-                                    Background="{DynamicResource CardBackground}"
-                                    BorderBrush="{DynamicResource CardBorder}"
-                                    BorderThickness="1"
-                                    CornerRadius="12"
-                                    Padding="12"
-                                    Margin="10,0,10,4">
+                            <!-- The Site/Reason card shares the exact card bounds
+                                 and visual treatment of the Parts and Cart surfaces. -->
+                            <Grid Grid.Row="1"
+                                  Margin="10,0,10,4">
+                                <!-- Shadow on a separate layer keeps TextBox text sharp. -->
+                                <Border Style="{StaticResource SurfaceCardStyle}"
+                                        IsHitTestVisible="False"/>
 
-                                <DockPanel LastChildFill="False">
+                                <Border Style="{StaticResource SurfaceCardStyle}"
+                                        Effect="{x:Null}">
+                                    <DockPanel LastChildFill="False">
 
                                     <StackPanel Orientation="Horizontal"
                                         VerticalAlignment="Center">
@@ -81,8 +82,9 @@
                                                 Style="{StaticResource SecondaryButtonStyle}"
                                                 Click="ApplySiteName_Click"/>
                                     </StackPanel>
-                                </DockPanel>
-                            </Border>
+                                    </DockPanel>
+                                </Border>
+                            </Grid>
 
                             <!-- Selected tab content -->
                             <ContentPresenter Grid.Row="2"
