@@ -15,6 +15,7 @@ $InstallBase = "http://$Vm/partsportal/install"
 $VersionApi = "http://$Vm/partsportal/api/system/client-version"
 
 $ClientProject = Join-Path $Repo "src\PartsPortal.Client\PartsPortal.Client.csproj"
+$ChangeLogPath = Join-Path $Repo "src\PartsPortal.Client\Assets\Data\ChangeLog.json"
 $ApiSettings = Join-Path $Repo "src\PartsPortal.Api\appsettings.json"
 $ClickOnceProfile = Join-Path $Repo "src\PartsPortal.Client\Properties\PublishProfiles\ClickOnceProfile.pubxml"
 $InstallPage = Join-Path $Repo "deploy\install\index.html"
@@ -288,6 +289,7 @@ $originalClient = Get-Content $ClientProject -Raw
 $originalApiSettings = Get-Content $ApiSettings -Raw
 $originalProfile = Get-Content $ClickOnceProfile -Raw
 $originalIndex = Get-Content $InstallPage -Raw
+$originalChangeLog = Get-Content $ChangeLogPath -Raw
 $keepChanges = $false
 
 try {
@@ -353,6 +355,24 @@ $bullets
 </html>
 "@
     Write-TextWithRetry $InstallPage $page
+
+    Step "Updating embedded change log"
+    # Uses the SAME release notes as the version API and install page.
+    # Rerunning a version replaces its entry instead of duplicating it.
+    $previousEntries = @(Get-Content $ChangeLogPath -Raw | ConvertFrom-Json)
+    $newEntry = [pscustomobject]@{
+        version = $Version
+        date = (Get-Date).ToString(
+            "MMMM d, yyyy",
+            [System.Globalization.CultureInfo]::GetCultureInfo("en-US"))
+        title = "PartsPortal $Version"
+        changes = @($ReleaseNotes)
+    }
+    $allEntries = @($newEntry) + @(
+        $previousEntries | Where-Object { [string]$_.version -ne $Version }
+    )
+    $changeLogJson = ConvertTo-Json -InputObject $allEntries -Depth 10
+    Write-TextWithRetry $ChangeLogPath ($changeLogJson + "`n")
 
     Step "Building Contracts and API"
     Run "dotnet" @("build", "src\PartsPortal.Contracts\PartsPortal.Contracts.csproj", "-c", "Release")
@@ -488,6 +508,7 @@ $bullets
         Write-TextWithRetry $ApiSettings $originalApiSettings
         Write-TextWithRetry $ClickOnceProfile $originalProfile
         Write-TextWithRetry $InstallPage $originalIndex
+        Write-TextWithRetry $ChangeLogPath $originalChangeLog
         $keepChanges = $true
         Write-Host ""
         Write-Host "ClickOnce publish completed. Deployment skipped." -ForegroundColor Yellow
@@ -652,6 +673,7 @@ catch {
         Write-TextWithRetry $ApiSettings $originalApiSettings
         Write-TextWithRetry $ClickOnceProfile $originalProfile
         Write-TextWithRetry $InstallPage $originalIndex
+        Write-TextWithRetry $ChangeLogPath $originalChangeLog
     }
 
     Write-Host ""

@@ -59,6 +59,11 @@ namespace PartsPortal
             }
         }
 
+        private void ChangeLogLink_Click(object sender, RoutedEventArgs e)
+        {
+            new ChangeLogWindow { Owner = this }.ShowDialog();
+        }
+
         private void Close_Click(object sender, RoutedEventArgs e)
         {
             Close();
