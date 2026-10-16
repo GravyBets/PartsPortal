@@ -143,9 +143,6 @@
     <SolidColorBrush x:Key="Fluent.Ribbon.Brushes.RibbonBorderBrush" Color="#D7DCE3"/>
     <SolidColorBrush x:Key="Fluent.Ribbon.Brushes.RibbonTabItemForegroundBrush" Color="#0F172A"/>
     <SolidColorBrush x:Key="Fluent.Ribbon.Brushes.RibbonTabItemSelectedForegroundBrush" Color="#0F172A"/>
-
-
-
     <!-- PartsPortal company logo -->
     <media:BitmapImage x:Key="CpeLogo"
                        UriSource="pack://application:,,,/Assets/CenterPointLogo_DarkText.png"/>
