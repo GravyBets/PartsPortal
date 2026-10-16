@@ -338,6 +338,28 @@
         <Setter Property="RowStyle" Value="{StaticResource ThemedDataGridRowStyle}"/>
     </Style>
 
+    <!-- Roomier administrative tables; normal order grids keep the original density. -->
+    <Style x:Key="AdminDataGridCellStyle"
+           TargetType="DataGridCell"
+           BasedOn="{StaticResource ThemedDataGridCellStyle}">
+        <Setter Property="Padding" Value="14,0"/>
+    </Style>
+
+    <Style x:Key="AdminDataGridTextStyle" TargetType="TextBlock">
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+    </Style>
+
+    <Style x:Key="AdminDataGridStyle"
+           TargetType="DataGrid"
+           BasedOn="{StaticResource ThemedDataGridStyle}">
+        <Setter Property="RowHeight" Value="48"/>
+        <Setter Property="ColumnHeaderHeight" Value="36"/>
+        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="CellStyle" Value="{StaticResource AdminDataGridCellStyle}"/>
+    </Style>
+
     <!-- TAB LOOK: attached tabs with CONSISTENT spacing -->
     <Style x:Key="AttachedTabItemStyle" TargetType="TabItem">
         <!-- overlap amount (controls how tight they are) -->

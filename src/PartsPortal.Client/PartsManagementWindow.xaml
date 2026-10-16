@@ -68,7 +68,7 @@
                 Style="{StaticResource Card}"
                 Padding="8">
             <DataGrid x:Name="PartsGrid"
-                      Style="{StaticResource ThemedDataGridStyle}"
+                      Style="{StaticResource AdminDataGridStyle}"
                       AutoGenerateColumns="False"
                       IsReadOnly="True"
                       SelectionMode="Single"
@@ -81,15 +81,19 @@
                 <DataGrid.Columns>
                     <DataGridTextColumn Header="Material"
                                         Binding="{Binding MaterialNumber}"
+                                        ElementStyle="{StaticResource AdminDataGridTextStyle}"
                                         Width="150"/>
                     <DataGridTextColumn Header="Description"
                                         Binding="{Binding Description}"
+                                        ElementStyle="{StaticResource AdminDataGridTextStyle}"
                                         Width="*"/>
                     <DataGridTextColumn Header="Warehouses"
                                         Binding="{Binding WarehouseDisplay}"
+                                        ElementStyle="{StaticResource AdminDataGridTextStyle}"
                                         Width="280"/>
                     <DataGridTextColumn Header="Status"
                                         Binding="{Binding StatusDisplay}"
+                                        ElementStyle="{StaticResource AdminDataGridTextStyle}"
                                         Width="100"/>
                 </DataGrid.Columns>
             </DataGrid>

@@ -69,7 +69,7 @@
 
                     <DataGrid x:Name="UsersGrid"
                               Grid.Row="1"
-                              Style="{StaticResource ThemedDataGridStyle}"
+                              Style="{StaticResource AdminDataGridStyle}"
                               AutoGenerateColumns="False"
                               IsReadOnly="True"
                               CanUserAddRows="False"
@@ -79,16 +79,20 @@
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="Employee ID"
                                                 Binding="{Binding EmployeeId}"
-                                                Width="130"/>
+                                                ElementStyle="{StaticResource AdminDataGridTextStyle}"
+                                        Width="130"/>
                             <DataGridTextColumn Header="Name"
                                                 Binding="{Binding DisplayName}"
-                                                Width="*"/>
+                                                ElementStyle="{StaticResource AdminDataGridTextStyle}"
+                                        Width="*"/>
                             <DataGridTextColumn Header="Roles"
                                                 Binding="{Binding RolesDisplay}"
-                                                Width="180"/>
+                                                ElementStyle="{StaticResource AdminDataGridTextStyle}"
+                                        Width="180"/>
                             <DataGridTextColumn Header="Status"
                                                 Binding="{Binding StatusDisplay}"
-                                                Width="80"/>
+                                                ElementStyle="{StaticResource AdminDataGridTextStyle}"
+                                        Width="80"/>
                         </DataGrid.Columns>
                     </DataGrid>
                 </Grid>
