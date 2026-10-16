@@ -17,7 +17,7 @@ namespace PartsPortal
             base.OnStartup(e);
 
             var settings = new SettingsService().Load();
-            ThemeService.Apply(settings.IsDarkMode);
+            ThemeService.ApplySavedTheme(settings.IsDarkMode);
 
             // ClickOnce owns update detection before the application starts.
             // PartsPortal no longer performs a second custom update check here.

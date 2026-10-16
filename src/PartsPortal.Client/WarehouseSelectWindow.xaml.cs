@@ -16,23 +16,20 @@ namespace PartsPortal
         private CurrentUserAccessDto? _currentAccess;
         private bool _isShuttingDown;
 
-        private bool _suppressThemeToggle;
+        private bool _suppressThemeSelection = true;
 
         public WarehouseSelectWindow()
         {
             // Load settings once
             _settings = _settingsService.Load();
 
-            // Apply theme immediately (so the window renders correctly)
-            ThemeService.Apply(_settings.IsDarkMode);
-
+            // App startup applies the saved theme before any window renders.
             InitializeComponent();
 
-            // Sync the toggle to settings without firing events
-            _suppressThemeToggle = true;
-            if (ThemeToggle != null)
-                ThemeToggle.IsChecked = _settings.IsDarkMode;
-            _suppressThemeToggle = false;
+            ThemeSelector.ItemsSource = ThemeService.ThemeOptions;
+            ThemeSelector.SelectedItem = ThemeService.ThemeOptions
+                .FirstOrDefault(option => option.Theme == ThemeService.Current);
+            _suppressThemeSelection = false;
 
             Closing += WarehouseSelectWindow_Closing;
             Loaded += WarehouseSelectWindow_Loaded;
@@ -143,22 +140,16 @@ namespace PartsPortal
             }
         }
 
-        private void ThemeToggle_Checked(object sender, RoutedEventArgs e)
+        private void ThemeSelector_SelectionChanged(
+            object sender,
+            System.Windows.Controls.SelectionChangedEventArgs e)
         {
-            if (_suppressThemeToggle) return;
+            if (_suppressThemeSelection ||
+                ThemeSelector.SelectedItem is not AppThemeOption selected)
+                return;
 
-            _settings.IsDarkMode = true;
-            _settingsService.Save(_settings);
-            ThemeService.Apply(true);
-        }
-
-        private void ThemeToggle_Unchecked(object sender, RoutedEventArgs e)
-        {
-            if (_suppressThemeToggle) return;
-
-            _settings.IsDarkMode = false;
-            _settingsService.Save(_settings);
-            ThemeService.Apply(false);
+            ThemeService.Apply(selected.Theme);
+            _settings.IsDarkMode = ThemeService.IsDark;
         }
 
         private void ManageParts_Click(object sender, RoutedEventArgs e)

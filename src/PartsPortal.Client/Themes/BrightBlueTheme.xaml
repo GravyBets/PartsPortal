@@ -153,4 +153,9 @@
     <media:BitmapImage x:Key="CpeLogo"
                        UriSource="pack://application:,,,/Assets/CenterPointLogo_DarkText.png"/>
 
+    <!-- PartsPortal-specific theme resources -->
+    <SolidColorBrush x:Key="ListItemSelectedBg" Color="#D3DEE8"/>
+    <SolidColorBrush x:Key="PartsTabsBarBg" Color="#D5DEE7"/>
+    <SolidColorBrush x:Key="PartsTabsBarBorder" Color="#5F7890"/>
+
 </ResourceDictionary>

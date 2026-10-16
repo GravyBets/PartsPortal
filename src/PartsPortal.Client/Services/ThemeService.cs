@@ -110,9 +110,9 @@ namespace PartsPortal.Services
         // Compatibility for older PartsPortal code while the old IsDarkMode
         // setting ages out. Theme selection itself is now multi-theme.
         public static bool IsDark =>
-            Current is not AppTheme.Light and
-            Current is not AppTheme.BrightBlue and
-            Current is not AppTheme.Sandstone;
+            Current != AppTheme.Light &&
+            Current != AppTheme.BrightBlue &&
+            Current != AppTheme.Sandstone;
 
         public static Uri CurrentCompanyLogoUri =>
             NormalizeTheme(Current) switch
@@ -123,11 +123,13 @@ namespace PartsPortal.Services
                 _ => CompanyLogoWhiteTextUri
             };
 
-        public static void ApplySavedTheme()
+        // Preserve existing light/dark settings when migrating to named themes.
+        public static void ApplySavedTheme(bool legacyDarkMode = false)
         {
+            var hasNamedTheme = File.Exists(ThemeSettingsFile);
             Apply(
-                ReadSavedTheme(),
-                saveChoice: false);
+                ReadSavedTheme(legacyDarkMode),
+                saveChoice: !hasNamedTheme);
         }
 
         public static void Apply(AppTheme theme)
@@ -253,19 +255,21 @@ namespace PartsPortal.Services
             };
         }
 
-        private static AppTheme ReadSavedTheme()
+        private static AppTheme ReadSavedTheme(bool legacyDarkMode)
         {
+            var fallback = legacyDarkMode ? AppTheme.Cobalt : AppTheme.Light;
+
             try
             {
                 if (!File.Exists(ThemeSettingsFile))
-                    return AppTheme.Light;
+                    return fallback;
 
                 var raw =
                     File.ReadAllText(ThemeSettingsFile)
                         .Trim();
 
                 if (string.IsNullOrWhiteSpace(raw))
-                    return AppTheme.Light;
+                    return fallback;
 
                 var migratedTheme =
                     raw.ToUpperInvariant() switch
@@ -294,7 +298,7 @@ namespace PartsPortal.Services
                 // A damaged local preference must never block startup.
             }
 
-            return AppTheme.Light;
+            return fallback;
         }
 
         private static void SaveTheme(

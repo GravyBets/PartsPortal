@@ -260,4 +260,7 @@
     <media:BitmapImage x:Key="CpeLogo"
                        UriSource="pack://application:,,,/Assets/CenterPointLogo_LightText.png"/>
 
+    <!-- PartsPortal-specific theme resources -->
+    <SolidColorBrush x:Key="ListItemSelectedBg" Color="#2C3642"/>
+
 </ResourceDictionary>
