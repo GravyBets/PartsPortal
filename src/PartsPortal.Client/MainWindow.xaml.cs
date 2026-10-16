@@ -645,6 +645,15 @@ namespace PartsPortal
             allPartsList.ContextMenu.Items.Add(addFav);
             allPartsList.ContextMenu.Items.Add(removeFavFromAll);
 
+            var addAllToBackorder = new MenuItem { Header = "Add to Backorder" };
+            addAllToBackorder.Click += (_, __) =>
+            {
+                if (allPartsList.SelectedItem is Part part)
+                    AddPartToBackorder(ownerTab, part);
+            };
+            allPartsList.ContextMenu.Items.Add(new Separator());
+            allPartsList.ContextMenu.Items.Add(addAllToBackorder);
+
             var removeFav = new MenuItem { Header = "Remove from Favorites" };
             removeFav.Click += (_, __) =>
             {
@@ -658,6 +667,81 @@ namespace PartsPortal
 
             favPartsList.ContextMenu = new ContextMenu();
             favPartsList.ContextMenu.Items.Add(removeFav);
+
+            var addFavoriteToBackorder = new MenuItem { Header = "Add to Backorder" };
+            addFavoriteToBackorder.Click += (_, __) =>
+            {
+                if (favPartsList.SelectedItem is Part part)
+                    AddPartToBackorder(ownerTab, part);
+            };
+            favPartsList.ContextMenu.Items.Add(new Separator());
+            favPartsList.ContextMenu.Items.Add(addFavoriteToBackorder);
+        }
+
+        // Reuse the existing backorder dialog and file store from the order window.
+        // Adding a backorder does not remove anything from the current order/cart.
+        private void AddPartToBackorder(TabItem ownerTab, Part part, int defaultQty = 1)
+        {
+            if (part == null)
+                return;
+
+            var currentReason = SiteTabs.SelectedItem == ownerTab && SiteNameBox != null
+                ? (SiteNameBox.Text ?? "").Trim()
+                : GetTabReason(ownerTab).Trim();
+
+            // Only prefill a Work Order when this tab is using a Work Order field.
+            var currentWorkOrder = GetRequiredField(ownerTab) == DetailField.WorkOrder
+                ? GetWorkOrder(ownerTab).Trim()
+                : "";
+
+            var dialog = new AddBackorderDialog(
+                (part.Description ?? "").Trim(),
+                (part.Material ?? "").Trim(),
+                new AddBackorderDialog.EntryLine
+                {
+                    Qty = Math.Max(1, defaultQty),
+                    SiteReason = currentReason,
+                    WorkOrder = currentWorkOrder
+                })
+            {
+                Owner = this,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            };
+
+            if (dialog.ShowDialog() != true)
+                return;
+
+            var entry = dialog.ResultLines.FirstOrDefault();
+            if (entry == null)
+                return;
+
+            var backorder = new BackorderLine
+            {
+                DateAdded = DateTime.Now,
+                Qty = entry.Qty,
+                SiteReason = (entry.SiteReason ?? "").Trim(),
+                WorkOrder = (entry.WorkOrder ?? "").Trim(),
+                Description = (part.Description ?? "").Trim(),
+                Material = (part.Material ?? "").Trim()
+            };
+
+            try
+            {
+                var store = new BackorderStore();
+                var lines = store.Load();
+                lines.Insert(0, backorder);
+                store.Save(lines.OrderByDescending(line => line.DateAdded));
+
+                SetStatus($"Added {backorder.Qty} x {backorder.Description} to the backorder log.");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    "Unable to save the backorder.\n\n" + ex.Message,
+                    "Add to Backorder",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
         }
 
         private void WireMovementDetails(TabItem ownerTab, Views.MovementDetailsView view)
@@ -726,6 +810,22 @@ namespace PartsPortal
 
             view.SaveToTemplatesButton.Click += async (_, __) =>
                 await SaveSelectedPartsToTemplateAsync(ownerTab);
+
+            // Add a selected cart line straight to the backorder log.
+            view.AddToBackorderButton.Click += (_, __) =>
+            {
+                if (view.SelectedPartsGrid.SelectedItem is not SelectedPartLine selected)
+                {
+                    MessageBox.Show(
+                        "Select a part in the cart first.",
+                        "Add to Backorder",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+                    return;
+                }
+
+                AddPartToBackorder(ownerTab, selected.Part, selected.Qty);
+            };
 
             view.SelectedPartsGrid.PreviewKeyDown += (_, e) =>
             {

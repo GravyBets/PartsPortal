@@ -91,6 +91,13 @@
                     x:FieldModifier="public"
                     Style="{StaticResource SelectedActionButton}"
                     Content="Save to Templates"/>
+
+            <Button x:Name="AddToBackorderButton"
+                    x:FieldModifier="public"
+                    Style="{StaticResource SelectedActionButton}"
+                    Content="Add to Backorder"
+                    Margin="8,0,0,0"
+                    ToolTip="Add the selected cart part to the backorder log"/>
         </StackPanel>
 
         <TextBlock x:Name="StatusText"

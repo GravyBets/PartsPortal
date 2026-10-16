@@ -93,14 +93,17 @@
                              Style="{StaticResource ModernWatermarkTextBox}"
                              KeyDown="InputBox_KeyDown"/>
 
-                    <!-- Qty (editable: dropdown 1-10, but can type >10) -->
-                    <ComboBox x:Name="QtyCombo"
-                              Grid.Column="2"
-                              Height="34"
-                              Width="100"
-                              MinWidth="100"
-                              Style="{StaticResource ModernComboBox}"                              
-                              PreviewTextInput="QtyCombo_PreviewTextInput"/>
+                    <!-- Direct-entry quantity; supports larger quantities from the cart. -->
+                    <TextBox x:Name="QtyBox"
+                             Grid.Column="2"
+                             Height="34"
+                             Width="100"
+                             MaxLength="6"
+                             TextAlignment="Center"
+                             Style="{StaticResource ModernTextBox}"
+                             PreviewTextInput="QtyBox_PreviewTextInput"
+                             DataObject.Pasting="QtyBox_Pasting"
+                             KeyDown="InputBox_KeyDown"/>
                 </Grid>
             </Grid>
         </Border>

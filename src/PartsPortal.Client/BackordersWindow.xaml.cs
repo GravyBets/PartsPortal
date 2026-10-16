@@ -623,7 +623,7 @@ namespace PartsPortal
             // Prefill from selected row
             var prefill = new AddBackorderDialog.EntryLine
             {
-                Qty = Math.Clamp(selected.Qty, 1, 10),
+                Qty = Math.Max(1, selected.Qty),
                 WorkOrder = selected.WorkOrder ?? "",
                 SiteReason = selected.SiteReason ?? ""
             };
@@ -641,7 +641,7 @@ namespace PartsPortal
             if (line == null) return;
 
             // Update selected row (keep DateAdded)
-            selected.Qty = Math.Clamp(line.Qty, 1, 10);
+            selected.Qty = Math.Max(1, line.Qty);
             selected.WorkOrder = (line.WorkOrder ?? "").Trim();
             selected.SiteReason = (line.SiteReason ?? "").Trim();
 

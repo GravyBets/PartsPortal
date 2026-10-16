@@ -28,9 +28,7 @@ namespace PartsPortal
             PartDesc.Text = description ?? "";
             PartMat.Text = material ?? "";
 
-            // Qty 1..10
-            QtyCombo.ItemsSource = Enumerable.Range(1, 10).ToList();
-            QtyCombo.SelectedIndex = 0;
+            QtyBox.Text = "1";
             
             Loaded += (_, __) =>
             {
@@ -48,53 +46,34 @@ namespace PartsPortal
             SiteReasonBox.Text = prefill.SiteReason ?? "";
             WorkOrderBox.Text = prefill.WorkOrder ?? "";
 
-            int q = prefill.Qty;
-            if (q < 1) q = 1;
-            if (q > 10) q = 10;
-
-            // ItemsSource is ints 1..10
-            QtyCombo.SelectedItem = q;
-            if (QtyCombo.SelectedItem == null)
-                QtyCombo.SelectedIndex = q - 1;
+            QtyBox.Text = Math.Max(1, prefill.Qty).ToString();
         }
 
         private void Add_Click(object sender, RoutedEventArgs e)
         {
-            _result = BuildLine();
-            DialogResult = true;
-            Close();
-        }
+            if (!int.TryParse((QtyBox.Text ?? "").Trim(), out var qty) ||
+                qty < 1 || qty > 999999)
+            {
+                MessageBox.Show(
+                    "Enter a quantity between 1 and 999999.",
+                    "Add Backorder",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+                QtyBox.Focus();
+                QtyBox.SelectAll();
+                return;
+            }
 
-        private EntryLine BuildLine()
-        {
-            int qty = 1;
-            if (QtyCombo.SelectedItem is int q) qty = q;
-
-            return new EntryLine
+            _result = new EntryLine
             {
                 Qty = qty,
                 SiteReason = (SiteReasonBox.Text ?? "").Trim(),
-                WorkOrder = (WorkOrderBox.Text ?? "").Trim() // optional
+                WorkOrder = (WorkOrderBox.Text ?? "").Trim()
             };
+
+            DialogResult = true;
+            Close();
         }
-
-        private int GetSelectedQty()
-        {
-            // 1) typed text wins
-            if (int.TryParse((QtyCombo.Text ?? "").Trim(), out int typed) && typed > 0)
-                return typed;
-
-            // 2) dropdown selection
-            if (QtyCombo.SelectedItem is int q && q >= 1)
-                return q;
-
-            if (QtyCombo.SelectedIndex >= 0)
-                return QtyCombo.SelectedIndex + 1;
-
-            return 1;
-        }
-
-
 
         private void Cancel_Click(object sender, RoutedEventArgs e)
         {
@@ -112,29 +91,25 @@ namespace PartsPortal
             }
         }
 
-        private void QtyCombo_PreviewTextInput(object sender, TextCompositionEventArgs e)
+        private void QtyBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
         {
-            // digits only
             e.Handled = e.Text.Any(ch => !char.IsDigit(ch));
         }
 
-        private void QtyCombo_LostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
+        private void QtyBox_Pasting(object sender, DataObjectPastingEventArgs e)
         {
-            NormalizeQtyText();
-        }
+            var data = e.SourceDataObject;
+            var format = data.GetDataPresent(DataFormats.UnicodeText)
+                ? DataFormats.UnicodeText
+                : DataFormats.Text;
 
-        private void NormalizeQtyText()
-        {
-            var t = (QtyCombo.Text ?? "").Trim();
-
-            if (!int.TryParse(t, out int qty) || qty < 1)
+            if (!data.GetDataPresent(format) ||
+                data.GetData(format) is not string text ||
+                text.Length == 0 ||
+                text.Any(ch => !char.IsDigit(ch)))
             {
-                QtyCombo.Text = "1";
-                return;
+                e.CancelCommand();
             }
-
-            // Keep what they typed (supports > 10)
-            QtyCombo.Text = qty.ToString();
         }
 
     }
