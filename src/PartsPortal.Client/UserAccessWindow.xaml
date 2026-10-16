@@ -213,6 +213,7 @@
                         Click="Refresh_Click"/>
                 <Button Content="Close"
                         Width="100"
+                        Style="{StaticResource PrimaryButtonStyle}"
                         Click="Close_Click"/>
             </StackPanel>
         </Grid>
