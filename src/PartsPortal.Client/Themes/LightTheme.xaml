@@ -144,10 +144,10 @@
     <SolidColorBrush x:Key="Fluent.Ribbon.Brushes.RibbonTabItemForegroundBrush" Color="#0F172A"/>
     <SolidColorBrush x:Key="Fluent.Ribbon.Brushes.RibbonTabItemSelectedForegroundBrush" Color="#0F172A"/>
 
-
-
-
-    <!-- PartsPortal About-window logo -->
+    <!-- PartsPortal compatibility resources -->
+    <SolidColorBrush x:Key="ListItemSelectedBg" Color="#DDE6F4"/>
+    <SolidColorBrush x:Key="PartsTabsBarBg" Color="#DEE6F2"/>
+    <SolidColorBrush x:Key="PartsTabsBarBorder" Color="#D7DCE3"/>
     <media:BitmapImage x:Key="CpeLogo"
                        UriSource="pack://application:,,,/Assets/CenterPointLogo_DarkText.png"/>
 
