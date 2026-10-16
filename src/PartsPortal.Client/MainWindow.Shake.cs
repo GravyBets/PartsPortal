@@ -15,7 +15,7 @@ namespace PartsPortal
         // Audio is installed along with the client (including ClickOnce).
         // Animation timing comes from MediaPlayer.Position so the drop stays
         // synchronized with playback, not with the time spent loading the MP3.
-        private const double HarlemShakeDropSeconds = 14.35;
+        private const double HarlemShakeDropSeconds = 14.20;
         private const double HarlemShakeEndSeconds = 28.22;
         private const double SoloWiggleSeconds = 0.38;
 
