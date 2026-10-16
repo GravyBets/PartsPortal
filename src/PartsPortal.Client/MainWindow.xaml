@@ -47,7 +47,7 @@
                             <!-- Tab headers -->
                             <TabPanel Grid.Row="0"
                                       IsItemsHost="True"
-                                      Margin="0,0,0,-1"/>
+                                      Margin="10,0,0,-1"/>
 
                             <!-- Site name bar (under headers) -->
                             <Border Grid.Row="1"
