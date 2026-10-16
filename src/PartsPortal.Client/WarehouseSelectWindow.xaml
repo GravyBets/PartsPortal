@@ -56,13 +56,13 @@
                                      Value="True">
                                 <Setter Property="Background" 
                                         Value="{DynamicResource TileFillHover}"/>
-                                <Setter Property="BorderBrush" Value="#B9C2D0"/>
+                                <Setter Property="BorderBrush" Value="{DynamicResource BorderHover}"/>
                             </Trigger>
                             <Trigger Property="IsPressed" 
                                      Value="True">
                                 <Setter Property="Background" 
                                         Value="{DynamicResource TileFillPressed}"/>
-                                <Setter Property="BorderBrush" Value="#B9C2D0"/>
+                                <Setter Property="BorderBrush" Value="{DynamicResource BorderHover}"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" 
                                      Value="False">
@@ -105,10 +105,10 @@
 
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="{DynamicResource PrimaryBorder}"/>
+                                <Setter Property="Background" Value="{DynamicResource PrimaryBgHover}"/>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter Property="Background" Value="#1E40AF"/>
+                                <Setter Property="Background" Value="{DynamicResource PrimaryBgPressed}"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter Property="Opacity" Value="0.55"/>

@@ -38,6 +38,9 @@ namespace PartsPortal.Services
         public AppTheme Theme { get; init; }
 
         public string DisplayName { get; init; } = "";
+
+        // PartsPortal's shared ComboBox template displays SelectedItem.ToString().
+        public override string ToString() => DisplayName;
     }
 
     public static class ThemeService

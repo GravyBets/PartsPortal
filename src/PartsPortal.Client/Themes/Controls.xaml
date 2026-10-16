@@ -1057,10 +1057,10 @@
                     <ControlTemplate.Triggers>
                         <!-- Hover: thicker border + nicer arrow -->
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="Bd" Property="BorderBrush" Value="#6B7280"/>
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource InputBorderHover}"/>
                             <Setter TargetName="Bd" Property="BorderThickness" Value="2"/>
                             <Setter TargetName="ArrowBd" Property="Background" Value="{DynamicResource TileFillHover}"/>
-                            <Setter TargetName="ArrowBd" Property="BorderBrush" Value="#6B7280"/>
+                            <Setter TargetName="ArrowBd" Property="BorderBrush" Value="{DynamicResource InputBorderHover}"/>
                             <Setter TargetName="Arrow" Property="Fill" Value="{DynamicResource TextPrimary}"/>
                         </Trigger>
 
@@ -1078,7 +1078,7 @@
                                 </Setter.Value>
                             </Setter>
                             <Setter TargetName="ArrowBd" Property="Background" Value="{DynamicResource TileFillHover}"/>
-                            <Setter TargetName="ArrowBd" Property="BorderBrush" Value="#6B7280"/>
+                            <Setter TargetName="ArrowBd" Property="BorderBrush" Value="{DynamicResource InputBorderHover}"/>
                         </Trigger>
 
                         <Trigger Property="IsEnabled" Value="False">
