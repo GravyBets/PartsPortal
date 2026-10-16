@@ -539,6 +539,19 @@ namespace PartsPortal
             WireDoubleClickAdd(allList);
             WireDoubleClickAdd(favList);
 
+            // Double-clicking a template name adds its parts to the active order.
+            // Ignore double-clicks on empty list space or scrollbars.
+            templatesList.MouseDoubleClick += (_, e) =>
+            {
+                if (e.OriginalSource is not DependencyObject source ||
+                    ItemsControl.ContainerFromElement(templatesList, source) is not ListBoxItem item ||
+                    item.DataContext is not PartTemplate template)
+                    return;
+
+                AddTemplateToOrder(ownerTab, template);
+                e.Handled = true;
+            };
+
             partsSearch.TextChanged += (_, __) => RefreshPartsList(ownerTab);
 
             partsTabs.SelectionChanged += (_, __) =>
