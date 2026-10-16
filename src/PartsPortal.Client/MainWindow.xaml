@@ -144,7 +144,9 @@
 
     </Window.Resources>
 
-    <Grid Margin="10">
+    <Grid x:Name="ShakeRoot"
+          Margin="10"
+          RenderTransformOrigin="0.5,0.5">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="328*"/>
             <ColumnDefinition Width="5*"/>

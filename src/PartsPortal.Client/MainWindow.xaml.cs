@@ -258,6 +258,14 @@ namespace PartsPortal
 
             string name = (SiteNameBox.Text ?? "").Trim();
 
+            // Secret command: don't persist or display "/shake" as a site reason.
+            if (string.Equals(name, "/shake", StringComparison.OrdinalIgnoreCase))
+            {
+                SiteNameBox.Text = GetTabReason(tab);
+                StartOrStopHarlemShake();
+                return;
+            }
+
             // Save per-tab text (empty allowed; empty will show watermark)
             SetTabReason(tab, name);
 
@@ -306,6 +314,11 @@ namespace PartsPortal
 
         private void PART_SiteNameBox_LostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
         {
+            // A focus change alone must NOT launch the Easter egg.
+            // It is triggered only by the Apply button or Enter.
+            if (string.Equals(SiteNameBox?.Text?.Trim(), "/shake", StringComparison.OrdinalIgnoreCase))
+                return;
+
             ApplySiteName_Click(sender, new RoutedEventArgs());
         }
 
