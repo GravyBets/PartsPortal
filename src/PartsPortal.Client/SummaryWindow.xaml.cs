@@ -18,6 +18,7 @@ namespace PartsPortal
         {
             GenerateOnly,
             EmailDraft,
+            TestNewOutlookDraft,
             Email
         }
 
@@ -54,6 +55,13 @@ namespace PartsPortal
             DialogResult = true;
             Close();
         }
+        private void TestNewOutlookDraft_Click(object sender, RoutedEventArgs e)
+        {
+            Action = SummaryAction.TestNewOutlookDraft;
+            DialogResult = true;
+            Close();
+        }
+
         private void Cancel_Click(object sender, RoutedEventArgs e)
         {
             DialogResult = false;

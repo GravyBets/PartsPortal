@@ -1811,6 +1811,75 @@ namespace PartsPortal
                 outDoc.Pages.Count);
         }
 
+        private void TestEmlDraftWithPdf(
+            string pdfPath,
+            List<PrintTabSummary> rows,
+            int pages)
+        {
+            try
+            {
+                string to = (_settings?.EmailTo ?? "").Trim();
+                string cc = (_settings?.EmailCc ?? "").Trim();
+
+                const string requiredCc = "smartgridradio@centerpointenergy.com";
+                if (!cc.Contains(requiredCc, StringComparison.OrdinalIgnoreCase))
+                {
+                    cc = string.IsNullOrWhiteSpace(cc)
+                        ? requiredCc
+                        : cc + "; " + requiredCc;
+                }
+
+                string subject = $"Material {GetSubjectIssueReturnToken(rows)} - " +
+                    $"{GetEmailDisplayName()} - {DateTime.Now:MM/dd/yyyy} - {pages} page(s)";
+                string body = BuildEmailBody(rows, pages);
+
+                string emlPath = EmlDraftService.Create(
+                    pdfPath, to, cc, subject, body);
+
+                // The .eml association may still point to Classic Outlook.
+                // The test file remains beside the PDF for Open with > Outlook (new).
+                try
+                {
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = emlPath,
+                        UseShellExecute = true
+                    });
+                }
+                catch
+                {
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = "explorer.exe",
+                        Arguments = $"/select,\"{emlPath}\"",
+                        UseShellExecute = true
+                    });
+                }
+
+                MessageBox.Show(
+                    this,
+                    "TEST draft created. No email was sent.\n\n" +
+                    "In New Outlook, verify To, CC, subject, full message body, " +
+                    "PDF attachment, and whether the message is editable with " +
+                    "a Send button.\n\n" +
+                    "If Classic Outlook opens instead, right-click this file " +
+                    "in Explorer and choose Open with > Outlook (new).\n\n" +
+                    $"Test file: {emlPath}",
+                    "New Outlook Draft Test",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    this,
+                    "Could not create or open the New Outlook draft test.\n\n" + ex.Message,
+                    "New Outlook Draft Test",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+        }
+
         private bool SendPdfEmailOutlook(string pdfPath, List<PrintTabSummary>? rows, int pages, bool openDraft)
         {
             if (string.IsNullOrWhiteSpace(pdfPath) || !File.Exists(pdfPath))
@@ -2128,6 +2197,10 @@ namespace PartsPortal
             {
                 case SummaryWindow.SummaryAction.EmailDraft:
                     await SendPdfEmailOutlookStaAsync(outFile, rows, pages, openDraft: true);
+                    break;
+
+                case SummaryWindow.SummaryAction.TestNewOutlookDraft:
+                    TestEmlDraftWithPdf(outFile, rows, pages);
                     break;
 
                 case SummaryWindow.SummaryAction.Email:

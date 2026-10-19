@@ -207,6 +207,12 @@
                     Margin="0,0,8,0" 
                     Click="EmailDraft_Click"/>
 
+            <Button Content="Test New Outlook Draft"
+                    Style="{DynamicResource SecondaryButtonStyle}"
+                    ToolTip="Experimental: generate an .eml draft with the PDF attached. Existing email buttons remain unchanged."
+                    Margin="0,0,8,0"
+                    Click="TestNewOutlookDraft_Click"/>
+
             <Button Content="Email"
                     Style="{DynamicResource PrimaryButtonStyle}"                    
                     Margin="0,0,8,0"
