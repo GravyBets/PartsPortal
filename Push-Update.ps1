@@ -325,10 +325,6 @@ try {
     $settingsJson = $settings | ConvertTo-Json -Depth 10
     Write-TextWithRetry $ApiSettings $settingsJson
 
-    $bullets = ($ReleaseNotes | ForEach-Object {
-        "  <li>$(Html $_)</li>"
-    }) -join [Environment]::NewLine
-
     $page = @"
 <!doctype html>
 <html lang="en">
@@ -341,7 +337,6 @@ body{font-family:"Segoe UI",Arial,sans-serif;background:#0f172a;color:#e5e7eb;ma
 main{width:min(680px,calc(100% - 40px));background:#111827;border:1px solid #334155;border-radius:18px;padding:32px}
 .version{color:#94a3b8;margin-bottom:24px}
 a{display:inline-block;padding:12px 18px;border-radius:10px;background:#2563eb;color:white;text-decoration:none;font-weight:600}
-li{margin:8px 0;color:#cbd5e1}
 .note{margin-top:24px;color:#94a3b8;font-size:13px;line-height:1.5}
 </style>
 </head>
@@ -350,10 +345,6 @@ li{margin:8px 0;color:#cbd5e1}
 <h1>PartsPortal</h1>
 <div class="version">Current release: $(Html $Version)</div>
 <a href="PartsPortal.application">Install / Update PartsPortal</a>
-<h2>What's new</h2>
-<ul>
-$bullets
-</ul>
 <div class="note">Install PartsPortal once with ClickOnce. Future releases are checked automatically when PartsPortal starts.</div>
 </main>
 </body>
@@ -362,9 +353,27 @@ $bullets
     Write-TextWithRetry $InstallPage $page
 
     Step "Updating embedded change log"
-    # Uses the SAME release notes as the version API and install page.
-    # Rerunning a version replaces its entry instead of duplicating it.
-    $previousEntries = @(Get-Content $ChangeLogPath -Raw | ConvertFrom-Json)
+    # Changelog is an array of individual version records; never serialize
+    # PowerShell's Count/value collection wrapper into an entry.
+    # Older malformed changelogs may contain a nested `value` array, so
+    # safely recover those records instead of carrying the wrapper forward.
+    $loadedEntries = ConvertFrom-Json -InputObject (Get-Content $ChangeLogPath -Raw)
+    $previousEntries = [System.Collections.Generic.List[object]]::new()
+    foreach ($item in @($loadedEntries)) {
+        if ($null -eq $item) { continue }
+
+        if ($item.PSObject.Properties["version"]) {
+            $previousEntries.Add($item)
+        }
+        elseif ($item.PSObject.Properties["value"]) {
+            foreach ($nested in @($item.value)) {
+                if ($null -ne $nested -and $nested.PSObject.Properties["version"]) {
+                    $previousEntries.Add($nested)
+                }
+            }
+        }
+    }
+
     $newEntry = [pscustomobject]@{
         version = $Version
         date = (Get-Date).ToString(
@@ -373,10 +382,17 @@ $bullets
         title = "PartsPortal $Version"
         changes = @($ReleaseNotes)
     }
-    $allEntries = @($newEntry) + @(
-        $previousEntries | Where-Object { [string]$_.version -ne $Version }
-    )
-    $changeLogJson = ConvertTo-Json -InputObject $allEntries -Depth 10
+
+    $allEntries = [System.Collections.Generic.List[object]]::new()
+    $allEntries.Add($newEntry)
+    foreach ($entry in $previousEntries) {
+        if ([string]$entry.version -ne $Version) {
+            $allEntries.Add($entry)
+        }
+    }
+
+    $finalEntries = $allEntries.ToArray()
+    $changeLogJson = ConvertTo-Json -InputObject $finalEntries -Depth 10
     Write-TextWithRetry $ChangeLogPath ($changeLogJson + "`n")
 
     Step "Building Contracts and API"
