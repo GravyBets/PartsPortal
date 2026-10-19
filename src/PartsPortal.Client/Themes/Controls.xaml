@@ -187,13 +187,15 @@
         </Setter>
     </Style>
 
-    <!-- Consistent destructive action styling across every app theme. -->
+    <!-- Solid-red destructive actions in every theme. Shared by Delete Part
+         now and other Delete buttons as they are added. -->
     <Style x:Key="DangerButtonStyle"
            TargetType="Button"
            BasedOn="{StaticResource SecondaryButtonStyle}">
-        <Setter Property="Foreground" Value="{DynamicResource DangerText}"/>
-        <Setter Property="Background" Value="{DynamicResource DangerBg}"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource DangerBorder}"/>
+        <Setter Property="Foreground" Value="White"/>
+        <Setter Property="Background" Value="#DC2626"/>
+        <Setter Property="BorderBrush" Value="#B91C1C"/>
+        <Setter Property="BorderThickness" Value="1.5"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
@@ -212,10 +214,11 @@
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter TargetName="Bd" Property="Background"
-                                    Value="{DynamicResource DangerBgHover}"/>
+                                    Value="#B91C1C"/>
                         </Trigger>
                         <Trigger Property="IsPressed" Value="True">
-                            <Setter Property="Opacity" Value="0.85"/>
+                            <Setter TargetName="Bd" Property="Background"
+                                    Value="#991B1B"/>
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter Property="Opacity" Value="0.55"/>
