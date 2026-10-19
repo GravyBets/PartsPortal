@@ -309,7 +309,19 @@ namespace PartsPortal
             if (e.Key != Key.Enter) return;
             e.Handled = true;
             ApplySiteName_Click(sender, new RoutedEventArgs());
-            Keyboard.ClearFocus();
+
+            // Window.PreviewKeyDown only receives keys while keyboard focus
+            // remains inside this Window. ClearFocus() leaves Esc with no
+            // routed target after the /shake command is submitted.
+            if (_harlemActive)
+            {
+                ShakeRoot.Focusable = true;
+                Keyboard.Focus(ShakeRoot);
+            }
+            else
+            {
+                Keyboard.ClearFocus();
+            }
         }
 
         private void PART_SiteNameBox_LostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
