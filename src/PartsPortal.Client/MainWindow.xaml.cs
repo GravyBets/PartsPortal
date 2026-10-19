@@ -281,6 +281,11 @@ namespace PartsPortal
 
         private void SiteTabs_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+            // A DataGrid or ListBox inside a site tab also raises a bubbling
+            // SelectionChanged. Rebuild only when the actual site tab changes.
+            if (!ReferenceEquals(e.OriginalSource, SiteTabs))
+                return;
+
             if (SiteTabs.SelectedItem == null) return;
 
             if (SiteTabs.SelectedItem == PlusTab)
@@ -579,8 +584,14 @@ namespace PartsPortal
 
             partsSearch.TextChanged += (_, __) => RefreshPartsList(ownerTab);
 
-            partsTabs.SelectionChanged += (_, __) =>
+            partsTabs.SelectionChanged += (_, e) =>
             {
+                // Inner ListBox/DataGrid selections bubble up to PartsTabs.
+                // They are not tab switches, and refreshing them here can
+                // create a cascade of SelectionChanged/layout updates.
+                if (!ReferenceEquals(e.OriginalSource, partsTabs))
+                    return;
+
                 UpdateButtonsForTab();
                 RefreshPartsList(ownerTab);
 

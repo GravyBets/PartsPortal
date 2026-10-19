@@ -43,6 +43,7 @@
                   FontSize="14"
                   RowHeight="44"
                   ColumnHeaderHeight="30"
+                  ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                   IsReadOnly="False">
 
             <DataGrid.Columns>
