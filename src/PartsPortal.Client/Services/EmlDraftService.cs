@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Mail;
@@ -7,8 +8,8 @@ using System.Text;
 namespace PartsPortal.Services;
 
 /// <summary>
-/// Experimental local-only MIME .eml draft to test New Outlook.
-/// Creating this file does not send any email or access Graph.
+/// Cross-version local MIME .eml composition. Works with Classic and New Outlook.
+/// Creating an .eml does not send any mail or use Graph / COM.
 /// </summary>
 internal static class EmlDraftService
 {
@@ -28,7 +29,7 @@ internal static class EmlDraftService
         string pdfName = Path.GetFileName(pdfPath);
         string attachmentName = SanitizeFilename(pdfName);
         string emlName = Path.GetFileNameWithoutExtension(pdfName) +
-            "_NewOutlook_TEST_" + Guid.NewGuid().ToString("N")[..8] + ".eml";
+            "_EmailDraft_" + Guid.NewGuid().ToString("N")[..8] + ".eml";
         string emlPath = Path.Combine(folder, emlName);
 
         string boundary = "partsportal_" + Guid.NewGuid().ToString("N");
@@ -70,6 +71,74 @@ internal static class EmlDraftService
         writer.WriteLine("--" + boundary + "--");
 
         return emlPath;
+    }
+
+    /// <summary>Compose a text-only draft for bug and feature reports.</summary>
+    public static string CreateMessage(
+        string to, string cc, string subject, string body)
+    {
+        string toHeader = NormalizeAddresses(to);
+        string ccHeader = NormalizeAddresses(cc);
+
+        if (toHeader.Length == 0 && ccHeader.Length == 0)
+            throw new InvalidOperationException("An Email To or CC recipient is required.");
+
+        string draftsFolder = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "PartsPortal", "Drafts");
+        Directory.CreateDirectory(draftsFolder);
+
+        string path = Path.Combine(draftsFolder,
+            "PartsPortal_Report_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") +
+            "_" + Guid.NewGuid().ToString("N")[..8] + ".eml");
+
+        using var file = new FileStream(path, FileMode.CreateNew, FileAccess.Write);
+        using var writer = new StreamWriter(file, Encoding.ASCII)
+        {
+            NewLine = "\r\n"
+        };
+
+        writer.WriteLine("X-Unsent: 1");
+        writer.WriteLine("MIME-Version: 1.0");
+        writer.WriteLine("To: " + toHeader);
+        if (ccHeader.Length > 0)
+            writer.WriteLine("Cc: " + ccHeader);
+
+        writer.WriteLine("Subject: =?UTF-8?B?" +
+            Convert.ToBase64String(Encoding.UTF8.GetBytes(subject ?? "")) + "?=");
+        writer.WriteLine("Content-Type: text/plain; charset=\"utf-8\"");
+        writer.WriteLine("Content-Transfer-Encoding: base64");
+        writer.WriteLine();
+        WriteBase64(writer, Encoding.UTF8.GetBytes(body ?? ""));
+
+        return path;
+    }
+
+    /// <summary>Open a prepared .eml using the user's Windows mail association.</summary>
+    public static void OpenDraft(string emlPath)
+    {
+        if (!File.Exists(emlPath))
+            throw new FileNotFoundException("The email draft file was not found.", emlPath);
+
+        try
+        {
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = emlPath,
+                UseShellExecute = true
+            });
+        }
+        catch
+        {
+            // If the .eml association cannot launch, show the file so
+            // the user can choose New Outlook or Classic Outlook manually.
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = "explorer.exe",
+                Arguments = $"/select,\"{emlPath}\"",
+                UseShellExecute = true
+            });
+        }
     }
 
     private static string NormalizeAddresses(string? text)

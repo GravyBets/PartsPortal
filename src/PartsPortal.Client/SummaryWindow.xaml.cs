@@ -17,9 +17,7 @@ namespace PartsPortal
         public enum SummaryAction
         {
             GenerateOnly,
-            EmailDraft,
-            TestNewOutlookDraft,
-            Email
+            EmailDraft
         }
 
         public SummaryAction Action { get; private set; } = SummaryAction.GenerateOnly;     
@@ -32,36 +30,12 @@ namespace PartsPortal
             Close();
         }
 
-        private void Email_Click(object sender, RoutedEventArgs e)
-        {
-            var result = MessageBox.Show(
-                this,
-                "Send Email now?",
-                "Confirm Email",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Question);
-
-            if (result != MessageBoxResult.Yes)
-                return; // stay on the Summary window
-
-            Action = SummaryAction.Email;
-            DialogResult = true;
-            Close();
-        }        
-
         private void EmailDraft_Click(object sender, RoutedEventArgs e)
         {
             Action = SummaryAction.EmailDraft;
             DialogResult = true;
             Close();
         }
-        private void TestNewOutlookDraft_Click(object sender, RoutedEventArgs e)
-        {
-            Action = SummaryAction.TestNewOutlookDraft;
-            DialogResult = true;
-            Close();
-        }
-
         private void Cancel_Click(object sender, RoutedEventArgs e)
         {
             DialogResult = false;

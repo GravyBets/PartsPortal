@@ -47,48 +47,18 @@ namespace PartsPortal
 
             string body = BuildBugFeatureEmailBody(type, details);
 
-            object? outlookApp = null;
-            object? mailItem = null;
-
             try
             {
-                outlookApp = OutlookCom.GetOrStartOutlook();
-
-                // 0 = olMailItem
-                mailItem = outlookApp.GetType().InvokeMember(
-                    "CreateItem",
-                    BindingFlags.InvokeMethod,
-                    null,
-                    outlookApp,
-                    new object[] { 0 });
-
-            if (mailItem == null)
-                throw new InvalidOperationException("Outlook CreateItem returned null.");
-
-                SetComProperty(mailItem, "To", to);
-                SetComProperty(mailItem, "CC", cc);
-                SetComProperty(mailItem, "Subject", subject);
-                SetComProperty(mailItem, "Body", body);
-
-                // Open as draft (non-modal)
-                mailItem.GetType().InvokeMember(
-                    "Display",
-                    BindingFlags.InvokeMethod,
-                    null,
-                    mailItem,
-                    new object[] { false });
-
+                string draftPath = EmlDraftService.CreateMessage(
+                    to, cc, subject, body);
+                EmlDraftService.OpenDraft(draftPath);
                 Close();
-                }
+            }
             catch (Exception ex)
             {
-                 MessageBox.Show("Failed to open Outlook draft:\n\n" + ex.Message,
+                MessageBox.Show(
+                    "Could not open the email draft:\n\n" + ex.Message,
                     "Bug / Feature", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-                finally
-            {
-                SafeReleaseComObject(mailItem);
-                SafeReleaseComObject(outlookApp);
             }
         }
 
@@ -129,27 +99,6 @@ namespace PartsPortal
             $"File Version: {fileVersion}\n" +
             $"App Path: {exePath}\n" +
             "----------------------------------------\n";
-    }
-
-    // Helpers (keep these if you already have them)
-    private static void SetComProperty(object target, string name, object? value)
-    {
-        target.GetType().InvokeMember(
-            name,
-            BindingFlags.SetProperty,
-            null,
-            target,
-            new object?[] { value });
-    }
-
-    private static void SafeReleaseComObject(object? obj)
-    {
-        try
-        {
-            if (obj != null && System.Runtime.InteropServices.Marshal.IsComObject(obj))
-                System.Runtime.InteropServices.Marshal.FinalReleaseComObject(obj);
-        }
-        catch { }
     }
 
 

@@ -305,15 +305,10 @@
                                 Click="Generate_Click"/>
 
                         <Button x:Name="EmailDraftButton"
-                                Content="Email Draft"
-                                Style="{StaticResource SecondaryButtonStyle}"
-                                Margin="0,0,8,0"
-                                Click="EmailDraft_Click"/>
-
-                        <Button x:Name="EmailButton"
-                                Content="Email"
+                                Content="Open Email"
                                 Style="{StaticResource PrimaryButtonStyle}"
-                                Click="Email_Click"/>
+                                ToolTip="Prepare an email with the PDF attached; review it and click Send in Outlook."
+                                Click="EmailDraft_Click"/>
 
                     </StackPanel>
                 </Grid>

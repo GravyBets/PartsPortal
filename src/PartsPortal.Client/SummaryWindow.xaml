@@ -202,21 +202,11 @@
                     IsDefault="True"
                     Click="Generate_Click"/>
 
-            <Button Content="Email Draft"
-                    Style="{DynamicResource SecondaryButtonStyle}"                     
-                    Margin="0,0,8,0" 
+            <Button Content="Open Email"
+                    Style="{DynamicResource PrimaryButtonStyle}"
+                    ToolTip="Opens a ready-to-send email with the PDF attached. Review it and click Send in Outlook."
+                    Margin="0,0,8,0"
                     Click="EmailDraft_Click"/>
-
-            <Button Content="Test New Outlook Draft"
-                    Style="{DynamicResource SecondaryButtonStyle}"
-                    ToolTip="Experimental: generate an .eml draft with the PDF attached. Existing email buttons remain unchanged."
-                    Margin="0,0,8,0"
-                    Click="TestNewOutlookDraft_Click"/>
-
-            <Button Content="Email"
-                    Style="{DynamicResource PrimaryButtonStyle}"                    
-                    Margin="0,0,8,0"
-                    Click="Email_Click"/>
         </StackPanel>
 
     </Grid>

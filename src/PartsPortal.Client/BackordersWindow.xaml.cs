@@ -1,5 +1,5 @@
 ﻿using PartsPortal.Models;
-using PartsPortal.Services;   // OutlookCom
+using PartsPortal.Services;
 using Syncfusion.Pdf;
 using Syncfusion.Pdf.Interactive;
 using Syncfusion.Pdf.Parsing;
@@ -11,9 +11,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -259,125 +257,30 @@ namespace PartsPortal
             return $"Backorders_Request_{safeWho}_{dateToken}_{pages}pages.pdf";
         }
 
-        private Task<bool> SendPdfEmailOutlookStaAsync(string pdfPath, List<PrintTabSummary>? rows, int pages, bool openDraft)
+        private void OpenEmailDraftWithPdf(
+            string pdfPath,
+            List<PrintTabSummary> rows,
+            int pages)
         {
-            
-            var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-
-            var thread = new Thread(() =>
-            {
-                try
-                {
-                    bool ok = SendPdfEmailOutlook(pdfPath, rows, pages, openDraft);
-                    tcs.SetResult(ok);
-                }
-                catch (Exception ex)
-                {
-                    tcs.SetException(ex);
-                }
-            });
-
-            thread.IsBackground = false;
-            thread.SetApartmentState(ApartmentState.STA);
-            thread.Start();
-
-            return tcs.Task;
-        }
-
-        private bool SendPdfEmailOutlook(string pdfPath, List<PrintTabSummary>? rows, int pages, bool openDraft)
-        {
-            if (string.IsNullOrWhiteSpace(pdfPath) || !File.Exists(pdfPath))
-                throw new FileNotFoundException("PDF not found.", pdfPath);
-
-            rows ??= new List<PrintTabSummary>();
-
             string to = (_settings?.EmailTo ?? "").Trim();
             string cc = (_settings?.EmailCc ?? "").Trim();
 
-
             const string requiredCc = "smartgridradio@centerpointenergy.com";
-
-            if (string.IsNullOrWhiteSpace(cc))
-                cc = requiredCc;
-            else if (!cc.Contains(requiredCc, StringComparison.OrdinalIgnoreCase))
-                cc = cc + "; " + requiredCc;
-
-            if (string.IsNullOrWhiteSpace(to) && string.IsNullOrWhiteSpace(cc))
+            if (!cc.Contains(requiredCc, StringComparison.OrdinalIgnoreCase))
             {
-                // ✅ Don't show MessageBox on STA worker thread
-                return false;
+                cc = string.IsNullOrWhiteSpace(cc)
+                    ? requiredCc
+                    : cc + "; " + requiredCc;
             }
 
-            string dateToken = DateTime.Now.ToString("MM/dd/yyyy");
             string who = GetEmailDisplayName();
             string pageWord = pages == 1 ? "page" : "pages";
-            string subject = $"Backorders Material Request - {who} - {dateToken} - {pages} {pageWord}";
-
-
+            string subject = $"Backorders Material Request - {who} - " +
+                $"{DateTime.Now:MM/dd/yyyy} - {pages} {pageWord}";
             string body = BuildEmailBody(rows, pages);
 
-            object? outlookApp = null;
-            object? mailItem = null;
-            object? attachments = null;
-
-            try
-            {
-                outlookApp = OutlookCom.GetOrStartOutlook();
-
-                mailItem = outlookApp.GetType().InvokeMember(
-                    "CreateItem",
-                    System.Reflection.BindingFlags.InvokeMethod,
-                    null,
-                    outlookApp,
-                    new object[] { 0 });
-
-                if (mailItem == null)
-                    throw new InvalidOperationException("Outlook CreateItem returned null.");
-
-                SetComProperty(mailItem, "To", to);
-                SetComProperty(mailItem, "CC", cc);
-                SetComProperty(mailItem, "Subject", subject);
-                SetComProperty(mailItem, "Body", body);
-
-                attachments = GetComProperty(mailItem, "Attachments");
-                if (attachments == null)
-                    throw new InvalidOperationException("Outlook Attachments collection was null.");
-
-                attachments.GetType().InvokeMember(
-                    "Add",
-                    System.Reflection.BindingFlags.InvokeMethod,
-                    null,
-                    attachments,
-                    new object?[] { pdfPath, Type.Missing, Type.Missing, Type.Missing }
-                );
-
-
-                if (openDraft)
-                {
-                    mailItem.GetType().InvokeMember("Display",
-                        System.Reflection.BindingFlags.InvokeMethod, null, mailItem, new object[] { false });
-                    return true;
-                }
-                else
-                {
-                    mailItem.GetType().InvokeMember("Send",
-                        System.Reflection.BindingFlags.InvokeMethod, null, mailItem, null);
-                    return true;
-                }
-            }
-            catch (COMException ex)
-            {
-                // ✅ Don't show MessageBox on STA worker thread
-                throw new InvalidOperationException(
-                    $"Outlook email failed (HRESULT: 0x{ex.HResult:X8}). {ex.Message}", ex);
-            }
-
-            finally
-            {
-                SafeReleaseComObject(attachments);
-                SafeReleaseComObject(mailItem);
-                SafeReleaseComObject(outlookApp);
-            }
+            string emlPath = EmlDraftService.Create(pdfPath, to, cc, subject, body);
+            EmlDraftService.OpenDraft(emlPath);
         }
 
         private string BuildEmailBody(List<PrintTabSummary> rows, int pages)
@@ -413,30 +316,6 @@ namespace PartsPortal
             lines.Add(GetEmailDisplayName());
 
             return string.Join(Environment.NewLine, lines);
-        }
-
-        private static void SetComProperty(object? target, string name, object? value)
-        {
-            if (target == null) throw new ArgumentNullException(nameof(target));
-            target.GetType().InvokeMember(name,
-                System.Reflection.BindingFlags.SetProperty, null, target, new object?[] { value });
-        }
-
-        private static object? GetComProperty(object? target, string name)
-        {
-            if (target == null) throw new ArgumentNullException(nameof(target));
-            return target.GetType().InvokeMember(name,
-                System.Reflection.BindingFlags.GetProperty, null, target, null);
-        }
-
-        private static void SafeReleaseComObject(object? obj)
-        {
-            try
-            {
-                if (obj != null && Marshal.IsComObject(obj))
-                    Marshal.FinalReleaseComObject(obj);
-            }
-            catch { }
         }
 
         private void SetPdfTextField(PdfLoadedDocument doc, string fieldName, string value)
@@ -693,26 +572,12 @@ namespace PartsPortal
             }
         }
 
-        private async void EmailDraft_Click(object sender, RoutedEventArgs e)
+        private void EmailDraft_Click(object sender, RoutedEventArgs e)
         {
-            await EmailSelectedAsync(openDraft: true);
+            OpenSelectedEmail();
         }
 
-        private async void Email_Click(object sender, RoutedEventArgs e)
-        {
-            var result = MessageBox.Show(
-                this,
-                "Send the email now?",
-                "Confirm Email",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Question);
-
-            if (result != MessageBoxResult.Yes)
-                return;
-            await EmailSelectedAsync(openDraft: false);
-        }
-
-        private async Task EmailSelectedAsync(bool openDraft)
+        private void OpenSelectedEmail()
         {
             var selected = GetCheckedBackordersOrSelected();
             if (selected.Count == 0)
@@ -722,57 +587,29 @@ namespace PartsPortal
                 return;
             }
 
-            // ✅ WO checker (required for email actions)
+            // Work orders remain mandatory for backorder email requests.
             if (!ConfirmProceedWhenMissingWorkOrders(selected))
                 return;
 
             string outDir = GetOutputFolder();
-
             string issueTemplatePath = GetTemplatePath(isReturn: false);
             if (!File.Exists(issueTemplatePath))
             {
                 MessageBox.Show("Issue PDF template not found:\n\n" + issueTemplatePath,
-                    "Email", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            string outFile;
-            int pages;
-            List<PrintTabSummary> rows;
-
-            try
-            {
-                (outFile, pages, rows) = GenerateBackordersMergedPdf(selected, outDir, issueTemplatePath);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Backorder PDF generation failed:\n\n" + ex.Message,
-                    "Email", MessageBoxButton.OK, MessageBoxImage.Error);
+                    "Open Email", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
             try
             {
-                bool did = await SendPdfEmailOutlookStaAsync(outFile, rows, pages, openDraft);
-
-                if (!did)
-                {
-                    MessageBox.Show("Email To/CC is blank. Add recipients in Settings → Email.",
-                        "Email", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    return;
-                }
-
-                if (!openDraft)
-                {
-                    MessageBox.Show("Email sent successfully.",
-                        "Email", MessageBoxButton.OK, MessageBoxImage.Information);
-                }
-
+                var (outFile, pages, rows) =
+                    GenerateBackordersMergedPdf(selected, outDir, issueTemplatePath);
+                OpenEmailDraftWithPdf(outFile, rows, pages);
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Email failed:\n\n" + ex.Message,
-                    "Email", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show("Could not prepare the email draft:\n\n" + ex.Message,
+                    "Open Email", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -960,15 +797,10 @@ namespace PartsPortal
 
             if (EmailDraftButton != null)
             {
-                EmailDraftButton.Content = labelCount > 0 ? $"Email Draft ({labelCount})" : "Email Draft";
+                EmailDraftButton.Content = labelCount > 0 ? $"Open Email ({labelCount})" : "Open Email";
                 EmailDraftButton.IsEnabled = enabled;
             }
 
-            if (EmailButton != null)
-            {
-                EmailButton.Content = labelCount > 0 ? $"Email ({labelCount})" : "Email";
-                EmailButton.IsEnabled = enabled;
-            }
         }
 
         private void HeaderSelectAll_Changed(object sender, RoutedEventArgs e)

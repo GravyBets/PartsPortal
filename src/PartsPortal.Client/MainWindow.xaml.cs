@@ -1811,7 +1811,7 @@ namespace PartsPortal
                 outDoc.Pages.Count);
         }
 
-        private void TestEmlDraftWithPdf(
+        private void OpenEmailDraftWithPdf(
             string pdfPath,
             List<PrintTabSummary> rows,
             int pages)
@@ -1835,197 +1835,18 @@ namespace PartsPortal
 
                 string emlPath = EmlDraftService.Create(
                     pdfPath, to, cc, subject, body);
-
-                // The .eml association may still point to Classic Outlook.
-                // The test file remains beside the PDF for Open with > Outlook (new).
-                try
-                {
-                    Process.Start(new ProcessStartInfo
-                    {
-                        FileName = emlPath,
-                        UseShellExecute = true
-                    });
-                }
-                catch
-                {
-                    Process.Start(new ProcessStartInfo
-                    {
-                        FileName = "explorer.exe",
-                        Arguments = $"/select,\"{emlPath}\"",
-                        UseShellExecute = true
-                    });
-                }
-
-                MessageBox.Show(
-                    this,
-                    "TEST draft created. No email was sent.\n\n" +
-                    "In New Outlook, verify To, CC, subject, full message body, " +
-                    "PDF attachment, and whether the message is editable with " +
-                    "a Send button.\n\n" +
-                    "If Classic Outlook opens instead, right-click this file " +
-                    "in Explorer and choose Open with > Outlook (new).\n\n" +
-                    $"Test file: {emlPath}",
-                    "New Outlook Draft Test",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Information);
+                EmlDraftService.OpenDraft(emlPath);
+                SetStatus("Email prepared. Review it and click Send in Outlook.");
             }
             catch (Exception ex)
             {
                 MessageBox.Show(
                     this,
-                    "Could not create or open the New Outlook draft test.\n\n" + ex.Message,
-                    "New Outlook Draft Test",
+                    "Could not prepare the email draft.\n\n" + ex.Message,
+                    "Open Email",
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
             }
-        }
-
-        private bool SendPdfEmailOutlook(string pdfPath, List<PrintTabSummary>? rows, int pages, bool openDraft)
-        {
-            if (string.IsNullOrWhiteSpace(pdfPath) || !File.Exists(pdfPath))
-                throw new FileNotFoundException("PDF not found.", pdfPath);
-
-            rows ??= new List<PrintTabSummary>();
-
-            // Recipients
-            string to = (_settings?.EmailTo ?? "").Trim();
-            string cc = (_settings?.EmailCc ?? "").Trim();
-
-            const string requiredCc = "smartgridradio@centerpointenergy.com";
-
-            if (string.IsNullOrWhiteSpace(cc))
-            {
-                cc = requiredCc;
-            }
-            else if (!cc.Contains(requiredCc, StringComparison.OrdinalIgnoreCase))
-            {
-                cc = cc + "; " + requiredCc; // Outlook supports ; separated
-            }
-
-            if (string.IsNullOrWhiteSpace(to) && string.IsNullOrWhiteSpace(cc))
-            {
-                MessageBox.Show("Email To/CC is blank. Add recipients in Settings → Email.",
-                    "Email", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return false;
-            }
-
-            //Email Subject
-            string dateToken = DateTime.Now.ToString("MM/dd/yyyy");
-            string typeToken = GetSubjectIssueReturnToken(rows);
-
-            string subject = $"Material {typeToken} - {GetEmailDisplayName()} - {dateToken} - {pages} page(s)";
-
-
-            // Body
-            string body = BuildEmailBody(rows, pages);
-
-            object? outlookApp = null;
-            object? mailItem = null;
-            object? attachments = null;
-
-            bool didAction = false;
-
-            try
-            {
-                outlookApp = OutlookCom.GetOrStartOutlook();
-
-                // Create MailItem (0 = olMailItem)
-                mailItem = outlookApp.GetType().InvokeMember(
-                    "CreateItem",
-                    System.Reflection.BindingFlags.InvokeMethod,
-                    null,
-                    outlookApp,
-                    new object[] { 0 });
-
-                if (mailItem == null)
-                    throw new InvalidOperationException("Outlook CreateItem returned null.");
-
-                // Set fields
-                SetComProperty(mailItem, "To", to);
-                SetComProperty(mailItem, "CC", cc);
-                SetComProperty(mailItem, "Subject", subject);
-                SetComProperty(mailItem, "Body", body);
-
-                // Attach PDF
-                attachments = GetComProperty(mailItem, "Attachments");
-                if (attachments == null)
-                    throw new InvalidOperationException("Outlook Attachments collection was null.");
-
-                attachments.GetType().InvokeMember("Add",
-                    System.Reflection.BindingFlags.InvokeMethod, null, attachments,
-                    new object[] { pdfPath });
-
-                // Draft vs Send
-                if (openDraft)
-                {
-                    // false = don't modal-block the app; Outlook will open inspector
-                    mailItem.GetType().InvokeMember("Display",
-                        System.Reflection.BindingFlags.InvokeMethod, null, mailItem, new object[] { false });
-
-                    didAction = true; // draft opened
-                }
-                else
-                {
-                    mailItem.GetType().InvokeMember("Send",
-                        System.Reflection.BindingFlags.InvokeMethod, null, mailItem, null);
-
-                    didAction = true; // send invoked
-                }
-            }
-            catch (COMException ex)
-            {
-                MessageBox.Show(
-                    "Outlook email failed.\n\n" +
-                    $"HRESULT: 0x{ex.HResult:X8}\n" +
-                    ex.Message + "\n\n" +
-                    "Fixes:\n" +
-                    "• Open Outlook (classic) manually once, finish any prompts, then retry.\n" +
-                    "• If Outlook is hung, end OUTLOOK.EXE in Task Manager.\n" +
-                    "• Ensure your app is not running as Administrator.\n" +
-                    "• If you only have New Outlook, COM automation may fail.",
-                    "Email", MessageBoxButton.OK, MessageBoxImage.Error);
-
-                return false;
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Outlook email failed:\n\n" + ex.Message,
-                    "Email", MessageBoxButton.OK, MessageBoxImage.Error);
-
-                return false;
-            }
-            finally
-            {
-                SafeReleaseComObject(attachments);
-                SafeReleaseComObject(mailItem);
-                SafeReleaseComObject(outlookApp);
-            }
-
-            return didAction;
-        }
-
-        private static void SetComProperty(object? target, string name, object? value)
-        {
-            if (target == null) throw new ArgumentNullException(nameof(target));
-            target.GetType().InvokeMember(name,
-                System.Reflection.BindingFlags.SetProperty, null, target, new object?[] { value });
-        }
-
-        private static object? GetComProperty(object? target, string name)
-        {
-            if (target == null) throw new ArgumentNullException(nameof(target));
-            return target.GetType().InvokeMember(name,
-                System.Reflection.BindingFlags.GetProperty, null, target, null);
-        }
-
-        private static void SafeReleaseComObject(object? obj)
-        {
-            try
-            {
-                if (obj != null && Marshal.IsComObject(obj))
-                    Marshal.FinalReleaseComObject(obj);
-            }
-            catch { /* ignore */ }
         }
 
         private string BuildEmailBody(List<PrintTabSummary> rows, int pages)
@@ -2073,7 +1894,7 @@ namespace PartsPortal
             return string.Join(Environment.NewLine, lines);
         }
 
-        private async void OpenSummary_Click(object sender, RoutedEventArgs e)
+        private void OpenSummary_Click(object sender, RoutedEventArgs e)
         {
             // Save current textbox value into selected tab
             if (SiteTabs.SelectedItem is TabItem current && current != PlusTab && SiteNameBox != null)
@@ -2192,30 +2013,14 @@ namespace PartsPortal
                 return;
             }
 
+            SetStatus("Created: " + outFile);
+
             // Do the chosen action
             switch (summary.Action)
             {
                 case SummaryWindow.SummaryAction.EmailDraft:
-                    await SendPdfEmailOutlookStaAsync(outFile, rows, pages, openDraft: true);
+                    OpenEmailDraftWithPdf(outFile, rows, pages);
                     break;
-
-                case SummaryWindow.SummaryAction.TestNewOutlookDraft:
-                    TestEmlDraftWithPdf(outFile, rows, pages);
-                    break;
-
-                case SummaryWindow.SummaryAction.Email:
-                    {
-                        bool sent = await SendPdfEmailOutlookStaAsync(outFile, rows, pages, openDraft: false);
-                        if (sent)
-                        {
-                            MessageBox.Show(
-                                "Email sent successfully.",
-                                "Email",
-                                MessageBoxButton.OK,
-                                MessageBoxImage.Information);
-                        }
-                        break;
-                    }
 
                 case SummaryWindow.SummaryAction.GenerateOnly:
                 default:
@@ -2231,8 +2036,6 @@ namespace PartsPortal
 
                     break;
             }
-            SetStatus("Created: " + outFile);
-
         }
 
         private static string ResolveOutputDirectory(string? configured)
@@ -2264,31 +2067,6 @@ namespace PartsPortal
             string fallback = Path.Combine(docs, "PartsPortal", "Output");
             Directory.CreateDirectory(fallback);
             return fallback;
-        }
-
-        private Task<bool> SendPdfEmailOutlookStaAsync(string pdfPath, List<PrintTabSummary>? rows, int pages, bool openDraft)
-        {
-            var tcs = new TaskCompletionSource<bool>(
-                TaskCreationOptions.RunContinuationsAsynchronously);
-
-            var thread = new Thread(() =>
-            {
-                try
-                {
-                    bool ok = SendPdfEmailOutlook(pdfPath, rows, pages, openDraft);
-                    tcs.SetResult(ok);
-                }
-                catch (Exception ex)
-                {
-                    tcs.SetException(ex);
-                }
-            });
-
-            thread.IsBackground = true;
-            thread.SetApartmentState(ApartmentState.STA);
-            thread.Start();
-
-            return tcs.Task;
         }
 
         private static string GetSubjectIssueReturnToken(List<PrintTabSummary>? rows)
