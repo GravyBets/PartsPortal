@@ -7,6 +7,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
+using PartsPortal.Services;
 
 namespace PartsPortal
 {
@@ -26,6 +27,31 @@ namespace PartsPortal
         private int _lastSoloSecond = -1;
         private int _soloTargetIndex = -1;
         private int _previousSoloTargetIndex = -1;
+
+        private TemporaryShakeVolume? _temporaryShakeVolume;
+        private static bool ShakeVolumeEnabled()
+        {
+            string path = Path.Combine(
+                Environment.GetFolderPath(
+                    Environment.SpecialFolder.ApplicationData),
+                "PartsPortal",
+                "shake-volume-consent.txt");
+            if (File.Exists(path))
+                return File.ReadAllText(path).Trim() == "yes";
+            var result = MessageBox.Show(
+                "Allow the Harlem Shake Easter egg to temporarily " +
+                "unmute Windows and raise speaker volume to at least 80%?\n\n" +
+                "Your previous settings will be restored afterward.",
+                "Harlem Shake Sound",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+            if (result != MessageBoxResult.Yes)
+                return false;
+            Directory.CreateDirectory(
+                Path.GetDirectoryName(path)!);
+            File.WriteAllText(path, "yes");
+            return true;
+        }
 
         private sealed class ShakeTarget
         {
@@ -131,6 +157,18 @@ namespace PartsPortal
                 // text boxes, headers, standalone text and images. Never
                 // transform their layout containers or the whole window.
                 GatherShakeTargets(ShakeRoot);
+
+                if (ShakeVolumeEnabled())
+                {
+                    try
+                    {
+                        _temporaryShakeVolume = new TemporaryShakeVolume(0.80f);
+                    }
+                    catch
+                    {
+                        // Ignore any errors setting the temporary shake volume.
+                    }
+                }
 
                 _harlemPlayer.Play();
                 _harlemTimer.Interval = TimeSpan.FromMilliseconds(45);
@@ -312,6 +350,15 @@ namespace PartsPortal
 
             _harlemPlayer.Stop();
             _harlemPlayer.Close();
+
+            try
+            {
+                _temporaryShakeVolume?.Dispose();
+            }
+            finally
+            {
+                _temporaryShakeVolume = null;
+            }
 
             // Restore every control's previous transform and origin.
             foreach (var target in _shakeTargets)
