@@ -293,6 +293,57 @@ public sealed class PartsController : ControllerBase
         return NoContent();
     }
 
+    [HttpDelete("{id:int}/permanent")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> PermanentlyDelete(
+        int id,
+        CancellationToken cancellationToken = default)
+    {
+        var actor = await RequirePartsManagerAsync(cancellationToken);
+
+        if (actor is null)
+            return StatusCode(
+                StatusCodes.Status403Forbidden,
+                "Parts management permission is required.");
+
+        var part = await _db.Parts
+            .SingleOrDefaultAsync(x => x.Id == id, cancellationToken);
+
+        if (part is null)
+            return NotFound();
+
+        // Include even inactive templates: a user may reactivate one later.
+        var inSavedTemplate = await _db.TemplateLines
+            .AnyAsync(x => x.PartId == id, cancellationToken);
+
+        if (inSavedTemplate)
+        {
+            return Conflict(
+                $"Part '{part.MaterialNumber}' is used in one or more saved templates. " +
+                "Remove it from those templates first, or deactivate the part instead.");
+        }
+
+        // PartWarehouse records cascade on delete in the existing schema.
+        // Other database references must remain protected.
+        _db.Parts.Remove(part);
+
+        try
+        {
+            await _db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException)
+        {
+            return Conflict(
+                "This part is still referenced by other records and cannot be " +
+                "permanently deleted. Deactivate it instead.");
+        }
+
+        return NoContent();
+    }
+
     [HttpPost("{id:int}/reactivate")]
     [ProducesResponseType<PartDto>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

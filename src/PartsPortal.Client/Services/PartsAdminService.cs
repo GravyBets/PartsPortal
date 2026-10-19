@@ -89,6 +89,17 @@ public sealed class PartsAdminService
         await EnsureSuccessAsync(response, cancellationToken);
     }
 
+    public async Task DeletePartPermanentlyAsync(
+        int id,
+        CancellationToken cancellationToken = default)
+    {
+        using var response = await _client.DeleteAsync(
+            $"parts/{id}/permanent",
+            cancellationToken);
+
+        await EnsureSuccessAsync(response, cancellationToken);
+    }
+
     public async Task<PartDto> ReactivatePartAsync(
         int id,
         CancellationToken cancellationToken = default)

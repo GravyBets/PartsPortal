@@ -14,6 +14,7 @@ public partial class PartsManagementWindow : Window
     private readonly PartsAdminService _service = new();
     private readonly ObservableCollection<PartRow> _rows = new();
     private ICollectionView? _view;
+    private bool _busy;
 
     public PartsManagementWindow()
     {
@@ -205,6 +206,41 @@ public partial class PartsManagementWindow : Window
         }
     }
 
+    private async void Delete_Click(object sender, RoutedEventArgs e)
+    {
+        if (_busy || PartsGrid.SelectedItem is not PartRow row)
+            return;
+
+        var answer = MessageBox.Show(
+            "Permanently delete this part from the central catalog?\n\n" +
+            $"{row.MaterialNumber} - {row.Description}\n\n" +
+            "This cannot be undone. Parts used in saved templates cannot be deleted. " +
+            "Use Deactivate if you want to keep the part for later.",
+            "Permanently Delete Part",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+
+        if (answer != MessageBoxResult.Yes)
+            return;
+
+        try
+        {
+            SetBusy(true, "Deleting part...");
+            await _service.DeletePartPermanentlyAsync(row.Id);
+            await LoadPartsAsync();
+            StatusText.Text = $"Part {row.MaterialNumber} permanently deleted.";
+        }
+        catch (Exception ex)
+        {
+            ShowOperationError("delete", ex);
+        }
+        finally
+        {
+            SetBusy(false);
+            UpdateSelectionButtons();
+        }
+    }
+
     private void PartsGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         UpdateSelectionButtons();
@@ -215,8 +251,9 @@ public partial class PartsManagementWindow : Window
         var row = PartsGrid.SelectedItem as PartRow;
         var hasSelection = row is not null;
 
-        EditButton.IsEnabled = hasSelection;
-        ActiveToggleButton.IsEnabled = hasSelection;
+        EditButton.IsEnabled = hasSelection && !_busy;
+        ActiveToggleButton.IsEnabled = hasSelection && !_busy;
+        DeleteButton.IsEnabled = hasSelection && !_busy;
         ActiveToggleButton.Content = row?.IsActive == false
             ? "Reactivate"
             : "Deactivate";
@@ -224,11 +261,15 @@ public partial class PartsManagementWindow : Window
 
     private void SetBusy(bool busy, string? message = null)
     {
+        _busy = busy;
         Mouse.OverrideCursor = busy ? Cursors.Wait : null;
 
         SearchBox.IsEnabled = !busy;
         IncludeInactiveCheckBox.IsEnabled = !busy;
         PartsGrid.IsEnabled = !busy;
+        EditButton.IsEnabled = !busy && PartsGrid.SelectedItem is PartRow;
+        ActiveToggleButton.IsEnabled = !busy && PartsGrid.SelectedItem is PartRow;
+        DeleteButton.IsEnabled = !busy && PartsGrid.SelectedItem is PartRow;
 
         if (!string.IsNullOrWhiteSpace(message))
             StatusText.Text = message;
