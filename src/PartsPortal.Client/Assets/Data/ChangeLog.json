@@ -1,10 +1,43 @@
-[
-  {
-    "version": "3.2.19",
-    "date": "Previous release",
-    "title": "API database testing",
-    "changes": [
-      "API Update for DB Testing"
-    ]
-  }
+﻿[
+    {
+        "version":  "4.1.1",
+        "date":  "October 19, 2026",
+        "title":  "PartsPortal 4.1.1",
+        "changes":  [
+                        "Hosted PartsPortal on VM on Server.",
+                        "Built ClickOnce for auto-updating.",
+                        "Built Database for parts catalog.",
+                        "Added roles for adding/modifying/deleting parts.",
+                        "Added front-end for adding/modifying/deleting parts.",
+                        "Added Administration window for giving user roles.",
+                        "Added SmartGridSuite themes.",
+                        "Remved the 6 tab limit.",
+                        "If more than 12 line items are ordered, app now creates a 2nd/3rd/4th etc. material request PDF.",
+                        "Added user ability to Add/Modify/Delete Templates.",
+                        "Put textbox on part quantities to allow manual typing.",
+                        "Added \"Add to Backorder\" button on main window for ease of adding backordered parts.",
+                        "Typing \"/shake\" in the \"Site # / Reason\" textbox does the thing.",
+                        "Added a \u0027X\u0027 to the parts search bar.",
+                        "Moved parts search bar to be inside the \"All Parts\" tab.",
+                        "Parts search bar no longer filters Favorites or Templates.",
+                        "Added Double-Click to Template Names to add to orders.",
+                        "Corrected Theme Selection ComboBox display names.",
+                        "Disabled User Role inputs until after \"New User\" button is clicked.",
+                        "UI Polish for Manage Parts and User Access windows.",
+                        "Added ChangeLog to the About App window."
+                    ]
+    },
+    {
+        "value":  [
+                      {
+                          "version":  "3.2.19",
+                          "date":  "Previous release",
+                          "title":  "API database testing",
+                          "changes":  [
+                                          "API Update for DB Testing"
+                                      ]
+                      }
+                  ],
+        "Count":  1
+    }
 ]
