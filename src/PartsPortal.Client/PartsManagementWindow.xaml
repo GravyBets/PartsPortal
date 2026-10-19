@@ -9,7 +9,7 @@
         WindowStartupLocation="CenterOwner"
         Background="{DynamicResource AppBackground}"
         Icon="/Assets/PartsPortalIcon.ico">
-    <Grid Margin="18">
+    <Grid Margin="12">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -19,7 +19,7 @@
 
         <Border Grid.Row="0"
                 Style="{StaticResource Card}"
-                Margin="0,0,0,14">
+                Margin="0,0,0,8">
             <StackPanel>
                 <TextBlock Text="Parts Management"
                            FontSize="22"
@@ -33,7 +33,7 @@
 
         <Border Grid.Row="1"
                 Style="{StaticResource Card}"
-                Margin="0,0,0,14">
+                Margin="0,0,0,8">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -59,7 +59,7 @@
 
                 <Button Grid.Column="2"
                         Content="Refresh"
-                        Style="{StaticResource SecondaryButtonStyle}"
+                        Style="{StaticResource PrimaryButtonStyle}"
                         Click="Refresh_Click"/>
             </Grid>
         </Border>
@@ -82,7 +82,7 @@
                     <DataGridTextColumn Header="Material"
                                         Binding="{Binding MaterialNumber}"
                                         ElementStyle="{StaticResource AdminDataGridTextStyle}"
-                                        Width="124"/>
+                                        Width="90"/>
                     <DataGridTextColumn Header="Description"
                                         Binding="{Binding Description}"
                                         ElementStyle="{StaticResource AdminDataGridTextStyle}"
@@ -90,7 +90,7 @@
                     <DataGridTextColumn Header="Warehouses"
                                         Binding="{Binding WarehouseDisplay}"
                                         ElementStyle="{StaticResource AdminDataGridTextStyle}"
-                                        Width="280"/>
+                                        Width="320"/>
                     <DataGridTextColumn Header="Status"
                                         Binding="{Binding StatusDisplay}"
                                         ElementStyle="{StaticResource AdminDataGridTextStyle}"
@@ -114,33 +114,34 @@
                         Orientation="Horizontal">
                 <Button Content="Add Part"
                         Width="110"
-                        Margin="0,0,10,0"
+                        Margin="0,0,4,0"
                         Style="{StaticResource PrimaryButtonStyle}"
                         Click="Add_Click"/>
+                <Button x:Name="DeleteButton"
+                        Content="Delete Part"
+                        Width="110"
+                        Margin="0,0,4,0"
+                        Style="{StaticResource DangerButtonStyle}"
+                        IsEnabled="False"
+                        Click="Delete_Click"/>
                 <Button x:Name="EditButton"
                         Content="Edit"
                         Width="100"
-                        Margin="0,0,10,0"
+                        Margin="0,0,4,0"
                         Style="{StaticResource SecondaryButtonStyle}"
                         IsEnabled="False"
                         Click="Edit_Click"/>
                 <Button x:Name="ActiveToggleButton"
                         Content="Deactivate"
                         Width="120"
-                        Margin="0,0,10,0"
+                        Margin="0,0,4,0"
                         Style="{StaticResource SecondaryButtonStyle}"
                         IsEnabled="False"
                         Click="ActiveToggle_Click"/>
-                <Button x:Name="DeleteButton"
-                        Content="Delete Part"
-                        Width="110"
-                        Margin="0,0,10,0"
-                        Style="{StaticResource DangerButtonStyle}"
-                        IsEnabled="False"
-                        Click="Delete_Click"/>
+                
                 <Button Content="Close"
                         Width="100"
-                        Style="{StaticResource SecondaryButtonStyle}"
+                        Style="{StaticResource PrimaryButtonStyle}"
                         Click="Close_Click"/>
             </StackPanel>
         </Grid>

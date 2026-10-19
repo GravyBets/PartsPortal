@@ -5,15 +5,14 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
         Title="Select Warehouse"
-        Height="560"
-        Width="920"
+        Height="520"
+        Width="810"
         WindowStartupLocation="CenterScreen"
         ResizeMode="NoResize"
         Background="{DynamicResource AppBackground}"
         Icon="/Assets/PartsPortalIcon.ico">
 
     <Window.Resources>
-
         <!-- Card -->
         <Style x:Key="Card" TargetType="Border">
             <Setter Property="CornerRadius" Value="18"/>
@@ -146,18 +145,16 @@
 
     </Window.Resources>
 
-    <Grid Margin="18">
+    <Grid Margin="12">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-
-
-
-
+        
         <!-- Header -->
-        <Border Style="{StaticResource Card}" Grid.Row="0">
+        <Border Style="{StaticResource Card}" 
+                Grid.Row="0">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -167,14 +164,13 @@
                 <!-- Title/Sub -->
                 <StackPanel Grid.Column="0">
                     <TextBlock Text="Select Warehouse"
-                       FontSize="22"
-                       FontWeight="Bold"
-                       Foreground="{DynamicResource TextPrimary}"/>
+                               FontSize="22"
+                               FontWeight="Bold"
+                               Foreground="{DynamicResource TextPrimary}"/>
                     <TextBlock Text="Choose the warehouse you are ordering parts for."
-                       Margin="0,4,0,0"
-                       Foreground="{DynamicResource TextSecondary}"/>
-                </StackPanel>               
-
+                               Margin="0,4,0,0"
+                               Foreground="{DynamicResource TextSecondary}"/>
+                </StackPanel>
 
                 <!-- Eight themes from SmartGridSuite. -->
                 <ComboBox Grid.Column="1"
@@ -192,7 +188,9 @@
 
 
         <!-- Body -->
-        <Border Style="{StaticResource Card}" Grid.Row="1" Margin="0,14,0,14">
+        <Border Style="{StaticResource Card}" 
+                Grid.Row="1" 
+                Margin="0,8,0,12">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="2*"/>
@@ -227,12 +225,12 @@
 
                     <!-- Primary spans all 3 rows (same height as the full stack) -->
                     <Button Grid.Column="0"
-                    Grid.Row="0"
-                    Grid.RowSpan="3"
-                    Style="{StaticResource PrimaryTileButton}"
-                    Tag="Warehouse - Building D"
-                    Click="Warehouse_Click"
-                    Margin="0,0,14,0">
+                            Grid.Row="0"
+                            Grid.RowSpan="3"
+                            Style="{StaticResource PrimaryTileButton}"
+                            Tag="Warehouse - Building D"
+                            Click="Warehouse_Click"
+                            Margin="0,0,8,0">
                         <StackPanel>
                             <TextBlock Text="Warehouse - Building D"
                                FontSize="22"
@@ -247,61 +245,61 @@
 
                     <!-- Other warehouses (A first, then B, then F) -->
                     <Button Grid.Column="1"
-                    Grid.Row="0"
-                    Style="{StaticResource TileButton}"
-                    Tag="Warehouse - Building A"
-                    Click="Warehouse_Click"
-                    Margin="0,0,0,10">
+                            Grid.Row="0"
+                            Style="{StaticResource TileButton}"
+                            Tag="Warehouse - Building A"
+                            Click="Warehouse_Click"
+                            Margin="0,0,0,8">
                         <StackPanel>
                             <TextBlock Text="Warehouse - Building A"
-                               FontSize="18"
-                               FontWeight="SemiBold"
-                               Foreground="{DynamicResource TextPrimary}"
-                               HorizontalAlignment="Center"/>
+                                       FontSize="18"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextPrimary}"
+                                       HorizontalAlignment="Center"/>
                             <TextBlock Text="Central"
-                               FontSize="13"
-                               Foreground="{DynamicResource TextSecondary}"
-                               Margin="0,6,0,0"
-                               HorizontalAlignment="Center"/>
+                                       FontSize="13"
+                                       Foreground="{DynamicResource TextSecondary}"
+                                       Margin="0,6,0,0"
+                                       HorizontalAlignment="Center"/>
                         </StackPanel>
                     </Button>
 
                     <Button Grid.Column="1"
-                    Grid.Row="1"
-                    Style="{StaticResource TileButton}"
-                    Tag="Warehouse - Building B"
-                    Click="Warehouse_Click"
-                    Margin="0,0,0,10">
+                            Grid.Row="1"
+                            Style="{StaticResource TileButton}"
+                            Tag="Warehouse - Building B"
+                            Click="Warehouse_Click"
+                            Margin="0,0,0,8">
                         <StackPanel>
                             <TextBlock Text="Warehouse - Building B"
-                               FontSize="18"
-                               FontWeight="SemiBold"
-                               Foreground="{DynamicResource TextPrimary}"
-                               HorizontalAlignment="Center"/>
+                                       FontSize="18"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextPrimary}"
+                                       HorizontalAlignment="Center"/>
                             <TextBlock Text="Substation"
-                               FontSize="13"
-                               Foreground="{DynamicResource TextSecondary}"
-                               Margin="0,6,0,0"
-                               HorizontalAlignment="Center"/>
+                                       FontSize="13"
+                                       Foreground="{DynamicResource TextSecondary}"
+                                       Margin="0,6,0,0"
+                                       HorizontalAlignment="Center"/>
                         </StackPanel>
                     </Button>
 
                     <Button Grid.Column="1"
-                    Grid.Row="2"
-                    Style="{StaticResource TileButton}"
-                    Tag="Backorders"
-                    Click="Warehouse_Click">
+                            Grid.Row="2"
+                            Style="{StaticResource TileButton}"
+                            Tag="Backorders"
+                            Click="Warehouse_Click">
                         <StackPanel>
                             <TextBlock Text="Backordered"
-                               FontSize="18"
-                               FontWeight="SemiBold"
-                               Foreground="{DynamicResource TextPrimary}"
-                               HorizontalAlignment="Center"/>
+                                       FontSize="18"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextPrimary}"
+                                       HorizontalAlignment="Center"/>
                             <TextBlock Text="Parts Log"
-                               FontSize="13"
-                               Foreground="{DynamicResource TextSecondary}"
-                               Margin="0,6,0,0"
-                               HorizontalAlignment="Center"/>
+                                       FontSize="13"
+                                       Foreground="{DynamicResource TextSecondary}"
+                                       Margin="0,6,0,0"
+                                       HorizontalAlignment="Center"/>
                         </StackPanel>
                     </Button>
                 </Grid>

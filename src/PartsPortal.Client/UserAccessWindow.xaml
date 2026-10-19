@@ -9,7 +9,7 @@
         WindowStartupLocation="CenterOwner"
         Background="{DynamicResource AppBackground}"
         Icon="/Assets/PartsPortalIcon.ico">
-    <Grid Margin="18">
+    <Grid Margin="12">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
@@ -18,7 +18,7 @@
 
         <Border Grid.Row="0"
                 Style="{StaticResource Card}"
-                Margin="0,0,0,14">
+                Margin="0,0,0,8">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -46,7 +46,7 @@
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="3*"/>
-                <ColumnDefinition Width="14"/>
+                <ColumnDefinition Width="8"/>
                 <ColumnDefinition Width="2*"/>
             </Grid.ColumnDefinitions>
 
@@ -80,15 +80,15 @@
                             <DataGridTextColumn Header="Employee ID"
                                                 Binding="{Binding EmployeeId}"
                                                 ElementStyle="{StaticResource AdminDataGridTextStyle}"
-                                        Width="116"/>
+                                                Width="102"/>
                             <DataGridTextColumn Header="Name"
                                                 Binding="{Binding DisplayName}"
                                                 ElementStyle="{StaticResource AdminDataGridTextStyle}"
-                                        Width="*"/>
+                                                Width="*"/>
                             <DataGridTextColumn Header="Roles"
                                                 Binding="{Binding RolesDisplay}"
                                                 ElementStyle="{StaticResource AdminDataGridTextStyle}"
-                                        Width="180"/>
+                                                Width="220"/>
                             <DataGridTextColumn Header="Status"
                                                 Binding="{Binding StatusDisplay}"
                                                 ElementStyle="{StaticResource AdminDataGridTextStyle}"
@@ -112,82 +112,82 @@
                         TextOptions.TextFormattingMode="Display"
                         TextOptions.TextRenderingMode="ClearType">
                     <StackPanel>
-                    <TextBlock x:Name="EditorTitle"
-                               Text="Select a user"
-                               FontSize="18"
-                               FontWeight="Bold"
-                               Margin="0,0,0,16"
-                               Foreground="{DynamicResource TextPrimary}"/>
+                        <TextBlock x:Name="EditorTitle"
+                                   Text="Select a user"
+                                   FontSize="18"
+                                   FontWeight="Bold"
+                                   Margin="0,0,0,4"
+                                   Foreground="{DynamicResource TextPrimary}"/>
 
                     <!-- No editing until an existing user is selected or New User is clicked. -->
                     <StackPanel x:Name="EditorFields"
                                 IsEnabled="False">
-                    <TextBlock Text="Employee ID"
-                               FontSize="14"
-                               FontWeight="SemiBold"
-                               Margin="0,0,0,6"
-                               Foreground="{DynamicResource TextPrimary}"/>
-                    <TextBox x:Name="EmployeeIdBox"
-                             Style="{StaticResource ModernTextBox}"
-                             Height="36"
-                             FontSize="14"
-                             MaxLength="64"
-                             Margin="0,0,0,14"/>
+                        <TextBlock Text="Employee ID"
+                                   FontSize="14"
+                                   FontWeight="SemiBold"
+                                   Margin="2,0,0,4"
+                                   Foreground="{DynamicResource TextPrimary}"/>
+                        <TextBox x:Name="EmployeeIdBox"
+                                 Style="{StaticResource ModernTextBox}"
+                                 Height="36"
+                                 FontSize="14"
+                                 MaxLength="64"
+                                 Margin="0,0,0,4"/>
 
-                    <TextBlock Text="Display Name"
-                               FontSize="14"
-                               FontWeight="SemiBold"
-                               Margin="0,0,0,6"
-                               Foreground="{DynamicResource TextPrimary}"/>
-                    <TextBox x:Name="DisplayNameBox"
-                             Style="{StaticResource ModernTextBox}"
-                             Height="36"
-                             FontSize="14"
-                             MaxLength="128"
-                             Margin="0,0,0,18"/>
+                        <TextBlock Text="Display Name"
+                                   FontSize="14"
+                                   FontWeight="SemiBold"
+                                   Margin="2,0,0,4"
+                                   Foreground="{DynamicResource TextPrimary}"/>
+                        <TextBox x:Name="DisplayNameBox"
+                                 Style="{StaticResource ModernTextBox}"
+                                 Height="36"
+                                 FontSize="14"
+                                 MaxLength="128"
+                                 Margin="0,0,0,8"/>
 
-                    <CheckBox x:Name="ActiveCheckBox"
-                              FontSize="14"
-                              Content="Active user"
-                              IsChecked="True"
-                              Margin="0,0,0,14"
-                              Foreground="{DynamicResource TextPrimary}"/>
+                        <CheckBox x:Name="ActiveCheckBox"
+                                  FontSize="14"
+                                  Content="Active user"
+                                  IsChecked="True"
+                                  Margin="2,0,0,4"
+                                  Foreground="{DynamicResource TextPrimary}"/>
 
-                    <TextBlock Text="Roles"
-                               FontSize="14"
-                               FontWeight="SemiBold"
-                               Margin="0,0,0,8"
-                               Foreground="{DynamicResource TextPrimary}"/>
+                        <TextBlock Text="Roles"
+                                   FontSize="14"
+                                   FontWeight="SemiBold"
+                                   Margin="0,0,0,4"
+                                   Foreground="{DynamicResource TextPrimary}"/>
 
-                    <CheckBox x:Name="AdminCheckBox"
-                              FontSize="14"
-                              Content="Administrator"
-                              Margin="0,0,0,8"
-                              Foreground="{DynamicResource TextPrimary}"/>
+                        <CheckBox x:Name="AdminCheckBox"
+                                  FontSize="14"
+                                  Content="Administrator"
+                                  Margin="2,0,0,4"
+                                  Foreground="{DynamicResource TextPrimary}"/>
 
-                    <TextBlock Text="Can manage users and parts."
-                               Margin="24,-4,0,12"
-                               FontSize="13"
-                               Foreground="{DynamicResource TextSecondary}"/>
+                        <TextBlock Text="Can manage users and parts."
+                                   Margin="26,-4,0,8"
+                                   FontSize="13"
+                                   Foreground="{DynamicResource TextSecondary}"/>
 
-                    <CheckBox x:Name="PartsManagerCheckBox"
-                              FontSize="14"
-                              Content="Parts Manager"
-                              Margin="0,0,0,8"
-                              Foreground="{DynamicResource TextPrimary}"/>
+                        <CheckBox x:Name="PartsManagerCheckBox"
+                                  FontSize="14"
+                                  Content="Parts Manager"
+                                  Margin="2,0,0,4"
+                                  Foreground="{DynamicResource TextPrimary}"/>
 
-                    <TextBlock Text="Can add, edit, deactivate, reactivate, and assign parts."
-                               Margin="24,-4,0,18"
-                               TextWrapping="Wrap"
-                               FontSize="13"
-                               Foreground="{DynamicResource TextSecondary}"/>
+                        <TextBlock Text="Can add, edit, deactivate, reactivate, and assign parts."
+                                   Margin="26,-4,0,18"
+                                   TextWrapping="Wrap"
+                                   FontSize="13"
+                                   Foreground="{DynamicResource TextSecondary}"/>
 
-                    <Button x:Name="SaveButton"
-                            Content="Save Access"
-                            Height="36"
-                            Style="{StaticResource PrimaryButtonStyle}"
-                            IsEnabled="False"
-                            Click="Save_Click"/>
+                        <Button x:Name="SaveButton"
+                                Content="Save Access"
+                                Height="36"
+                                Style="{StaticResource PrimaryButtonStyle}"
+                                IsEnabled="False"
+                                Click="Save_Click"/>
                     </StackPanel>
                     </StackPanel>
                 </Border>
@@ -210,13 +210,13 @@
                 <Button x:Name="DeleteUserButton"
                         Content="Delete User"
                         Width="110"
-                        Margin="0,0,10,0"
+                        Margin="0,0,4,0"
                         Style="{StaticResource DangerButtonStyle}"
                         IsEnabled="False"
                         Click="DeleteUser_Click"/>
                 <Button Content="Refresh"
                         Width="100"
-                        Margin="0,0,10,0"
+                        Margin="0,0,4,0"
                         Click="Refresh_Click"/>
                 <Button Content="Close"
                         Width="100"
