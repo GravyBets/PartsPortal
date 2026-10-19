@@ -57,6 +57,49 @@ public sealed class AccessController : ControllerBase
             await _access.GetUsersAsync(cancellationToken));
     }
 
+    [HttpDelete("users/{employeeId}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> DeleteUser(
+        string employeeId,
+        CancellationToken cancellationToken = default)
+    {
+        var currentEmployeeId =
+            Request.Headers[AccessRepository.UserHeaderName]
+                .FirstOrDefault()?
+                .Trim();
+
+        if (string.IsNullOrWhiteSpace(currentEmployeeId) ||
+            !await _access.CanManageUsersAsync(
+                currentEmployeeId,
+                cancellationToken))
+        {
+            return StatusCode(
+                StatusCodes.Status403Forbidden,
+                "Administrator access is required.");
+        }
+
+        try
+        {
+            var deleted = await _access.DeleteUserAsync(
+                employeeId,
+                cancellationToken);
+
+            return deleted ? NoContent() : NotFound();
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(ex.Message);
+        }
+    }
+
     [HttpPut("users/{employeeId}")]
     public async Task<ActionResult<UserAccessDto>> SaveUser(
         string employeeId,

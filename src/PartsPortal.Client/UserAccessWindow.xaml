@@ -207,6 +207,13 @@
 
             <StackPanel Grid.Column="1"
                         Orientation="Horizontal">
+                <Button x:Name="DeleteUserButton"
+                        Content="Delete User"
+                        Width="110"
+                        Margin="0,0,10,0"
+                        Style="{StaticResource DangerButtonStyle}"
+                        IsEnabled="False"
+                        Click="DeleteUser_Click"/>
                 <Button Content="Refresh"
                         Width="100"
                         Margin="0,0,10,0"

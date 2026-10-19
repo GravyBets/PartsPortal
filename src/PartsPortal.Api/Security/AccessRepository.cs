@@ -364,6 +364,124 @@ public sealed class AccessRepository
                 StringComparison.OrdinalIgnoreCase));
     }
 
+    public async Task<bool> DeleteUserAsync(
+        string employeeId,
+        CancellationToken cancellationToken = default)
+    {
+        employeeId = NormalizeEmployeeId(employeeId);
+
+        var connection = _db.Database.GetDbConnection();
+        var closeWhenDone = connection.State != ConnectionState.Open;
+
+        if (closeWhenDone)
+            await connection.OpenAsync(cancellationToken);
+
+        try
+        {
+            // Lock active administrator rows before checking the target so
+            // concurrent deletes cannot both remove the final admin.
+            await using var transaction =
+                await connection.BeginTransactionAsync(
+                    IsolationLevel.Serializable,
+                    cancellationToken);
+
+            try
+            {
+                var activeAdminIds = new HashSet<int>();
+
+                await using (var admins = connection.CreateCommand())
+                {
+                    admins.Transaction = transaction;
+                    admins.CommandText = """
+                        SELECT u.id
+                        FROM app_users u
+                        INNER JOIN app_user_roles ur
+                            ON ur.user_id = u.id
+                        INNER JOIN app_roles r
+                            ON r.id = ur.role_id
+                        WHERE u.is_active = 1
+                          AND r.code = 'ADMIN'
+                        FOR UPDATE;
+                        """;
+
+                    await using var reader =
+                        await admins.ExecuteReaderAsync(cancellationToken);
+
+                    while (await reader.ReadAsync(cancellationToken))
+                        activeAdminIds.Add(reader.GetInt32(0));
+                }
+
+                int? userId = null;
+
+                await using (var lookup = connection.CreateCommand())
+                {
+                    lookup.Transaction = transaction;
+                    lookup.CommandText = """
+                        SELECT id
+                        FROM app_users
+                        WHERE employee_id = @employee_id
+                        FOR UPDATE;
+                        """;
+                    AddParameter(lookup, "@employee_id", employeeId);
+
+                    var value = await lookup.ExecuteScalarAsync(
+                        cancellationToken);
+
+                    if (value is not null && value is not DBNull)
+                        userId = Convert.ToInt32(value);
+                }
+
+                if (!userId.HasValue)
+                {
+                    await transaction.CommitAsync(cancellationToken);
+                    return false;
+                }
+
+                if (activeAdminIds.Contains(userId.Value) &&
+                    activeAdminIds.Count == 1)
+                {
+                    throw new InvalidOperationException(
+                        "You cannot delete the final active administrator. " +
+                        "Assign another active administrator first.");
+                }
+
+                // Only delete this user's PartsPortal access configuration.
+                // Saved templates use owner_employee_id rather than a FK
+                // to app_users, so their data remains untouched.
+                await using (var roles = connection.CreateCommand())
+                {
+                    roles.Transaction = transaction;
+                    roles.CommandText =
+                        "DELETE FROM app_user_roles WHERE user_id = @user_id;";
+                    AddParameter(roles, "@user_id", userId.Value);
+                    await roles.ExecuteNonQueryAsync(cancellationToken);
+                }
+
+                await using (var user = connection.CreateCommand())
+                {
+                    user.Transaction = transaction;
+                    user.CommandText =
+                        "DELETE FROM app_users WHERE id = @user_id;";
+                    AddParameter(user, "@user_id", userId.Value);
+                    await user.ExecuteNonQueryAsync(cancellationToken);
+                }
+
+                await transaction.CommitAsync(cancellationToken);
+                return true;
+            }
+            catch
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                throw;
+            }
+        }
+        finally
+        {
+            if (closeWhenDone)
+                await connection.CloseAsync();
+        }
+    }
+
     private static async Task<int> UpsertUserAsync(
         DbConnection connection,
         DbTransaction transaction,

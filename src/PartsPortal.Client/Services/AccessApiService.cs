@@ -49,6 +49,19 @@ public sealed class AccessApiService
                ?? new List<UserAccessDto>();
     }
 
+    public async Task DeleteUserAsync(
+        string employeeId,
+        CancellationToken cancellationToken = default)
+    {
+        var id = Uri.EscapeDataString(employeeId);
+
+        using var response = await _client.DeleteAsync(
+            $"access/users/{id}",
+            cancellationToken);
+
+        await EnsureSuccessAsync(response, cancellationToken);
+    }
+
     public async Task<UserAccessDto> SaveUserAsync(
         SaveUserAccessRequest request,
         CancellationToken cancellationToken = default)

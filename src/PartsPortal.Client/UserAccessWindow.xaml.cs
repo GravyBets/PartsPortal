@@ -156,6 +156,9 @@ public partial class UserAccessWindow : Window
         object sender,
         RoutedEventArgs e)
     {
+        if (_isBusy)
+            return;
+
         UsersGrid.SelectedItem = null;
         _isNewUser = true;
 
@@ -175,6 +178,9 @@ public partial class UserAccessWindow : Window
         object sender,
         RoutedEventArgs e)
     {
+        if (_isBusy)
+            return;
+
         var employeeId = (EmployeeIdBox.Text ?? "").Trim();
 
         if (string.IsNullOrWhiteSpace(employeeId))
@@ -229,10 +235,64 @@ public partial class UserAccessWindow : Window
         }
     }
 
+    private async void DeleteUser_Click(
+        object sender,
+        RoutedEventArgs e)
+    {
+        if (_isBusy || _isNewUser ||
+            UsersGrid.SelectedItem is not UserRow row)
+            return;
+
+        var display = string.IsNullOrWhiteSpace(row.DisplayName)
+            ? row.EmployeeId
+            : $"{row.DisplayName} ({row.EmployeeId})";
+
+        var answer = MessageBox.Show(
+            $"Permanently delete the PartsPortal access record for {display}?\n\n" +
+            "Their PartsPortal roles will be removed. This action cannot " +
+            "be undone. Their saved personal templates will be retained.\n\n" +
+            "The final active administrator cannot be deleted.",
+            "Delete User",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning,
+            MessageBoxResult.No);
+
+        if (answer != MessageBoxResult.Yes)
+            return;
+
+        try
+        {
+            SetBusy(true, "Deleting user...");
+            await _service.DeleteUserAsync(row.EmployeeId);
+
+            // Remove the old selection and reset the editor before reloading.
+            _isNewUser = false;
+            UsersGrid.SelectedItem = null;
+
+            await LoadUsersAsync();
+            StatusText.Text = $"User {row.EmployeeId} deleted.";
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                "Could not delete the user.\n\n" + ex.Message,
+                "User Access",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+        finally
+        {
+            SetBusy(false);
+        }
+    }
+
     private async void Refresh_Click(
         object sender,
         RoutedEventArgs e)
     {
+        if (_isBusy)
+            return;
+
         await LoadUsersAsync(
             (UsersGrid.SelectedItem as UserRow)?.EmployeeId);
     }
@@ -257,6 +317,9 @@ public partial class UserAccessWindow : Window
 
         EditorFields.IsEnabled = canEdit;
         SaveButton.IsEnabled = canEdit;
+        DeleteUserButton.IsEnabled = !_isBusy &&
+                                     !_isNewUser &&
+                                     UsersGrid.SelectedItem is UserRow;
     }
 
     private void Close_Click(
